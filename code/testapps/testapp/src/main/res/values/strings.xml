@@ -1,0 +1,33 @@
+<resources>
+    <string name="app_name">Campaign Demo</string>
+    <string name="user_name">User Name</string>
+    <string name="password">Password</string>
+    <string name="button_sign_in">Sign In</string>
+    <string name="button_sign_up">Do not have an account yet? Sign Up</string>
+    <string name="button_guest">Continue as a guest</string>
+    <string name="sign_up_now">Sign Up Now</string>
+    <string name="fields_manadatory">All the fields are mandatory!</string>
+    <string name="first_name">First Name:</string>
+    <string name="last_name">Last Name:</string>
+    <string name="email">Email:</string>
+    <string name="button_submit">Submit</string>
+    <string name="trigger_IAM_Header">Trigger IAM on Analytics Track</string>
+    <string name="button_action">Action</string>
+    <string name="button_state">State</string>
+    <string name="action_name">Action Name: </string>
+    <string name="state_name">State Name: </string>
+    <string name="track_context_data">Track Context Data</string>
+    <string name="track_context_data_info">Provide key:value semi-colon delimited.</string>
+    <string name="button_trigger_IAM">Trigger IAM </string>
+    <string name="title_activity_main2">Main2Activity</string>
+    <string name="action_app_home">App Home</string>
+    <string name="action_settings">Settings</string>
+    <string name="button_app_home">App Home</string>
+    <string name="button_settings">Settings</string>
+    <string name="section_format">Hello World from section: %1$d</string>
+    <string name="button_logout">Logout </string>
+    <string name="title_activity_settings_test">SettingsTestActivity</string>
+    <string name="privacy_status">Mobile Privacy Status</string>
+    <string name="asset_statements" translatable="false">[{ \"include\": \"https://59ee4ac5dbcdac4ba616ed86.c00.adobe.com/.well-known/assetlinks.json\" }]</string>
+
+</resources>

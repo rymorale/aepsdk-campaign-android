@@ -1,0 +1,4 @@
+include ':campaign', ':testapp', ':campaign_notifications_test_app'
+rootProject.name = "campaign-sdk"
+project(':testapp').projectDir = new File('Testapps/testapp')
+project(':campaign_notifications_test_app').projectDir = new File('Testapps/campaign_notifications_test_app')
