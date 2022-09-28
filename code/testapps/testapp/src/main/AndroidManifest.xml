@@ -19,6 +19,7 @@
 
         <activity
             android:name=".MainActivity"
+            android:exported="true"
             android:label="@string/app_name">
             <tools:validation testUrl="https://59ee4ac5dbcdac4ba616ed86.c00.adobe.com/activity" />
 
@@ -51,7 +52,8 @@
             </intent-filter>
         </receiver>
 
-        <service android:name=".CampaignFirebaseMessagingService">
+        <service android:name=".CampaignFirebaseMessagingService"
+            android:exported="true">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>

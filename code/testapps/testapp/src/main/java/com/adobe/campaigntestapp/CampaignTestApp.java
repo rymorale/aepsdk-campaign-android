@@ -27,9 +27,9 @@ import com.google.firebase.iid.InstanceIdResult;
 
 import android.app.Application;
 import android.content.Context;
-import android.support.annotation.NonNull;
 import android.util.Log;
-import android.widget.Toast;
+
+import androidx.annotation.NonNull;
 
 public class CampaignTestApp extends Application {
 
@@ -50,8 +50,7 @@ public class CampaignTestApp extends Application {
 			MobileCore.start(new AdobeCallback() {
 				@Override
 				public void call(Object o) {
-					// mobile property: ryan-new, org: Marketing Cloud In App-Messaging Service
-					MobileCore.configureWithAppID("launch-EN38885fd18c02433daa8c090382d81123-development");
+					MobileCore.configureWithAppID("31d8b0ad1f9f/98da4ef07438/launch-b7548c1d44a2-development");
 				}
 			});
 		} catch (InvalidInitException e) {

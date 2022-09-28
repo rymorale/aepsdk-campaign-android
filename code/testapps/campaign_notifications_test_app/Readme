@@ -1,9 +1,0 @@
-This is a test application to demo working of Campaign extension.
-This application shows a list of items and in app messages/ push notification.
-
-In app message is shown on following instances:
-
-1). When app is launch it shows local notification type in app message.
-2). In Checkout activity on click of button "buy" app shows full screen in app message.
-3). In Checkout activity on click of button "cancel" app shows alert dialog type in app message.
-4). It also handles Push notification from Campaign cloud.
