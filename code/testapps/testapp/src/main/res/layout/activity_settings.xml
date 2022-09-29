@@ -10,7 +10,7 @@ android:paddingRight="16dp"
 tools:context=".SettingsActivity">
 
 
-<TextView
+<androidx.appcompat.widget.AppCompatTextView
     android:id="@+id/textView13"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
@@ -24,7 +24,7 @@ tools:context=".SettingsActivity">
     app:layout_constraintStart_toStartOf="parent"
     app:layout_constraintTop_toTopOf="parent" />
 
-    <Button
+    <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/button"
         android:layout_width="110dp"
         android:layout_height="37dp"
@@ -35,10 +35,9 @@ tools:context=".SettingsActivity">
         android:text="OPT OUT"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editText6" />
+        app:layout_constraintStart_toStartOf="parent" />
 
-    <Button
+    <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/button2"
         android:layout_width="110dp"
         android:layout_height="37dp"
@@ -49,10 +48,9 @@ tools:context=".SettingsActivity">
         android:text="OPT IN"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editText6" />
+        app:layout_constraintStart_toStartOf="parent" />
 
-    <Button
+    <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/button3"
         android:layout_width="110dp"
         android:layout_height="37dp"

@@ -47,12 +47,7 @@ public class CampaignTestApp extends Application {
 			Identity.registerExtension();
 			Lifecycle.registerExtension();
 			Signal.registerExtension();
-			MobileCore.start(new AdobeCallback() {
-				@Override
-				public void call(Object o) {
-					MobileCore.configureWithAppID("31d8b0ad1f9f/98da4ef07438/launch-b7548c1d44a2-development");
-				}
-			});
+			MobileCore.start(o -> MobileCore.configureWithAppID("31d8b0ad1f9f/98da4ef07438/launch-b7548c1d44a2-development"));
 		} catch (InvalidInitException e) {
 			e.printStackTrace();
 

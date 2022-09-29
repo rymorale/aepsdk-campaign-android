@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:gravity="center_vertical"
+              android:padding="10dp"
+              android:orientation="horizontal">
+
+    <androidx.appcompat.widget.AppCompatCheckBox android:id="@+id/selectionCheckBox"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"/>
+
+    <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/itemImage"
+            android:layout_gravity="left"
+            android:layout_width="50dp"
+            android:layout_marginLeft="10dp"
+            android:layout_height="75dp"
+            android:padding="10dp"/>
+
+    <androidx.appcompat.widget.AppCompatTextView android:id="@+id/itemDetailsTextView"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"/>
+</androidx.appcompat.widget.LinearLayoutCompat>

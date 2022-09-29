@@ -1,3 +1,4 @@
-include ':campaign', ':testapp'
+include ':campaign', ':testapp', ':kotlin_test_app'
 rootProject.name = "campaign-sdk"
 project(':testapp').projectDir = new File('Testapps/testapp')
+project(':kotlin_test_app').projectDir = new File('Testapps/kotlin_test_app')
