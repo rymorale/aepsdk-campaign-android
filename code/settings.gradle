@@ -1,4 +1,4 @@
-include ':campaign', ':testapp', ':kotlin_test_app'
-rootProject.name = "campaign-sdk"
+include ':android-campaign-library', ':testapp', ':kotlin_test_app'
+rootProject.name = "aepsdk-campaign-android"
 project(':testapp').projectDir = new File('Testapps/testapp')
 project(':kotlin_test_app').projectDir = new File('Testapps/kotlin_test_app')

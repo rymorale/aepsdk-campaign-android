@@ -36,7 +36,9 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.0'
     implementation project(":${rootProject.moduleProjectName}")
-    implementation "com.adobe.marketing.mobile:core:$rootProject.mavenCoreVersion"
+    //implementation "com.adobe.marketing.mobile:core:$rootProject.mavenCoreVersion"
+    //implementation 'com.github.adobe.aepsdk-core-android:core:v2.0.0-experimental.2'
+    implementation 'com.github.adobe.aepsdk-core-android:core:dev-v2.0.0-SNAPSHOT'
     implementation 'com.adobe.marketing.mobile:userprofile:+'
     implementation 'com.adobe.marketing.mobile:identity:+'
     implementation 'com.adobe.marketing.mobile:lifecycle:+'
