@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+        <variable
+            name="eventHandler"
+            type="com.example.campaign_push_notification_test_app.SignUpScreenFragment.EventHandler" />
+    </data>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/signup_bg"
+        tools:context=".SignUpScreenFragment">
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/profilePicImageView"
+            style="@style/style_constraint_center_horizontal"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_marginTop="50dp"
+            android:background="@drawable/circle_bg"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:ignore="MissingConstraints" />
+
+        <com.google.android.material.textfield.TextInputLayout
+
+            android:id="@+id/firstNameTextInputLayout"
+            style="@style/style_constraint_center_horizontal_margin50"
+            android:hint="First Name"
+            android:textColorHint="@android:color/white"
+            app:layout_constraintTop_toBottomOf="@id/profilePicImageView"
+            tools:ignore="MissingConstraints">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/firstNameEditText"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@null"
+                android:onTextChanged="@{eventHandler::onTextChanged}"
+                android:textColor="@android:color/white" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/lastNameTextInputLayout"
+            style="@style/style_constraint_center_horizontal_margin50"
+            android:hint="Last Name"
+            android:textColorHint="@android:color/white"
+            app:layout_constraintTop_toBottomOf="@id/firstNameTextInputLayout"
+            tools:ignore="MissingConstraints">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/lastNameEditText"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@null"
+                android:onTextChanged="@{eventHandler::onTextChanged}"
+                android:textColor="@android:color/white" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/userNameTextInputLayout"
+            style="@style/style_constraint_center_horizontal_margin50"
+            android:background="@drawable/edittext_bg"
+            android:hint="User name"
+            android:textColorHint="@android:color/white"
+            app:layout_constraintTop_toBottomOf="@id/lastNameTextInputLayout"
+            tools:ignore="MissingConstraints">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/userNameEditText"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@null"
+                android:onTextChanged="@{eventHandler::onTextChanged}"
+                android:textColor="@android:color/white" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/passwordTextInputLayout"
+            style="@style/style_constraint_center_horizontal_margin50"
+            android:background="@drawable/edittext_bg"
+            android:hint="Password"
+            android:textColorHint="@android:color/white"
+            app:layout_constraintTop_toBottomOf="@id/userNameTextInputLayout"
+            tools:ignore="MissingConstraints">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/passwordEditText"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@null"
+                android:onTextChanged="@{eventHandler::onTextChanged}"
+                android:textColor="@android:color/white" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/buttonSignUp"
+            style="@style/style_constraint_center_horizontal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="50dp"
+            android:background="@drawable/circle_btn_bg"
+            android:enabled="false"
+            android:onClick="@{eventHandler::onSignUpButtonClick}"
+            android:padding="10dp"
+            android:text="Sign Up"
+            android:textColor="@android:color/white"
+            app:layout_constraintTop_toBottomOf="@id/passwordTextInputLayout"
+            tools:ignore="MissingConstraints" />
+
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>

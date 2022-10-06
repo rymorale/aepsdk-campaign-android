@@ -1,0 +1,25 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.adobe.campaigntestapp",
+    "sha256_cert_fingerprints":
+    ["6B:C5:DB:F9:EE:F0:F5:0F:2A:B0:3F:2E:13:7B:2B:72:6E:46:59:18:5B:E4:4A:FC:70:90:40:EE:A0:83:4D:B4"]
+  }
+},
+{
+  "relation": ["delegate_permission/common.get_login_creds"],
+  "target": {
+    "namespace": "web",
+    "site": "https://59ee4ac5dbcdac4ba616ed86.c00.adobe.com"
+  }
+},
+{
+  "relation": ["delegate_permission/common.get_login_creds"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.adobe.campaigntestapp",
+    "sha256_cert_fingerprints":
+    ["6B:C5:DB:F9:EE:F0:F5:0F:2A:B0:3F:2E:13:7B:2B:72:6E:46:59:18:5B:E4:4A:FC:70:90:40:EE:A0:83:4D:B4"]
+  }
+}]

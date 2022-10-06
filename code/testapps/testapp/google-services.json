@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "701498899335",
+    "firebase_url": "https://test-push-a0530.firebaseio.com",
+    "project_id": "test-push-a0530",
+    "storage_bucket": "test-push-a0530.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:701498899335:android:b7916b8673d87acefd3122",
+        "android_client_info": {
+          "package_name": "com.adobe.campaigntestapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "701498899335-bkcj3bpufbei5sbfduo5vi349j7vuejt.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDMQfs6KHsYhjNXbnVZM6XFjMidKQD8nS8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "701498899335-bkcj3bpufbei5sbfduo5vi349j7vuejt.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "701498899335-af89svoqbpiumgm2vaj0hmbvicfou5el.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.adobe.mobile.AMSDKTest"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
