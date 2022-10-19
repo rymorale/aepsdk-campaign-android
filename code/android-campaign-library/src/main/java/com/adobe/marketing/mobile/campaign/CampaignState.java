@@ -11,10 +11,18 @@
 
 package com.adobe.marketing.mobile.campaign;
 
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.LOG_TAG;
+
+import com.adobe.marketing.mobile.MobilePrivacyStatus;
+import com.adobe.marketing.mobile.services.Log;
+import com.adobe.marketing.mobile.util.StringUtils;
+
+import java.util.Map;
+
 final class CampaignState {
-
+	private final String SELF_TAG = "CampaignState";
 	// ----------- Configuration properties -----------
-
+	private boolean configStateSet = false;
 	private String campaignServer;
 	private String campaignPkey;
 	private String campaignMcias;
@@ -26,7 +34,7 @@ final class CampaignState {
 
 
 	// ----------- Identity properties -----------
-
+	private boolean identityStateSet = false;
 	private String experienceCloudId;
 
 	// ========================================================================
@@ -119,14 +127,23 @@ final class CampaignState {
 	 * <p>
 	 * Invokes internal methods to set the properties for {@code Configuration} and {@code Identity} shared states.
 	 *
-	 * @param configState {@link EventData} representing {@code Configuration} shared state
-	 * @param identityState {@code EventData} representing {@code Identity} shared state
-	 * @see #setConfiguration(EventData)
-	 * @see #setIdentity(EventData)
+	 * @param configState {@link Map<String, Object>} representing {@code Configuration} shared state
+	 * @param identityState {@code Map<String, Object>} representing {@code Identity} shared state
+	 * @see #setConfiguration(Map<String, Object>)
+	 * @see #setIdentity(Map<String, Object>)
 	 */
-	void setState(final EventData configState, final EventData identityState) {
+	void setState(final Map<String, Object> configState, final Map<String, Object> identityState) {
 		setConfiguration(configState);
 		setIdentity(identityState);
+	}
+
+	/**
+	 * Determines if the necessary configuration and identity shared state data has been received.
+	 *
+	 * @return {@code boolean} indicating whether the configuration and identity shared state are present
+	 */
+	boolean isStateSet() {
+		return configStateSet && identityStateSet;
 	}
 
 	/**
@@ -136,13 +153,13 @@ final class CampaignState {
 	 */
 	boolean canDownloadRulesWithCurrentState() {
 		if (this.privacyStatus != MobilePrivacyStatus.OPT_IN) {
-			Log.trace(CampaignConstants.LOG_TAG,
-					  "canDownloadRulesWithCurrentState -  Cannot download rules, since privacy status is not opted in.");
+			Log.trace(LOG_TAG, SELF_TAG,
+					"canDownloadRulesWithCurrentState -  Cannot download rules, since privacy status is not opted in.");
 			return false;
 		}
 
 		return !StringUtils.isNullOrEmpty(this.experienceCloudId) && !StringUtils.isNullOrEmpty(this.campaignServer) &&
-			   !StringUtils.isNullOrEmpty(this.campaignMcias) && !StringUtils.isNullOrEmpty(this.propertyId);
+				!StringUtils.isNullOrEmpty(this.campaignMcias) && !StringUtils.isNullOrEmpty(this.propertyId);
 	}
 
 	/**
@@ -152,13 +169,13 @@ final class CampaignState {
 	 */
 	boolean canRegisterWithCurrentState() {
 		if (this.privacyStatus != MobilePrivacyStatus.OPT_IN) {
-			Log.trace(CampaignConstants.LOG_TAG,
-					  "canRegisterWithCurrentState -  Cannot register with Campaign, since privacy status is not opted in.");
+			Log.trace(LOG_TAG, SELF_TAG,
+					"canRegisterWithCurrentState -  Cannot register with Campaign, since privacy status is not opted in.");
 			return false;
 		}
 
 		return !StringUtils.isNullOrEmpty(this.experienceCloudId) && !StringUtils.isNullOrEmpty(this.campaignServer) &&
-			   !StringUtils.isNullOrEmpty(this.campaignPkey);
+				!StringUtils.isNullOrEmpty(this.campaignPkey);
 	}
 
 	/**
@@ -168,8 +185,8 @@ final class CampaignState {
 	 */
 	boolean canSendTrackInfoWithCurrentState() {
 		if (this.privacyStatus != MobilePrivacyStatus.OPT_IN) {
-			Log.trace(CampaignConstants.LOG_TAG,
-					  "canSendTrackInfoWithCurrentState -  Cannot send message track request to Campaign, since privacy status is not opted in.");
+			Log.trace(LOG_TAG, SELF_TAG,
+					"canSendTrackInfoWithCurrentState -  Cannot send message track request to Campaign, since privacy status is not opted in.");
 			return false;
 		}
 
@@ -181,50 +198,45 @@ final class CampaignState {
 	// ========================================================================
 
 	/**
-	 * Extracts properties from the provided {@code configState} and updates this {@code CampaignState}.
+	 * Extracts properties from the provided {@code Map<String, Object>} configState and updates this {@code CampaignState}.
 	 *
-	 * @param configState {@link EventData} representing {@code Configuration} shared state
+	 * @param configState {@link Map<String, Object>} representing {@code Configuration} shared state
 	 */
-	private void setConfiguration(final EventData configState) {
-		if (configState == null) {
-			Log.debug(CampaignConstants.LOG_TAG,
-					  "setConfiguration -  Cannot set Configuration properties, provided config data is null.");
+	private void setConfiguration(final Map<String, Object> configState) {
+		if (configState == null || configState.isEmpty()) {
+			Log.debug(LOG_TAG, SELF_TAG,
+					"setConfiguration -  Cannot set Configuration properties, provided config data is null.");
 			return;
 		}
 
-		this.campaignServer = configState.optString(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_SERVER_KEY,
-							  "");
-		this.campaignPkey = configState.optString(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_PKEY_KEY,
-							"");
-		this.campaignMcias = configState.optString(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_MCIAS_KEY,
-							 "");
-		this.timeout = configState.optInteger(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_TIMEOUT,
-											  CampaignConstants.CAMPAIGN_TIMEOUT_DEFAULT);
-		this.propertyId = configState.optString(CampaignConstants.EventDataKeys.Configuration.PROPERTY_ID,
-												"");
-		this.privacyStatus = MobilePrivacyStatus.fromString(configState.optString(
-								 CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY, ""));
-		this.campaignRegistrationDelayDays = configState.optInteger(
-				CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_REGISTRATION_DELAY_KEY,
-				CampaignConstants.DEFAULT_REGISTRATION_DELAY_DAYS);
-		this.campaignRegistrationPaused = configState.optBoolean(
-											  CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_REGISTRATION_PAUSED_KEY, false);
+		this.campaignServer = (String) configState.get(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_SERVER_KEY);
+		this.campaignPkey = (String) configState.get(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_PKEY_KEY);
+		this.campaignMcias = (String) configState.get(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_MCIAS_KEY);
+		this.propertyId = (String) configState.get(CampaignConstants.EventDataKeys.Configuration.PROPERTY_ID);
+		this.privacyStatus = MobilePrivacyStatus.fromString((String) configState.get(CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY));
+		// setting configuration that need default values if none were given
+		final Integer timeout = (Integer) configState.get(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_TIMEOUT);
+		this.timeout = timeout == null ? CampaignConstants.CAMPAIGN_TIMEOUT_DEFAULT : timeout;
+		final Integer registrationDelay = (Integer) configState.get(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_REGISTRATION_DELAY_KEY);
+		this.campaignRegistrationDelayDays = registrationDelay == null ? CampaignConstants.DEFAULT_REGISTRATION_DELAY_DAYS : registrationDelay;
+		final Boolean registrationPaused = (Boolean) configState.get(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_REGISTRATION_PAUSED_KEY);
+		this.campaignRegistrationPaused = registrationPaused == null ? false : registrationPaused;
+		configStateSet = true;
 	}
 
 	/**
-	 * Extracts properties from the provided {@code identityState} and updates this {@code CampaignState}.
+	 * Extracts properties from the provided {@code Map<String, Object>} identityState and updates this {@code CampaignState}.
 	 *
-	 * @param identityState {@link EventData} representing {@code Identity} shared state
+	 * @param identityState {@link Map<String, Object>} representing {@code Identity} shared state
 	 */
-	private void setIdentity(final EventData identityState) {
-		if (identityState == null) {
-			Log.debug(CampaignConstants.LOG_TAG, "setIdentity -  Cannot set Identity properties, provided identity data is null.");
+	private void setIdentity(final Map<String, Object> identityState) {
+		if (identityState == null || identityState.isEmpty()) {
+			Log.debug(LOG_TAG, SELF_TAG, "setIdentity -  Cannot set Identity properties, provided identity data is null.");
 			return;
 		}
 
-		this.experienceCloudId = identityState.optString(CampaignConstants.EventDataKeys.Identity.VISITOR_ID_MID,
-								 "");
+		this.experienceCloudId = (String) identityState.get(CampaignConstants.EventDataKeys.Identity.VISITOR_ID_MID);
+		identityStateSet = true;
 	}
-
 
 }

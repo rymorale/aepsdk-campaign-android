@@ -12,6 +12,7 @@
 package com.adobe.campaigntestapp;
 
 import com.adobe.marketing.mobile.AdobeCallback;
+import com.adobe.marketing.mobile.Extension;
 import com.adobe.marketing.mobile.Identity;
 import com.adobe.marketing.mobile.MobileCore;
 import com.adobe.marketing.mobile.Lifecycle;
@@ -20,6 +21,7 @@ import com.adobe.marketing.mobile.LoggingMode;
 import com.adobe.marketing.mobile.Signal;
 import com.adobe.marketing.mobile.UserProfile;
 import com.adobe.marketing.mobile.InvalidInitException;
+import com.adobe.marketing.mobile.campaign.CampaignExtension;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.iid.FirebaseInstanceId;
@@ -30,6 +32,10 @@ import android.content.Context;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class CampaignTestApp extends Application {
 
@@ -42,16 +48,17 @@ public class CampaignTestApp extends Application {
 		MobileCore.setLogLevel(LoggingMode.DEBUG);
 
 		try {
-			Campaign.registerExtension();
 			UserProfile.registerExtension();
 			Identity.registerExtension();
 			Lifecycle.registerExtension();
 			Signal.registerExtension();
-			MobileCore.start(o -> MobileCore.configureWithAppID("31d8b0ad1f9f/98da4ef07438/launch-b7548c1d44a2-development"));
+			//MobileCore.start(o -> MobileCore.configureWithAppID("31d8b0ad1f9f/98da4ef07438/launch-b7548c1d44a2-development"));
 		} catch (InvalidInitException e) {
 			e.printStackTrace();
 
 		}
+
+		MobileCore.registerExtensions(Arrays.asList(CampaignExtension.class), o -> MobileCore.configureWithAppID("31d8b0ad1f9f/98da4ef07438/launch-b7548c1d44a2-development"));
 
 		application = this;
 		FirebaseInstanceId.getInstance().getInstanceId()

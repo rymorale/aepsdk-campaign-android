@@ -11,28 +11,31 @@
 
 package com.adobe.marketing.mobile.campaign;
 
+import com.adobe.marketing.mobile.Event;
+import com.adobe.marketing.mobile.ExtensionEventListener;
+import com.adobe.marketing.mobile.services.Log;
+
 /**
  * Listens for {@code EventType.CONFIGURATION}, {@code EventSource.RESPONSE_CONTENT} events and invokes method on
  * the parent {@code CampaignExtension} to process mobile privacy status change and trigger Campaign rules download.
  */
-class CampaignListenerConfigurationResponseContent extends ModuleEventListener<CampaignExtension> {
+class ListenerConfigurationResponseContent implements ExtensionEventListener {
+	private static final String SELF_TAG = "ListenerConfigurationResponseContent";
+	private final CampaignExtension parentExtension;
 
 	/**
-	 * Constructor
+	 * Constructor.
 	 *
-	 * @param extension {@link CampaignExtension} that owns this listener
-	 * @param type {@link EventType} this listener is registered to handle
-	 * @param source {@link EventSource} this listener is registered to handle
+	 * @param {@link CampaignExtension} which created this listener
 	 */
-	CampaignListenerConfigurationResponseContent(final CampaignExtension extension, final EventType type,
-			final EventSource source) {
-		super(extension, type, source);
+	ListenerConfigurationResponseContent(final CampaignExtension parentExtension) {
+		this.parentExtension = parentExtension;
 	}
 
 	/**
 	 * Listens to {@code EventType#CONFIGURATION}, {@code EventSource#RESPONSE_CONTENT} event.
 	 * <p>
-	 * Invokes method on the parent {@link CampaignExtension} to handle change in {@link MobilePrivacyStatus} and to
+	 * Invokes method on the parent {@link CampaignExtension} to handle change in {@link com.adobe.marketing.mobile.MobilePrivacyStatus} and to
 	 * queue event for downloading Campaign rules.
 	 *
 	 * @param event {@link Event} to be processed
@@ -40,13 +43,17 @@ class CampaignListenerConfigurationResponseContent extends ModuleEventListener<C
 	 */
 	@Override
 	public void hear(final Event event) {
-		EventData eventData = event.getData();
-
-		if (eventData == null) {
-			Log.debug(CampaignConstants.LOG_TAG, "Ignoring Configuration response event with null EventData.");
+		if (event == null || event.getEventData() == null) {
+			Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
+					"hear - Ignoring Configuration response event with null EventData.");
 			return;
 		}
 
-		parentModule.processConfigurationResponse(event);
+		if (parentExtension == null) {
+			Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
+					"hear - The parent extension, associated with this listener is null, ignoring the event.");
+			return;
+		}
+		parentExtension.processConfigurationResponse(event);
 	}
 }

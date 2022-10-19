@@ -11,22 +11,25 @@
 
 package com.adobe.marketing.mobile.campaign;
 
+import com.adobe.marketing.mobile.Event;
+import com.adobe.marketing.mobile.ExtensionEventListener;
+import com.adobe.marketing.mobile.services.Log;
+
 /**
  * Listens for {@code EventType.GENERIC_DATA}, {@code EventSource.OS} events and invokes method on
  * the parent {@code CampaignExtension} to send notification tracking information to Campaign.
  */
-class CampaignListenerGenericDataOS extends ModuleEventListener<CampaignExtension> {
+class ListenerGenericDataOS implements ExtensionEventListener {
+	private static final String SELF_TAG = "ListenerGenericDataOS";
+	private final CampaignExtension parentExtension;
 
 	/**
-	 * Constructor
+	 * Constructor.
 	 *
-	 * @param extension {@link CampaignExtension} that owns this listener
-	 * @param type {@link EventType} this listener is registered to handle
-	 * @param source {@link EventSource} this listener is registered to handle
+	 * @param {@link CampaignExtension} which created this listener
 	 */
-	CampaignListenerGenericDataOS(final CampaignExtension extension, final EventType type,
-								  final EventSource source) {
-		super(extension, type, source);
+	ListenerGenericDataOS(final CampaignExtension parentExtension) {
+		this.parentExtension = parentExtension;
 	}
 
 	/**
@@ -39,17 +42,20 @@ class CampaignListenerGenericDataOS extends ModuleEventListener<CampaignExtensio
 	 */
 	@Override
 	public void hear(final Event event) {
-
-		if (event == null || event.getData() == null || event.getData().isEmpty()) {
-			Log.debug(CampaignConstants.LOG_TAG, "Ignoring Generic data OS event with null or empty EventData.");
+		if (event == null || event.getEventData() == null || event.getEventData().isEmpty()) {
+			Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "Ignoring Generic data OS event with null or empty EventData.");
 			return;
 		}
 
-		parentModule.getExecutor().execute(new Runnable() {
-			@Override
-			public void run() {
-				parentModule.queueAndProcessEvent(event);
-			}
+		if (parentExtension == null) {
+			Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
+					"hear - The parent extension, associated with this listener is null, ignoring the event.");
+			return;
+		}
+
+		parentExtension.getExecutor().execute(() -> {
+			parentExtension.queueEvent(event);
+			parentExtension.processEvents();
 		});
 	}
 }

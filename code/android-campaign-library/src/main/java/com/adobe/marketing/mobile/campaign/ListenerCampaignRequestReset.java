@@ -11,28 +11,30 @@
 
 package com.adobe.marketing.mobile.campaign;
 
+import com.adobe.marketing.mobile.Event;
+import com.adobe.marketing.mobile.ExtensionEventListener;
+import com.adobe.marketing.mobile.services.Log;
+
 /**
  * Listens for {@code EventType.CAMPAIGN}, {@code EventSource.REQUEST_RESET} events and queues them for
  * processing by the parent {@code CampaignExtension} in order to clear previously set
  * linkage fields in the SDK.
  *
- * @see EventType#CAMPAIGN
- * @see EventSource#REQUEST_RESET
+ * @see com.adobe.marketing.mobile.EventType#CAMPAIGN
+ * @see com.adobe.marketing.mobile.EventSource#REQUEST_RESET
  * @see CampaignExtension
  */
-class CampaignListenerCampaignRequestReset extends ModuleEventListener<CampaignExtension> {
-
+class ListenerCampaignRequestReset implements ExtensionEventListener {
+	private static final String SELF_TAG = "ListenerCampaignRequestReset";
+	private final CampaignExtension parentExtension;
 
 	/**
-	 * Constructor
+	 * Constructor.
 	 *
-	 * @param extension parent {@link CampaignExtension} that owns this listener
-	 * @param type   {@link EventType} this listener is registered to handle
-	 * @param source {@link EventSource} this listener is registered to handle
+	 * @param {@link CampaignExtension} which created this listener
 	 */
-	CampaignListenerCampaignRequestReset(final CampaignExtension extension, final EventType type,
-										 final EventSource source) {
-		super(extension, type, source);
+	ListenerCampaignRequestReset(final CampaignExtension parentExtension) {
+		this.parentExtension = parentExtension;
 	}
 
 	/**
@@ -42,12 +44,22 @@ class CampaignListenerCampaignRequestReset extends ModuleEventListener<CampaignE
 	 * process event to clear previously set linkage fields and download Campaign rules.
 	 *
 	 * @param event {@link Event} to be processed
-	 * @see CampaignExtension#queueAndProcessEvent(Event)
+	 * @see CampaignExtension#queueEvent(Event)
 	 */
 	@Override
 	public void hear(final Event event) {
-		parentModule.handleResetLinkageFields(event);
+		if (event == null || event.getEventData() == null) {
+			Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
+					"hear -  Ignoring Campaign request identity event with null or empty EventData.");
+			return;
+		}
 
+		if (parentExtension == null) {
+			Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
+					"hear - The parent extension, associated with this listener is null, ignoring the event.");
+			return;
+		}
+		parentExtension.handleResetLinkageFields(event);
 	}
 
 }

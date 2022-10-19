@@ -11,27 +11,31 @@
 
 package com.adobe.marketing.mobile.campaign;
 
+import com.adobe.marketing.mobile.Event;
+import com.adobe.marketing.mobile.ExtensionEventListener;
+import com.adobe.marketing.mobile.services.Log;
+
 import java.util.Map;
 
 /**
  * Listens for {@code EventType.LIFECYCLE}, {@code EventSource.RESPONSE_CONTENT} events and queues them for
  * processing by the parent {@code CampaignExtension}.
  *
- * @see EventType#LIFECYCLE
- * @see EventSource#RESPONSE_CONTENT
+ * @see com.adobe.marketing.mobile.EventType#LIFECYCLE
+ * @see com.adobe.marketing.mobile.EventSource#RESPONSE_CONTENT
  * @see CampaignExtension
  */
-class CampaignListenerLifecycleResponseContent extends ModuleEventListener<CampaignExtension> {
+class ListenerLifecycleResponseContent implements ExtensionEventListener {
+	private static final String SELF_TAG = "ListenerLifecycleResponseContent";
+	private final CampaignExtension parentExtension;
+
 	/**
-	 * Constructor
+	 * Constructor.
 	 *
-	 * @param extension parent {@link CampaignExtension} that owns this listener
-	 * @param type   {@link EventType} this listener is registered to handle
-	 * @param source {@link EventSource} this listener is registered to handle
+	 * @param {@link CampaignExtension} which created this listener
 	 */
-	CampaignListenerLifecycleResponseContent(final CampaignExtension extension, final EventType type,
-			final EventSource source) {
-		super(extension, type, source);
+	ListenerLifecycleResponseContent(final CampaignExtension parentExtension) {
+		this.parentExtension = parentExtension;
 	}
 
 	/**
@@ -44,28 +48,32 @@ class CampaignListenerLifecycleResponseContent extends ModuleEventListener<Campa
 	 */
 	@Override
 	public void hear(final Event event) {
-		final EventData eventData = event.getData();
+		final Map<String, Object> eventData = event.getEventData();
 
 		if (eventData == null || eventData.isEmpty()) {
-			Log.debug(CampaignConstants.LOG_TAG, "Ignoring Lifecycle response event with null or empty EventData.");
+			Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "Ignoring Lifecycle response event with null or empty EventData.");
 			return;
 		}
 
-		final Map<String, String> lifecycleData = eventData.optStringMap(
-					CampaignConstants.EventDataKeys.Lifecycle.LIFECYCLE_CONTEXT_DATA, null);
+		final Map<String, String> lifecycleData = (Map<String, String>) eventData.get(
+				CampaignConstants.EventDataKeys.Lifecycle.LIFECYCLE_CONTEXT_DATA);
 
 		if (lifecycleData == null || lifecycleData.isEmpty()
 				|| !lifecycleData.containsKey(CampaignConstants.EventDataKeys.Lifecycle.LAUNCH_EVENT)) {
-			Log.debug(CampaignConstants.LOG_TAG,
-					  "Ignoring Lifecycle response event, lifecycle context data is null or does not contain launch Event.");
+			Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
+					"Ignoring Lifecycle response event, lifecycle context data is null or does not contain launch Event.");
 			return;
 		}
 
-		parentModule.getExecutor().execute(new Runnable() {
-			@Override
-			public void run() {
-				parentModule.queueAndProcessEvent(event);
-			}
+		if (parentExtension == null) {
+			Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
+					"hear - The parent extension, associated with this listener is null, ignoring the event.");
+			return;
+		}
+
+		parentExtension.getExecutor().execute(() -> {
+			parentExtension.queueEvent(event);
+			parentExtension.processEvents();
 		});
 	}
 

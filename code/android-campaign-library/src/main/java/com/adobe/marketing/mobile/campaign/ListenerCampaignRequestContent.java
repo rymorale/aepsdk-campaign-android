@@ -11,33 +11,36 @@
 
 package com.adobe.marketing.mobile.campaign;
 
+import com.adobe.marketing.mobile.Event;
+import com.adobe.marketing.mobile.ExtensionEventListener;
+import com.adobe.marketing.mobile.services.Log;
+
 /**
  * Listens for {@code EventType.CAMPAIGN}, {@code EventSource.REQUEST_CONTENT} events and invokes method on the
  * parent {@code CampaignExtension} for displaying in-app messages or for downloading/ caching their remote assets.
  *
- * @see EventType#CAMPAIGN
- * @see EventSource#REQUEST_CONTENT
+ * @see com.adobe.marketing.mobile.EventType#CAMPAIGN
+ * @see com.adobe.marketing.mobile.EventSource#REQUEST_CONTENT
  * @see CampaignExtension
  */
-class CampaignListenerCampaignRequestContent extends ModuleEventListener<CampaignExtension> {
+class ListenerCampaignRequestContent implements ExtensionEventListener {
+	private static final String SELF_TAG = "ListenerCampaignRequestContent";
+	private final CampaignExtension parentExtension;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param extension parent {@link CampaignExtension} that owns this listener
-	 * @param type   {@link EventType} this listener is registered to handle
-	 * @param source {@link EventSource} this listener is registered to handle
+	 * @param {@link CampaignExtension} which created this listener
 	 */
-	CampaignListenerCampaignRequestContent(final CampaignExtension extension, final EventType type,
-										   final EventSource source) {
-		super(extension, type, source);
+	ListenerCampaignRequestContent(final CampaignExtension parentExtension) {
+		this.parentExtension = parentExtension;
 	}
 
 	/**
 	 * Listens to {@code EventType#CAMPAIGN}, {@code EventSource#REQUEST_CONTENT} event.
 	 * <p>
 	 * Invokes method on the parent {@link CampaignExtension} to handle loaded or triggered Campaign rule consequence
-	 * passed in the {@link EventData}.
+	 * passed in the {@code Map<String, Object} event data.
 	 * <p>
 	 * If there is a triggered consequence, the parent {@code CampaignExtension} will process the consequence.
 	 * <p>
@@ -49,13 +52,21 @@ class CampaignListenerCampaignRequestContent extends ModuleEventListener<Campaig
 	 */
 	@Override
 	public void hear(final Event event) {
-
-		if (event == null || event.getData() == null || event.getData().isEmpty()) {
-			Log.debug(CampaignConstants.LOG_TAG,
-					  "Ignoring Campaign request event because a null/empty event or EventData was found.");
+		if (event == null || event.getEventData() == null) {
+			Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
+					"hear - Ignoring Campaign request event because a null/empty event or EventData was found.");
 			return;
 		}
 
-		parentModule.processMessageEvent(event);
+		if (parentExtension == null) {
+			Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
+					"hear - The parent extension, associated with this listener is null, ignoring the event.");
+			return;
+		}
+
+		parentExtension.getExecutor().execute(() -> {
+			parentExtension.queueEvent(event);
+			parentExtension.processEvents();
+		});
 	}
 }
