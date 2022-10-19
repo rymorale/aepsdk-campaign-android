@@ -11,7 +11,33 @@
 
 package com.adobe.marketing.mobile.campaign;
 
-import com.adobe.marketing.mobile.UIService.UIFullScreenMessage;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.CAMPAIGN_INTERACTION_TYPE;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_ASSETS_PATH;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_HTML;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_REMOTE_ASSETS;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_ID;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.LOG_TAG;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.MESSAGE_CACHE_DIR;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.MESSAGE_DATA_ID_TOKENS_LEN;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.MESSAGE_DATA_TAG_ID;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.MESSAGE_DATA_TAG_ID_BUTTON_1;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.MESSAGE_DATA_TAG_ID_BUTTON_2;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.MESSAGE_DATA_TAG_ID_BUTTON_X;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.MESSAGE_DATA_TAG_ID_DELIMITER;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.MESSAGE_SCHEME;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.MESSAGE_SCHEME_PATH_CANCEL;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.MESSAGE_SCHEME_PATH_CONFIRM;
+
+import com.adobe.marketing.mobile.services.Log;
+import com.adobe.marketing.mobile.services.ServiceProvider;
+import com.adobe.marketing.mobile.services.caching.CacheResult;
+import com.adobe.marketing.mobile.services.caching.CacheService;
+import com.adobe.marketing.mobile.services.ui.FullscreenMessage;
+import com.adobe.marketing.mobile.services.ui.FullscreenMessageDelegate;
+import com.adobe.marketing.mobile.services.ui.MessageSettings;
+import com.adobe.marketing.mobile.services.ui.UIService;
+import com.adobe.marketing.mobile.util.StringUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -30,23 +56,25 @@ import java.util.Map;
  * The actual UI implementation happens in the platform services.
  */
 class FullScreenMessage extends CampaignMessage {
+	private final String SELF_TAG = "FullScreenMessage";
+
 	private String html;
 	private String htmlContent;
 	private String assetsPath;
 
 	List<List<String>> assets;
 
-	class FullScreenMessageUiListener implements UIService.UIFullScreenListener {
+	class FullScreenMessageUiListener implements FullscreenMessageDelegate {
 		/**
 		 * Invoked when a {@code UIFullScreenMessage} is displayed.
 		 * <p>
 		 * Triggers a call to parent method {@link CampaignMessage#triggered()}.
 		 *
-		 * @param message the {@link UIFullScreenMessage} being displayed
+		 * @param message the {@link FullscreenMessage} being displayed
 		 */
 		@Override
-		public void onShow(final UIFullScreenMessage message) {
-			Log.debug(CampaignConstants.LOG_TAG, "Fullscreen on show callback received.");
+		public void onShow(final FullscreenMessage message) {
+			Log.debug(LOG_TAG, SELF_TAG, "Fullscreen on show callback received.");
 			triggered();
 		}
 
@@ -55,11 +83,11 @@ class FullScreenMessage extends CampaignMessage {
 		 * <p>
 		 * Triggers a call to parent method {@link CampaignMessage#viewed()}.
 		 *
-		 * @param message the {@link UIFullScreenMessage} being dismissed
+		 * @param message the {@link FullscreenMessage} being dismissed
 		 */
 		@Override
-		public void onDismiss(final UIFullScreenMessage message) {
-			Log.debug(CampaignConstants.LOG_TAG, "Fullscreen on dismiss callback received.");
+		public void onDismiss(final FullscreenMessage message) {
+			Log.debug(LOG_TAG, SELF_TAG, "Fullscreen on dismiss callback received.");
 			viewed();
 		}
 
@@ -79,47 +107,47 @@ class FullScreenMessage extends CampaignMessage {
 		 * Extracts the host and query information from the provided {@code urlString} in a {@code Map<String, String>} and
 		 * passes it to the {@link CampaignMessage} class to dispatch message click-through or viewed event.
 		 *
-		 * @param message the {@link UIFullScreenMessage} instance
+		 * @param message the {@link FullscreenMessage} instance
 		 * @param urlString {@link String} containing the URL being loaded by the {@code CampaignMessage}
 		 *
 		 * @return true if the SDK wants to handle the URL
 		 * @see #processMessageInteraction(Map)
 		 */
 		@Override
-		public boolean overrideUrlLoad(final UIFullScreenMessage message, final String urlString) {
+		public boolean overrideUrlLoad(final FullscreenMessage message, final String urlString) {
 
-			Log.trace(CampaignConstants.LOG_TAG, "Fullscreen overrideUrlLoad callback received with url (%s)", urlString);
+			Log.trace(LOG_TAG, "Fullscreen overrideUrlLoad callback received with url (%s)", urlString);
 
 			if (StringUtils.isNullOrEmpty(urlString)) {
-				Log.debug(CampaignConstants.LOG_TAG, "Cannot process provided URL string, it is null or empty.");
+				Log.debug(LOG_TAG, SELF_TAG, "Cannot process provided URL string, it is null or empty.");
 				return true;
 			}
 
-			URI uri = null;
+			URI uri;
 
 			try {
 				uri = new URI(urlString);
 
 			} catch (URISyntaxException ex) {
-				Log.debug(CampaignConstants.LOG_TAG, "overrideUrlLoad -  Invalid message URI found (%s).", urlString);
+				Log.debug(LOG_TAG, "overrideUrlLoad -  Invalid message URI found (%s).", urlString);
 				return true;
 			}
 
 			// check adbinapp scheme
 			final String messageScheme =  uri.getScheme();
 
-			if (!messageScheme.equals(CampaignConstants.MESSAGE_SCHEME)) {
-				Log.debug(CampaignConstants.LOG_TAG, "overrideUrlLoad -  Invalid message scheme found in URI. (%s)", urlString);
+			if (!messageScheme.equals(MESSAGE_SCHEME)) {
+				Log.debug(LOG_TAG, "overrideUrlLoad -  Invalid message scheme found in URI. (%s)", urlString);
 				return false;
 			}
 
 			// cancel or confirm
 			final String host = uri.getHost();
 
-			if (!host.equals(CampaignConstants.MESSAGE_SCHEME_PATH_CONFIRM) &&
-					!host.equals(CampaignConstants.MESSAGE_SCHEME_PATH_CANCEL)) {
-				Log.debug(CampaignConstants.LOG_TAG,
-						  "overrideUrlLoad -  Unsupported URI host found, neither \"confirm\" nor \"cancel\". (%s)", urlString);
+			if (!host.equals(MESSAGE_SCHEME_PATH_CONFIRM) &&
+					!host.equals(MESSAGE_SCHEME_PATH_CANCEL)) {
+				Log.debug(LOG_TAG,
+						"overrideUrlLoad -  Unsupported URI host found, neither \"confirm\" nor \"cancel\". (%s)", urlString);
 				return false;
 			}
 
@@ -127,20 +155,30 @@ class FullScreenMessage extends CampaignMessage {
 			final String query = uri.getQuery();
 
 			// Populate message data
-			final Map<String, String> messageData = UrlUtilities.extractQueryParameters(query);
+			final Map<String, String> messageData = extractQueryParameters(query);
 
 			if (messageData != null && !messageData.isEmpty()) {
-				messageData.put(CampaignConstants.CAMPAIGN_INTERACTION_TYPE, host);
+				messageData.put(CAMPAIGN_INTERACTION_TYPE, host);
 
 				// handle message interaction
 				processMessageInteraction(messageData);
 			}
 
 			if (message != null) {
-				message.remove();
+				message.dismiss();
 			}
 
 			return true;
+		}
+
+		@Override
+		public boolean shouldShowMessage(FullscreenMessage fullscreenMessage) {
+			return true;
+		}
+
+		@Override
+		public void onShowFailure() {
+			Log.debug(LOG_TAG, SELF_TAG, "onShowFailure -  Fullscreen message failed to show.");
 		}
 	}
 
@@ -148,16 +186,12 @@ class FullScreenMessage extends CampaignMessage {
 	 * Constructor.
 	 *
 	 * @param extension {@link CampaignExtension} that is this parent
-	 * @param platformServices {@link PlatformServices} instance used to access JSON implementation
-	 * @param consequence {@code CampaignRuleConsequence} instance containing a message-defining payload
+	 * @param consequence {@code Map<String, Object>} instance containing a message-defining payload
 	 * @throws CampaignMessageRequiredFieldMissingException if {@code consequence} is null or if any required field for a
 	 * {@link FullScreenMessage} is null or empty
-	 * @throws MissingPlatformServicesException if {@code platformServices} is null
 	 */
-	FullScreenMessage(final CampaignExtension extension, final PlatformServices platformServices,
-					  final CampaignRuleConsequence consequence)
-	throws CampaignMessageRequiredFieldMissingException, MissingPlatformServicesException {
-		super(extension, platformServices, consequence);
+	FullScreenMessage(final CampaignExtension extension, final Map<String, Object> consequence) throws CampaignMessageRequiredFieldMissingException {
+		super(extension, consequence);
 		parseFullScreenMessagePayload(consequence);
 	}
 
@@ -173,57 +207,51 @@ class FullScreenMessage extends CampaignMessage {
 	 *     <li>{@code assets} - {@code Array} of {@code String[]}s containing remote assets to prefetch and cache</li>
 	 * </ul>
 	 *
-	 * @param consequence {@code CampaignRuleConsequence} instance containing the message payload to be parsed
+	 * @param consequence {@code Map<String, Object>} instance containing the message payload to be parsed
 	 * @throws CampaignMessageRequiredFieldMissingException if any of the required fields are missing from {@code consequence}
 	 */
 	@SuppressWarnings("unchecked")
-	private void parseFullScreenMessagePayload(final CampaignRuleConsequence consequence)
-	throws CampaignMessageRequiredFieldMissingException {
+	private void parseFullScreenMessagePayload(final Map<String, Object> consequence) throws CampaignMessageRequiredFieldMissingException {
 
 		if (consequence == null) {
 			throw new CampaignMessageRequiredFieldMissingException("Message consequence is null.");
 		}
 
-		assetsPath = consequence.getAssetsPath();
+		assetsPath = (String) consequence.get(MESSAGE_CONSEQUENCE_ASSETS_PATH);
 
 		if (StringUtils.isNullOrEmpty(assetsPath)) {
-			Log.debug(CampaignConstants.LOG_TAG,
-					  "parseFullScreenMessagePayload -  Unable to create fullscreen message, provided assets path is missing/empty.");
+			Log.debug(LOG_TAG, SELF_TAG,
+					"parseFullScreenMessagePayload -  Unable to create fullscreen message, provided assets path is missing/empty.");
 			throw new CampaignMessageRequiredFieldMissingException("Messages - Unable to create fullscreen message, assetPath is missing/empty.");
 		}
 
-		final Map<String, Variant> detailDictionary = consequence.getDetail();
+		final Map<String, Object> detailDictionary = (Map<String, Object>) consequence.get(MESSAGE_CONSEQUENCE_DETAIL);
 
 		if (detailDictionary == null || detailDictionary.isEmpty()) {
 			throw new CampaignMessageRequiredFieldMissingException("Unable to create fullscreen message, message detail is missing or not an object.");
 		}
 
 		// html is required
-		html = Variant.optVariantFromMap(detailDictionary,
-										 CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_HTML).optString(null);
+		html = (String) detailDictionary.get(MESSAGE_CONSEQUENCE_DETAIL_KEY_HTML);
 
 		if (StringUtils.isNullOrEmpty(html)) {
-			Log.debug(CampaignConstants.LOG_TAG,
-					  "parseFullScreenMessagePayload -  Unable to create fullscreen message, html is missing/empty.");
+			Log.debug(LOG_TAG, SELF_TAG,
+					"parseFullScreenMessagePayload -  Unable to create fullscreen message, html is missing/empty.");
 			throw new CampaignMessageRequiredFieldMissingException("Messages - Unable to create fullscreen message, html is missing/empty.");
 		}
 
 		// remote assets are optional
-		final VariantSerializer<List<String>> assetsSerializer = new TypedListVariantSerializer<String>
-		(new StringVariantSerializer());
-		final List<List<String>> assetsArray = Variant.optVariantFromMap(detailDictionary,
-											   CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_REMOTE_ASSETS).optTypedList(null,
-													   assetsSerializer);
+		final List<List<String>> assetsArray = (List<List<String>>) detailDictionary.get(MESSAGE_CONSEQUENCE_DETAIL_KEY_REMOTE_ASSETS);
 
 		if (assetsArray != null && !assetsArray.isEmpty()) {
-			assets = new ArrayList<List<String>>();
+			assets = new ArrayList<>();
 
 			for (final List<String> currentAssetArray : assetsArray) {
 				extractAsset(currentAssetArray);
 			}
 		} else {
-			Log.trace(CampaignConstants.LOG_TAG,
-					  "parseFullScreenMessagePayload -  Tried to read \"assets\" for fullscreen message but none found.  This is not a required field.");
+			Log.trace(LOG_TAG, SELF_TAG,
+					"parseFullScreenMessagePayload -  Tried to read \"assets\" for fullscreen message but none found.  This is not a required field.");
 		}
 	}
 
@@ -236,7 +264,7 @@ class FullScreenMessage extends CampaignMessage {
 	 */
 	private void extractAsset(final List<String> currentAssets) {
 		if (currentAssets == null || currentAssets.isEmpty()) {
-			Log.warning(CampaignConstants.LOG_TAG, "There are no assets to extract.");
+			Log.warning(LOG_TAG, SELF_TAG, "There are no assets to extract.");
 			return;
 		}
 
@@ -252,51 +280,46 @@ class FullScreenMessage extends CampaignMessage {
 	}
 
 	/**
-	 * Creates and shows a new {@code UIService.UIFullScreenMessage} object and registers a {@code FullScreenMessageUiListener}
+	 * Creates and shows a new {@link FullscreenMessage} object and registers a {@link FullScreenMessageUiListener}
 	 * instance with the {@code UIService} to receive message interaction events.
 	 * <p>
 	 * This method reads the {@link #htmlContent} from the cached html at {@link #assetsPath} and generates the expanded html by
 	 * replacing assets URLs with cached references, before calling the method on the {@code UIService} to display the message.
 	 *
 	 * @see #getCachedResourcesMapAndUpdateHtml()
-	 * @see UIService#createFullscreenMessage(String, UIService.UIFullScreenListener)
+	 * @see UIService#createFullscreenMessage(String, FullscreenMessageDelegate, boolean, MessageSettings)
 	 */
 	@Override
 	void showMessage() {
-		Log.debug(CampaignConstants.LOG_TAG, "showMessage -  Attempting to show fullscreen message with ID %s", messageId);
+		Log.debug(LOG_TAG, "showMessage -  Attempting to show fullscreen message with ID %s", messageId);
 
-		if (parentModulePlatformServices == null) {
-			Log.warning(CampaignConstants.LOG_TAG,
-						"Platform Service is unavailable.  Unable to show fullscreen message with ID (%s)", messageId);
-			return;
-		}
-
-		final UIService uiService = parentModulePlatformServices.getUIService();
+		final UIService uiService = ServiceProvider.getInstance().getUIService();
 
 		if (uiService == null) {
-			Log.warning(CampaignConstants.LOG_TAG,
-						"UI Service is unavailable.  Unable to show fullscreen message with ID (%s)",
-						messageId);
+			Log.warning(LOG_TAG, SELF_TAG,
+					"UI Service is unavailable.  Unable to show fullscreen message with ID (%s)",
+					messageId);
 			return;
 		}
 
 		htmlContent = readHtmlFromFile(new File(assetsPath + File.separator + html));
 
 		if (StringUtils.isNullOrEmpty(htmlContent)) {
-			Log.debug(CampaignConstants.LOG_TAG,
-					  "showMessage -  No html content in file (%s). File is missing or invalid!", html);
+			Log.debug(LOG_TAG, SELF_TAG,
+					"showMessage -  No html content in file (%s). File is missing or invalid!", html);
 			return;
 		}
 
 		final Map<String, String> cachedResourcesMap = getCachedResourcesMapAndUpdateHtml();
 
 		final FullScreenMessageUiListener fullScreenMessageUiListener = new FullScreenMessageUiListener();
-		final UIFullScreenMessage uiFullScreenMessage = uiService.createFullscreenMessage(htmlContent,
-				fullScreenMessageUiListener);
+		final MessageSettings messageSettings = new MessageSettings();
+		messageSettings.setParent(this);
+		final FullscreenMessage uiFullScreenMessage = uiService.createFullscreenMessage(htmlContent,
+				fullScreenMessageUiListener, !cachedResourcesMap.isEmpty(), messageSettings);
 
 
 		if (uiFullScreenMessage != null) {
-
 			uiFullScreenMessage.setLocalAssetsMap(cachedResourcesMap);
 			uiFullScreenMessage.show();
 		}
@@ -316,16 +339,16 @@ class FullScreenMessage extends CampaignMessage {
 
 			try {
 				htmlInputStream = new FileInputStream(htmlFile);
-				htmlString = StringUtils.streamToString(htmlInputStream);
-			} catch (IOException ex) {
-				Log.debug(CampaignConstants.LOG_TAG, "readHtmlFromFile -  Could not read the html file! (%s)", ex);
+				htmlString = Utils.inputStreamToString(htmlInputStream);
+			} catch (final IOException ex) {
+				Log.debug(LOG_TAG, SELF_TAG, "readHtmlFromFile -  Could not read the html file! (%s)", ex);
 			} finally {
 				try {
 					if (htmlInputStream != null) {
 						htmlInputStream.close();
 					}
-				} catch (Exception e) {
-					Log.trace(CampaignConstants.LOG_TAG, "readHtmlFromFile -  Failed to close stream for %s", htmlFile);
+				} catch (final Exception e) {
+					Log.trace(LOG_TAG, SELF_TAG,"readHtmlFromFile -  Failed to close stream for %s", htmlFile);
 				}
 			}
 		}
@@ -347,13 +370,13 @@ class FullScreenMessage extends CampaignMessage {
 	/**
 	 * Returns a {@code Map<String,String>} containing remote resource URL as key and cached resource path as value for all remote resource that are cached.
 	 * <p>
-	 * This function uses {@link CacheManager} to find cached remote file. if a cached file is present then add it to the {@code Map<String, String>} that will be returned.
+	 * This function uses {@link CacheService} to find cached remote file. if a cached file is present then add it to the {@code Map<String, String>} that will be returned.
 	 * Replace the remote URL's in {@link #htmlContent} that are not cached with fallback image (if present).
 	 * </p>
 	 * This functions returns empty map in following cases.
 	 * <ul>
 	 * <li>Asset List is empty.</li>
-	 * <li>{@link CacheManager} in null.</li>
+	 * <li>{@link CacheService} in null.</li>
 	 * </ul>
 	 *
 	 * @return {@code Map<String,String>}
@@ -361,15 +384,15 @@ class FullScreenMessage extends CampaignMessage {
 	private Map<String, String> getCachedResourcesMapAndUpdateHtml() {
 		// early bail if we don't have assets
 		if (assets == null || assets.isEmpty()) {
-			Log.debug(CampaignConstants.LOG_TAG, "generateExpandedHtml -  No cached assets found, cannot expand URLs in the HTML.");
+			Log.debug(LOG_TAG, SELF_TAG, "generateExpandedHtml -  No cached assets found, cannot expand URLs in the HTML.");
 			return Collections.emptyMap();
 		}
 
-		CacheManager cacheManager = getCacheManager();
+		CacheService cacheService = ServiceProvider.getInstance().getCacheService();
 
-		if (cacheManager == null) {
-			Log.debug(CampaignConstants.LOG_TAG,
-					  "getLocalResourcesMapping -  No cache manager found, cannot generate local resource mapping.");
+		if (cacheService == null) {
+			Log.debug(LOG_TAG, SELF_TAG,
+					"getLocalResourcesMapping -  No cache service found, cannot generate local resource mapping.");
 			return Collections.emptyMap();
 		}
 
@@ -389,11 +412,10 @@ class FullScreenMessage extends CampaignMessage {
 			// loop through our assets to see if we have any of them in cache
 			while (currentAssetNumber < currentAssetArrayCount) {
 				final String currentAsset = currentAssetArray.get(currentAssetNumber);
-				final File assetValueFile = cacheManager.getFileForCachedURL(currentAsset,
-											CampaignConstants.MESSAGE_CACHE_DIR + File.separator + messageId, false);
+				final CacheResult assetValueFile = cacheService.get(currentAsset, MESSAGE_CACHE_DIR + File.separator + messageId);
 
 				if (assetValueFile != null) {
-					assetValue = assetValueFile.getPath();
+					assetValue = assetValueFile.getMetadata().get("path");
 					break;
 				}
 
@@ -403,7 +425,7 @@ class FullScreenMessage extends CampaignMessage {
 			// if assetValue is still null, none of our urls have been cached, so we check for a bundled asset
 			if (assetValue == null) {
 				assetValue = currentAssetArray.get(currentAssetArrayCount - 1);
-				boolean isLocalImage = !StringUtils.stringIsUrl(assetValue);
+				boolean isLocalImage = !Utils.stringIsUrl(assetValue);
 
 				if (isLocalImage) {
 					fallbackImagesMap.put(assetUrl, assetValue);
@@ -415,49 +437,6 @@ class FullScreenMessage extends CampaignMessage {
 
 		htmlContent = expandTokens(htmlContent, fallbackImagesMap);
 		return cachedImagesMap;
-	}
-
-	/**
-	 * Returns an instance of {@link CacheManager}.
-	 * <p>
-	 *  Return null if {@link MissingPlatformServicesException} is thrown by the {@code CacheManager} constructor.
-	 * </p>
-	 *
-	 * @return instance of {@code CacheManager}
-	 */
-	CacheManager getCacheManager() {
-		try {
-			return new CacheManager(parentModulePlatformServices.getSystemInfoService());
-		} catch (MissingPlatformServicesException e) {
-			Log.debug(CampaignConstants.LOG_TAG,
-					  "getCacheManager -  No cache manager found.", e);
-		}
-
-		return null;
-	}
-
-	/**
-	 * Attempts to prefetch and cache all {@code assets} for this {@code FullScreenMessage}.
-	 * <p>
-	 * If there are no {@link #assets} for this instance, method does nothing..
-	 */
-	@Override
-	protected void downloadAssets() {
-		if (assets == null || assets.isEmpty()) {
-			Log.trace(CampaignConstants.LOG_TAG, "downloadAssets -  No assets to download for message %s", messageId);
-			return;
-		}
-
-		for (final List<String> currentAssetArray : assets) {
-			if (currentAssetArray.isEmpty()) {
-				continue;
-			}
-
-			final CampaignMessageAssetsDownloader assetsDownloader = new CampaignMessageAssetsDownloader(
-				parentModulePlatformServices,
-				currentAssetArray, messageId);
-			assetsDownloader.downloadAssetCollection();
-		}
 	}
 
 	/**
@@ -475,18 +454,18 @@ class FullScreenMessage extends CampaignMessage {
 	 */
 	private void processMessageInteraction(final Map<String, String> query) {
 		if (query == null || query.isEmpty()) {
-			Log.debug(CampaignConstants.LOG_TAG,
-					  "processMessageInteraction -  Cannot process message interaction, input query is null or empty.");
+			Log.debug(LOG_TAG, SELF_TAG,
+					"processMessageInteraction -  Cannot process message interaction, input query is null or empty.");
 			return;
 		}
 
-		if (query.containsKey(CampaignConstants.MESSAGE_DATA_TAG_ID)) {
-			final String id = query.get(CampaignConstants.MESSAGE_DATA_TAG_ID);
-			final String[] strTokens = id.split(CampaignConstants.MESSAGE_DATA_TAG_ID_DELIMITER);
+		if (query.containsKey(MESSAGE_DATA_TAG_ID)) {
+			final String id = query.get(MESSAGE_DATA_TAG_ID);
+			final String[] strTokens = id.split(MESSAGE_DATA_TAG_ID_DELIMITER);
 
-			if (strTokens.length != CampaignConstants.MESSAGE_DATA_ID_TOKENS_LEN) {
-				Log.debug(CampaignConstants.LOG_TAG,
-						  "processMessageInteraction -  Cannot process message interaction, input query contains insufficient id tokens.");
+			if (strTokens.length != MESSAGE_DATA_ID_TOKENS_LEN) {
+				Log.debug(LOG_TAG, MESSAGE_CONSEQUENCE_ID,
+						"processMessageInteraction -  Cannot process message interaction, input query contains insufficient id tokens.");
 				return;
 			}
 
@@ -495,24 +474,59 @@ class FullScreenMessage extends CampaignMessage {
 			try {
 				tagId = Integer.parseInt(strTokens[2]);
 			} catch (NumberFormatException e) {
-				Log.debug(CampaignConstants.LOG_TAG,
-						  "processMessageInteraction -  Cannot parse tag Id from the id field in given query (%s).", e);
+				Log.debug(LOG_TAG, SELF_TAG,
+						"processMessageInteraction -  Cannot parse tag Id from the id field in given query (%s).", e);
 			}
 
 			switch (tagId) {
-				case CampaignConstants.MESSAGE_DATA_TAG_ID_BUTTON_1: // adbinapp://confirm/?id=h11901a,86f10d,3
-				case CampaignConstants.MESSAGE_DATA_TAG_ID_BUTTON_2: // adbinapp://confirm/?id=h11901a,86f10d,4
-				case CampaignConstants.MESSAGE_DATA_TAG_ID_BUTTON_X: // adbinapp://cancel?id=h11901a,86f10d,5
+				case MESSAGE_DATA_TAG_ID_BUTTON_1: // adbinapp://confirm/?id=h11901a,86f10d,3
+				case MESSAGE_DATA_TAG_ID_BUTTON_2: // adbinapp://confirm/?id=h11901a,86f10d,4
+				case MESSAGE_DATA_TAG_ID_BUTTON_X: // adbinapp://cancel?id=h11901a,86f10d,5
 					clickedWithData(query);
 					viewed(); // Temporary fix for AMSDK-7633. No viewed event should be dispatched on confirm.
 					break;
 
 				default:
-					Log.debug(CampaignConstants.LOG_TAG,
-							  "processMessageInteraction -  Unsupported tag Id found in the id field in the given query (%s).", tagId);
+					Log.debug(LOG_TAG, SELF_TAG,
+							"processMessageInteraction -  Unsupported tag Id found in the id field in the given query (%s).", tagId);
 					break;
 
 			}
 		}
+	}
+
+	/**
+	 * Extracts query parameters from a given {@code String} into a {@code Map<String, String>}.
+	 *
+	 * @param queryString {@link String} containing query parameters
+	 * @return the extracted {@code Map<String, String>} query parameters
+	 */
+	private Map<String, String> extractQueryParameters(final String queryString) {
+		if (StringUtils.isNullOrEmpty(queryString)) {
+			return null;
+		}
+
+		final Map<String, String> parameters = new HashMap<>();
+		final String[] paramArray = queryString.split("&");
+
+		for (String currentParam : paramArray) {
+			// quick out in case this entry is null or empty string
+			if (StringUtils.isNullOrEmpty(currentParam)) {
+				continue;
+			}
+
+			final String[] currentParamArray = currentParam.split("=", 2);
+
+			if (currentParamArray.length != 2 ||
+					(currentParamArray[0].isEmpty() || currentParamArray[1].isEmpty())) {
+				continue;
+			}
+
+			final String key = currentParamArray[0];
+			final String value = currentParamArray[1];
+			parameters.put(key, value);
+		}
+
+		return parameters;
 	}
 }

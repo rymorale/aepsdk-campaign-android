@@ -11,6 +11,23 @@
 
 package com.adobe.marketing.mobile.campaign;
 
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_CANCEL;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_CONFIRM;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_CONTENT;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_TITLE;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_URL;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.LOG_TAG;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.MESSAGE_CONSEQUENCE_MESSAGE_TYPE;
+
+import com.adobe.marketing.mobile.services.Log;
+import com.adobe.marketing.mobile.services.ServiceProvider;
+import com.adobe.marketing.mobile.services.ui.AlertListener;
+import com.adobe.marketing.mobile.services.ui.AlertSetting;
+import com.adobe.marketing.mobile.services.ui.UIError;
+import com.adobe.marketing.mobile.services.ui.UIService;
+import com.adobe.marketing.mobile.util.StringUtils;
+
 import java.util.Map;
 import java.util.HashMap;
 
@@ -20,6 +37,7 @@ import java.util.HashMap;
  * The actual UI implementation happens in the platform services.
  */
 class AlertMessage extends CampaignMessage {
+	private final String SELF_TAG = "AlertMessage";
 
 	// ================================================================================
 	// protected class members
@@ -33,18 +51,16 @@ class AlertMessage extends CampaignMessage {
 	/**
 	 * Serves as the delegate for handling {@code AlertMessage} events triggered by the {@code UIService}.
 	 */
-	class UIAlertMessageUIListener implements UIService.UIAlertListener {
+	class UIAlertMessageUIListener implements AlertListener {
 		/**
-		* Invoked on positive button clicks.
-		* <p>
-		* Checks to see if the alert message's url is populated and if so adds the url to the context data map
-		* then calls {@link #clickedWithData(Map)}.
-		* If a url is not present then call the {@link #clickedThrough()} method implemented in the parent class {@link CampaignMessage}.
-		*/
+		 * Invoked on positive button clicks.
+		 * <p>
+		 * Checks to see if the alert message's url is populated and if so adds the url to the context data map
+		 * then calls {@link #clickedWithData(Map)}.
+		 * If a url is not present then call the {@link #clickedThrough()} method implemented in the parent class {@link CampaignMessage}.
+		 */
 		@Override
 		public void onPositiveResponse() {
-
-			// Temporary fix for AMSDK-7710. No viewed event should be dispatched on confirm.
 			viewed();
 
 			if (url != null && !url.isEmpty()) {
@@ -85,22 +101,28 @@ class AlertMessage extends CampaignMessage {
 		public void onDismiss() {
 			viewed();
 		}
+
+		/**
+		 * Invoked when an error occurs when showing the alert.
+		 * <p>
+		 */
+		@Override
+		public void onError(UIError uiError) {
+			Log.debug(LOG_TAG, SELF_TAG, "Error occurred when attempting to display the alert message: %s.", uiError.toString());
+		}
 	}
 
 	/**
 	 * Constructor.
 	 *
 	 * @param extension parent {@link CampaignExtension} instance
-	 * @param platformServices {@link PlatformServices} instance used to access JSON implementation
-	 * @param consequence {@code CampaignRuleConsequence} instance containing {@code CampaignMessage} defining payload
+	 * @param consequence {@code Map<String, Object>} instance containing {@code CampaignMessage} defining payload
 	 * @throws CampaignMessageRequiredFieldMissingException if {@code consequence} is null or if any required field for an
 	 * {@link AlertMessage} is null or empty
-	 * @throws MissingPlatformServicesException if {@code platformServices} is null
 	 */
-	AlertMessage(final CampaignExtension extension, final PlatformServices platformServices,
-				 final CampaignRuleConsequence consequence)
-	throws CampaignMessageRequiredFieldMissingException, MissingPlatformServicesException {
-		super(extension, platformServices, consequence);
+	AlertMessage(final CampaignExtension extension, final Map<String, Object> consequence)
+			throws CampaignMessageRequiredFieldMissingException {
+		super(extension, consequence);
 		parseAlertMessagePayload(consequence);
 	}
 
@@ -119,65 +141,60 @@ class AlertMessage extends CampaignMessage {
 	 *     <li>{@value CampaignConstants.EventDataKeys.RuleEngine#MESSAGE_CONSEQUENCE_DETAIL_KEY_URL} - {@code String} containing a URL destination to be shown on positive click-through</li>
 	 * </ul>
 	 *
-	 * @param consequence {@code CampaignRuleConsequence} instance containing the message payload to be parsed
+	 * @param consequence {@code Map<String, Object>} instance containing the message payload to be parsed
 	 * @throws CampaignMessageRequiredFieldMissingException if any of the required fields are missing from {@code consequence}
 	 */
 	@SuppressWarnings("unchecked")
-	private void parseAlertMessagePayload(final CampaignRuleConsequence consequence) throws
-		CampaignMessageRequiredFieldMissingException {
+	private void parseAlertMessagePayload(final Map<String, Object> consequence) throws
+			CampaignMessageRequiredFieldMissingException {
 		Log.trace(CampaignConstants.LOG_TAG,
-				  "parseAlertMessagePayload - Parsing rule consequence to show alert message with messageid %s", messageId);
+				"parseAlertMessagePayload - Parsing rule consequence to show alert message with messageid %s", messageId);
 
 		if (consequence == null) {
 			throw new CampaignMessageRequiredFieldMissingException("Message consequence is null.");
 		}
 
-		final Map<String, Variant> detailDictionary = consequence.getDetail();
+		final Map<String, Object> detailDictionary = (Map<String, Object>) consequence.get(MESSAGE_CONSEQUENCE_DETAIL);
 
 		if (detailDictionary == null || detailDictionary.isEmpty()) {
 			throw new CampaignMessageRequiredFieldMissingException("Message detail is missing.");
 		}
 
 		// title is required
-		title = Variant.optVariantFromMap(detailDictionary,
-										  CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_TITLE).optString(null);
+		title = (String) detailDictionary.get(MESSAGE_CONSEQUENCE_DETAIL_KEY_TITLE);
 
 		if (StringUtils.isNullOrEmpty(title)) {
 			throw new CampaignMessageRequiredFieldMissingException("Alert Message title is empty.");
 		}
 
 		// content is required
-		content = Variant.optVariantFromMap(detailDictionary,
-											CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_CONTENT).optString(null);
+		content = (String) detailDictionary.get(MESSAGE_CONSEQUENCE_DETAIL_KEY_CONTENT);
 
 		if (StringUtils.isNullOrEmpty(content)) {
 			throw new CampaignMessageRequiredFieldMissingException("Alert Message content is empty.");
 		}
 
 		// cancel button text is required
-		cancelButtonText = Variant.optVariantFromMap(detailDictionary,
-						   CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_CANCEL).optString(null);
+		cancelButtonText = (String) detailDictionary.get(MESSAGE_CONSEQUENCE_DETAIL_KEY_CANCEL);
 
 		if (StringUtils.isNullOrEmpty(cancelButtonText)) {
 			throw new CampaignMessageRequiredFieldMissingException("Alert Message cancel button text is empty.");
 		}
 
 		// confirm button text is optional
-		confirmButtonText = Variant.optVariantFromMap(detailDictionary,
-							CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_CONFIRM).optString(null);
+		confirmButtonText = (String) detailDictionary.get(MESSAGE_CONSEQUENCE_DETAIL_KEY_CONFIRM);
 
 		if (StringUtils.isNullOrEmpty(confirmButtonText)) {
-			Log.trace(CampaignConstants.LOG_TAG,
-					  "Tried to read \"confirm\" for Alert message but found none. This is not a required field.");
+			Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
+					"Tried to read \"confirm\" for Alert message but found none. This is not a required field.");
 		}
 
 		// url is optional
-		url = Variant.optVariantFromMap(detailDictionary,
-										CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_URL).optString(null);
+		url = (String) detailDictionary.get(MESSAGE_CONSEQUENCE_DETAIL_KEY_URL);
 
 		if (StringUtils.isNullOrEmpty(url)) {
-			Log.trace(CampaignConstants.LOG_TAG,
-					  "Tried to read url for Alert message but found none. This is not a required field.");
+			Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
+					"Tried to read url for Alert message but found none. This is not a required field.");
 		}
 	}
 
@@ -188,19 +205,18 @@ class AlertMessage extends CampaignMessage {
 	 * interaction events.
 	 *
 	 * @see CampaignMessage#showMessage()
-	 * @see UIService#showAlert(String, String, String, String, UIService.UIAlertListener)
+	 * @see UIService#showAlert(AlertSetting, AlertListener)
 	 */
 	@Override
 	void showMessage() {
 		Log.debug(CampaignConstants.LOG_TAG, "Attempting to show Alert message with ID %s ", messageId);
 
-		if (parentModulePlatformServices != null) {
-			final UIService uiService = parentModulePlatformServices.getUIService();
+		final UIService uiService = ServiceProvider.getInstance().getUIService();
 
-			if (uiService != null) {
-				final UIAlertMessageUIListener uiListener = new UIAlertMessageUIListener();
-				uiService.showAlert(title, content, confirmButtonText, cancelButtonText, uiListener);
-			}
+		if (uiService != null) {
+			final UIAlertMessageUIListener uiListener = new UIAlertMessageUIListener();
+			final AlertSetting alertSetting = AlertSetting.build(title, content, confirmButtonText, cancelButtonText);
+			uiService.showAlert(alertSetting, uiListener);
 		}
 	}
 
