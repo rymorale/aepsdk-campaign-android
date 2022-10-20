@@ -55,6 +55,7 @@ import java.util.Map;
  * <p>
  * The actual UI implementation happens in the platform services.
  */
+//TODO: update after UIFullscreenMessage ported to core 2.0: https://github.com/adobe/aepsdk-core-android/blob/dev-v2.0.0/code/android-core-compatiblity/src/phone/java/com/adobe/marketing/mobile/UIService.java#L88-L112
 class FullScreenMessage extends CampaignMessage {
 	private final String SELF_TAG = "FullScreenMessage";
 
