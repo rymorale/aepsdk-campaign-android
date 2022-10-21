@@ -20,6 +20,7 @@ import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKey
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.LOG_TAG;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.EXTENSION_NAME;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.FRIENDLY_NAME;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.MESSAGE_CACHE_DIR;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.RULES_CACHE_FOLDER;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.RULES_CACHE_KEY;
 
@@ -40,14 +41,17 @@ import com.adobe.marketing.mobile.launch.rulesengine.LaunchRulesEngine;
 import com.adobe.marketing.mobile.launch.rulesengine.download.RulesLoadResult;
 import com.adobe.marketing.mobile.launch.rulesengine.download.RulesLoader;
 import com.adobe.marketing.mobile.launch.rulesengine.json.JSONRulesParser;
+import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.DataQueue;
 import com.adobe.marketing.mobile.services.DataQueuing;
 import com.adobe.marketing.mobile.services.DataStoring;
+import com.adobe.marketing.mobile.services.DeviceInforming;
 import com.adobe.marketing.mobile.services.HttpMethod;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.services.Networking;
 import com.adobe.marketing.mobile.services.NetworkRequest;
+import com.adobe.marketing.mobile.services.PersistentHitQueue;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.caching.CacheEntry;
 import com.adobe.marketing.mobile.services.caching.CacheExpiry;
@@ -101,6 +105,7 @@ public class CampaignExtension extends Extension {
 	private final ExtensionApi extensionApi;
 	private final RulesLoader rulesLoader;
 	private final LaunchRulesEngine launchRulesEngine;
+	private final PersistentHitQueue campaignPersistentHitQueue;
 
 	/**
 	 * Constructor.
@@ -112,6 +117,11 @@ public class CampaignExtension extends Extension {
 		this.extensionApi = extensionApi;
 		rulesLoader = new RulesLoader(CACHE_BASE_DIR);
 		launchRulesEngine = new LaunchRulesEngine(extensionApi);
+
+		// setup persistent hit queue
+		final DataQueuing dataQueuing = ServiceProvider.getInstance().getDataQueueService();
+		final DataQueue campaignDataQueue = dataQueuing.getDataQueue(FRIENDLY_NAME);
+		campaignPersistentHitQueue = new PersistentHitQueue(campaignDataQueue, new CampaignHitProcessor());
 
 		// initialize the campaign state
 		campaignState = new CampaignState();
@@ -159,6 +169,7 @@ public class CampaignExtension extends Extension {
 	@Override
 	public boolean readyForEvent(final Event event) {
 		return getApi().getSharedState(CampaignConstants.EventDataKeys.Configuration.EXTENSION_NAME,
+				event, false, SharedStateResolution.ANY).getStatus() == SharedStateStatus.SET && getApi().getSharedState(CampaignConstants.EventDataKeys.Identity.EXTENSION_NAME,
 				event, false, SharedStateResolution.ANY).getStatus() == SharedStateStatus.SET;
 	}
 
@@ -327,17 +338,9 @@ public class CampaignExtension extends Extension {
 
 		getExecutor().execute(() -> {
 			MobilePrivacyStatus privacyStatus = campaignState.getMobilePrivacyStatus();
-			// notify campaign data queue of any privacy status changes
-			final DataQueuing dataQueuing = ServiceProvider.getInstance().getDataQueueService();
-			final DataQueue campaignDataQueue = dataQueuing.getDataQueue(FRIENDLY_NAME);
-
+			// notify campaign persistent hit queue of any privacy status changes
+			campaignPersistentHitQueue.handlePrivacyChange(privacyStatus);
 			if (privacyStatus.equals(MobilePrivacyStatus.OPT_OUT)) {
-				if (campaignDataQueue != null) {
-					campaignDataQueue.clear();
-				} else {
-					Log.warning(LOG_TAG, SELF_TAG,
-							"Campaign data queue is not initialized. Unable to update data queue status.");
-				}
 				processPrivacyOptOut();
 				return;
 			}
@@ -653,7 +656,6 @@ public class CampaignExtension extends Extension {
 		clearCachedAssetsForMessagesNotInList(loadedMessageIds);
 	}
 
-	// TODO: migrate to using core 2.0 CacheService
 	/**
 	 * Deletes cached message assets for message Ids not listed in {@code activeMessageIds}.
 	 * <p>
@@ -662,20 +664,22 @@ public class CampaignExtension extends Extension {
 	 * @param activeMessageIds {@code List<String>} containing the Ids of active messages
 	 */
 	void clearCachedAssetsForMessagesNotInList(final List<String> activeMessageIds) {
-//		try {
-//			final DeviceInforming deviceInforming = ServiceProvider.getInstance().getDeviceInfoService();
-//
-//			if (deviceInforming == null) {
-//				Log.error(LOG_TAG, SELF_TAG, "Cannot clear cached assets, device informing is not available.");
-//				return;
-//			}
-//
-//			final CacheManager cacheManager = new CacheManager(getPlatformServices().getSystemInfoService());
-//			cacheManager.deleteFilesNotInList(activeMessageIds, CampaignConstants.MESSAGE_CACHE_DIR, true);
-//		} catch (final MissingPlatformServicesException ex) {
-//			Log.warning(LOG_TAG,
-//						"Unable to clear cached message assets \n (%s).", ex);
-//		}
+		final DeviceInforming deviceInforming = ServiceProvider.getInstance().getDeviceInfoService();
+
+		if (deviceInforming == null) {
+			Log.error(LOG_TAG, SELF_TAG, "Cannot clear cached assets, device info service is not available.");
+			return;
+		}
+
+		final CacheService cacheService = ServiceProvider.getInstance().getCacheService();
+		if (cacheService == null) {
+			Log.error(LOG_TAG, SELF_TAG, "Cannot clear cached assets, cache service is not available.");
+			return;
+		}
+
+		for (final String messageId : activeMessageIds) {
+			cacheService.remove(MESSAGE_CACHE_DIR, messageId);
+		}
 	}
 
 	/**
@@ -872,7 +876,6 @@ public class CampaignExtension extends Extension {
 		return bodyJSON.toString();
 	}
 
-	// TODO: migrate to use core 2.0 HitQueueing
 	/**
 	 * Queues a {@code Campaign} registration request by creating a {@link com.adobe.marketing.mobile.services.DataEntity} object and inserting it to
 	 * the Campaign {@link DataQueue} instance.
@@ -902,24 +905,11 @@ public class CampaignExtension extends Extension {
 			return;
 		}
 
-		final DataQueuing dataQueuing = ServiceProvider.getInstance().getDataQueueService();
-
-		if (dataQueuing != null) {
-			final DataQueue dataQueue = dataQueuing.getDataQueue(FRIENDLY_NAME);
-			if (dataQueue != null) {
-				// create a data entity and add it to the data queue
-//				CampaignHit campaignHit = new CampaignHit();
-//				campaignHit.url = url;
-//				campaignHit.body = payload;
-//				campaignHit.timeout = campaignState.getCampaignTimeout();
-//				Log.debug(LOG_TAG,
-//						"processRequest - Campaign Request Queued with url (%s) and body (%s)", url, payload);
-//				dataQueue.add(); // add
-			}
-		} else {
-			Log.warning(LOG_TAG, SELF_TAG,
-					"Campaign data queue is not initialized. Unable to queue Campaign Request.");
-		}
+		// create a data entity and add it to the data queue
+		final CampaignHit campaignHit = new CampaignHit(url, payload, campaignState.getCampaignTimeout());
+		DataEntity dataEntity = new DataEntity(campaignHit.toString());
+		Log.debug(LOG_TAG, SELF_TAG, "processRequest - Campaign Request Queued with url (%s) and body (%s)", url, payload);
+		campaignPersistentHitQueue.queue(dataEntity);
 	}
 
 	/**

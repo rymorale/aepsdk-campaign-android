@@ -11,6 +11,9 @@
 
 package com.adobe.marketing.mobile.campaign;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 /**
  * Contains {@code static} constants used by the classes within the Campaign extension.
  * <p>
@@ -83,6 +86,11 @@ public final class CampaignConstants {
 
 	static final String MESSAGE_TRIGGERED_ACTION_VALUE = "7";
 	static final String CHARSET_UTF_8 = "UTF-8";
+	static final String HTTP_HEADER_KEY_ACCEPT = "Accept";
+	static final String HTTP_HEADER_KEY_CONNECTION = "connection";
+	static final String HTTP_HEADER_KEY_CONTENT_TYPE = "Content-Type";
+	static final String HTTP_HEADER_CONTENT_TYPE_JSON_APPLICATION = "application/json";
+	static final ArrayList<Integer> recoverableNetworkErrorCodes = new ArrayList(Arrays.asList(408, 504, 503));
 
 	private CampaignConstants() {
 	}
@@ -98,6 +106,15 @@ public final class CampaignConstants {
 		static final String MESSAGE_ID = "a.message.id";
 
 		private ContextDataKeys() {
+		}
+	}
+
+	public static final class CampaignHit {
+		static final String URL = "url";
+		static final String PAYLOAD = "payload";
+		static final String TIMEOUT = "timeout";
+
+		private CampaignHit() {
 		}
 	}
 

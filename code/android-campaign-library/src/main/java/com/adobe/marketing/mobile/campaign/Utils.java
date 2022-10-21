@@ -11,10 +11,13 @@
 
 package com.adobe.marketing.mobile.campaign;
 
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.CampaignHit.PAYLOAD;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.CampaignHit.TIMESTAMP;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.LOG_TAG;
 
 import com.adobe.marketing.mobile.LoggingMode;
 import com.adobe.marketing.mobile.MobileCore;
+import com.adobe.marketing.mobile.services.DataEntity;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
@@ -32,8 +35,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 class Utils {
-
-    private static final long MILLISECONDS_PER_SECOND = 1000L;
 
     private Utils() {}
 
@@ -182,5 +183,10 @@ class Utils {
         } catch (final MalformedURLException ex) {
             return false;
         }
+    }
+
+    static CampaignHit campaignHitFromDataEntity(final DataEntity dataEntity) throws JSONException {
+        final JSONObject jsonData = new JSONObject(dataEntity.getData());
+        return new CampaignHit(jsonData.getString(CampaignConstants.CampaignHit.URL), jsonData.getString(PAYLOAD), jsonData.getLong(TIMESTAMP));
     }
 }
