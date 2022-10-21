@@ -33,11 +33,11 @@ import com.adobe.marketing.mobile.Extension;
 import com.adobe.marketing.mobile.ExtensionApi;
 import com.adobe.marketing.mobile.ExtensionError;
 import com.adobe.marketing.mobile.ExtensionErrorCallback;
+import com.adobe.marketing.mobile.MobileCore;
 import com.adobe.marketing.mobile.MobilePrivacyStatus;
 import com.adobe.marketing.mobile.SharedStateResolution;
 import com.adobe.marketing.mobile.SharedStateStatus;
 import com.adobe.marketing.mobile.launch.rulesengine.LaunchRule;
-import com.adobe.marketing.mobile.launch.rulesengine.LaunchRulesEngine;
 import com.adobe.marketing.mobile.launch.rulesengine.download.RulesLoadResult;
 import com.adobe.marketing.mobile.launch.rulesengine.download.RulesLoader;
 import com.adobe.marketing.mobile.launch.rulesengine.json.JSONRulesParser;
@@ -104,8 +104,8 @@ public class CampaignExtension extends Extension {
 	private final ConcurrentLinkedQueue<Event> eventQueue = new ConcurrentLinkedQueue<>();
 	private final ExtensionApi extensionApi;
 	private final RulesLoader rulesLoader;
-	private final LaunchRulesEngine launchRulesEngine;
 	private final PersistentHitQueue campaignPersistentHitQueue;
+	private final CampaignRulesEngine campaignRulesEngine;
 
 	/**
 	 * Constructor.
@@ -116,7 +116,9 @@ public class CampaignExtension extends Extension {
 		super(extensionApi);
 		this.extensionApi = extensionApi;
 		rulesLoader = new RulesLoader(CACHE_BASE_DIR);
-		launchRulesEngine = new LaunchRulesEngine(extensionApi);
+
+		// initialize campaign rules engine
+		campaignRulesEngine = new CampaignRulesEngine(extensionApi);
 
 		// setup persistent hit queue
 		final DataQueuing dataQueuing = ServiceProvider.getInstance().getDataQueueService();
@@ -351,7 +353,7 @@ public class CampaignExtension extends Extension {
 	}
 
 	/**
-	 * Loads cached rules from the previous rules download and registers those rules with the {@link LaunchRulesEngine}.
+	 * Loads cached rules from the previous rules download and registers those rules with the {@link CampaignRulesEngine}.
 	 * <p>
 	 * This method reads the persisted {@value CampaignConstants#CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY} from the Campaign
 	 * named collection, gets cache path for the corresponding rules and loads then registers the rules with the {@link RulesLoader}.
@@ -383,7 +385,7 @@ public class CampaignExtension extends Extension {
 					rulesDirectory);
 
 			final RulesLoadResult result = rulesLoader.loadFromCache(cachedUrl);
-			launchRulesEngine.replaceRules(JSONRulesParser.parse(result.toString(), extensionApi));
+			campaignRulesEngine.replaceRules(JSONRulesParser.parse(result.toString(), extensionApi));
 		}
 
 		shouldLoadCache = false;
@@ -408,8 +410,8 @@ public class CampaignExtension extends Extension {
 		// clear any queued event
 		clearWaitingEvents();
 
-		// unregister rules
-		launchRulesEngine.replaceRules(null);
+		// unregister campaign rules
+		campaignRulesEngine.replaceRules(null);
 
 		// clear cached rules
 		clearRulesCacheDirectory();
@@ -588,7 +590,7 @@ public class CampaignExtension extends Extension {
 		getExecutor().execute(() -> {
 			linkageFields = "";
 
-			launchRulesEngine.replaceRules(null);
+			campaignRulesEngine.replaceRules(null);
 
 			clearRulesCacheDirectory();
 
@@ -916,7 +918,7 @@ public class CampaignExtension extends Extension {
 	 * Starts synchronous rules download from the provided {@code url}.
 	 * <p>
 	 * This method uses the {@link Networking} service to download the rules and the {@link CacheService}
-	 * to cache the downloaded Campaign rules. Once the rules are downloaded, they are registered with the {@link LaunchRulesEngine}.
+	 * to cache the downloaded Campaign rules. Once the rules are downloaded, they are registered with the {@link CampaignRulesEngine}.
 	 * <p>
 	 * If the given {@code url} is null or empty no rules download happens.
 	 *
@@ -962,7 +964,7 @@ public class CampaignExtension extends Extension {
 	 *
 	 * @param url {@link String} containing Campaign rules download URL
 	 * @see #updateUrlInNamedCollection(String)
-	 * @see LaunchRulesEngine#replaceRules(List)
+	 * @see CampaignRulesEngine#replaceRules(List)
 	 * @see #loadConsequences(List)
 	 */
 	private void onRulesDownloaded(final String url) {
@@ -971,7 +973,7 @@ public class CampaignExtension extends Extension {
 
 		loadedConsequencesList = new ArrayList<>();
 		// register all new rules
-		launchRulesEngine.replaceRules(loadRulesFromDirectory(ServiceProvider.getInstance().getCacheService().get(RULES_CACHE_FOLDER, RULES_CACHE_KEY)));
+		campaignRulesEngine.replaceRules(loadRulesFromDirectory(ServiceProvider.getInstance().getCacheService().get(RULES_CACHE_FOLDER, RULES_CACHE_KEY)));
 
 		loadConsequences(loadedConsequencesList);
 		loadedConsequencesList = null; // We don't need it anymore.
@@ -994,7 +996,7 @@ public class CampaignExtension extends Extension {
 		if (cachedRules == null) {
 			Log.debug(LOG_TAG, SELF_TAG, "loadRulesFromDirectory -  No valid rules directory found in cache.");
 			// clear existing rules
-			launchRulesEngine.replaceRules(null);
+			campaignRulesEngine.replaceRules(null);
 			return rulesList;
 		}
 
