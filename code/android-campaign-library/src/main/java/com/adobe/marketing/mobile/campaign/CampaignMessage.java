@@ -147,7 +147,7 @@ abstract class CampaignMessage {
 		CampaignMessage msgObject = null;
 
 		try {
-			msgObject = (CampaignMessage)messageClass.getDeclaredConstructor(CampaignExtension.class,
+			msgObject = (CampaignMessage) messageClass.getDeclaredConstructor(CampaignExtension.class,
 					Map.class).newInstance(extension, consequenceData);
 
 			if (msgObject.shouldDownloadAssets()) {

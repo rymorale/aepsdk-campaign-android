@@ -107,7 +107,7 @@ class AlertMessage extends CampaignMessage {
 		 * <p>
 		 */
 		@Override
-		public void onError(UIError uiError) {
+		public void onError(final UIError uiError) {
 			Log.debug(LOG_TAG, SELF_TAG, "Error occurred when attempting to display the alert message: %s.", uiError.toString());
 		}
 	}
