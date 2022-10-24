@@ -71,10 +71,8 @@ class ListenerLifecycleResponseContent implements ExtensionEventListener {
 			return;
 		}
 
-		parentExtension.getExecutor().execute(() -> {
-			parentExtension.queueEvent(event);
-			parentExtension.processEvents();
-		});
+		parentExtension.queueEvent(event);
+		parentExtension.processEvents();
 	}
 
 }

@@ -67,8 +67,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -98,8 +96,6 @@ public class CampaignExtension extends Extension {
 	private String linkageFields;
 	private List<Map<String, Object>> loadedConsequencesList;
 	private boolean shouldLoadCache = true;
-	private ExecutorService executorService;
-	private final Object executorMutex = new Object();
 	private final ConcurrentLinkedQueue<Event> eventQueue = new ConcurrentLinkedQueue<>();
 	private final ExtensionApi extensionApi;
 	private final RulesLoader rulesLoader;
@@ -268,7 +264,6 @@ public class CampaignExtension extends Extension {
 	 * @param event incoming {@link Event} instance to be processed
 	 */
 	void processMessageEvent(final Event event) {
-		getExecutor().execute(() -> {
 			Log.trace(LOG_TAG, "processMessageEvent -  processing event %s type: %s source: %s", event.getName(),
 					event.getType(), event.getSource());
 			final Map<String, Object> eventData = event.getEventData();
@@ -292,7 +287,6 @@ public class CampaignExtension extends Extension {
 			} catch (final CampaignMessageRequiredFieldMissingException ex) {
 				Log.error(LOG_TAG, SELF_TAG,"processMessageEvent -  Error reading message definition: \n %s", ex);
 			}
-		});
 
 	}
 
@@ -307,7 +301,7 @@ public class CampaignExtension extends Extension {
 	void processSharedStateUpdate(final String stateOwner) {
 		if (CampaignConstants.EventDataKeys.Configuration.EXTENSION_NAME.equals(stateOwner) ||
 				CampaignConstants.EventDataKeys.Identity.EXTENSION_NAME.equals(stateOwner)) {
-			getExecutor().execute(() -> processEvents());
+			processEvents();
 		}
 	}
 
@@ -337,7 +331,6 @@ public class CampaignExtension extends Extension {
 			loadCachedMessages();
 		}
 
-		getExecutor().execute(() -> {
 			MobilePrivacyStatus privacyStatus = campaignState.getMobilePrivacyStatus();
 			// notify campaign persistent hit queue of any privacy status changes
 			campaignPersistentHitQueue.handlePrivacyChange(privacyStatus);
@@ -348,7 +341,6 @@ public class CampaignExtension extends Extension {
 
 			queueEvent(event);
 			processEvents();
-		});
 	}
 
 	/**
@@ -555,7 +547,6 @@ public class CampaignExtension extends Extension {
 	 * @param linkageFieldsMap {@code Map<String, String>} of linkageFields that were already extracted and null-checked by the caller of this method.
 	 */
 	void handleSetLinkageFields(final Event event, final Map<String, String> linkageFieldsMap) {
-		getExecutor().execute(() -> {
 			final Gson gson = new Gson();
 			final String linkageFieldsJsonString = gson.toJson(linkageFieldsMap);
 
@@ -574,7 +565,6 @@ public class CampaignExtension extends Extension {
 
 			queueEvent(event);
 			processEvents();
-		});
 	}
 
 	/**
@@ -586,7 +576,6 @@ public class CampaignExtension extends Extension {
 	 * @param event {@link Event} object to be processed
 	 */
 	void handleResetLinkageFields(final Event event) {
-		getExecutor().execute(() -> {
 			linkageFields = "";
 
 			campaignRulesEngine.replaceRules(null);
@@ -595,7 +584,6 @@ public class CampaignExtension extends Extension {
 
 			queueEvent(event);
 			processEvents();
-		});
 	}
 
 	/**
@@ -1052,23 +1040,5 @@ public class CampaignExtension extends Extension {
 				"shouldSendRegistrationRequest - The registration request will not be sent because the registration delay of (%d) days has not elapsed.",
 				registrationDelay);
 		return false;
-	}
-
-	// ========================================================================================
-	// Getters for private members
-	// ========================================================================================
-	/**
-	 * Getter for the {@link #executorService}. Access to which is mutex protected.
-	 *
-	 * @return A non-null {@link ExecutorService} instance
-	 */
-	ExecutorService getExecutor() {
-		synchronized (executorMutex) {
-			if (executorService == null) {
-				executorService = Executors.newSingleThreadExecutor();
-			}
-
-			return executorService;
-		}
 	}
 }
