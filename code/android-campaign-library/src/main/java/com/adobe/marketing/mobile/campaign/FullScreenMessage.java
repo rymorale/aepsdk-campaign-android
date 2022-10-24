@@ -55,7 +55,6 @@ import java.util.Map;
  * <p>
  * The actual UI implementation happens in the platform services.
  */
-//TODO: update after UIFullscreenMessage ported to core 2.0: https://github.com/adobe/aepsdk-core-android/blob/dev-v2.0.0/code/android-core-compatiblity/src/phone/java/com/adobe/marketing/mobile/UIService.java#L88-L112
 class FullScreenMessage extends CampaignMessage {
 	private final String SELF_TAG = "FullScreenMessage";
 
@@ -93,7 +92,7 @@ class FullScreenMessage extends CampaignMessage {
 		}
 
 		/**
-		 * Invoked when a {@code UIFullScreenMessage} is attempting to load a URL.
+		 * Invoked when a {@code FullscreenMessage} is attempting to load a URL.
 		 * <p>
 		 * The provided {@code urlString} can be in one of the following forms:
 		 * <ul>
@@ -106,7 +105,7 @@ class FullScreenMessage extends CampaignMessage {
 		 * {@value CampaignConstants#MESSAGE_SCHEME_PATH_CANCEL}.
 		 * <p>
 		 * Extracts the host and query information from the provided {@code urlString} in a {@code Map<String, String>} and
-		 * passes it to the {@link CampaignMessage} class to dispatch message click-through or viewed event.
+		 * passes it to the {@link CampaignMessage} class to dispatch a message click-through or viewed event.
 		 *
 		 * @param message the {@link FullscreenMessage} instance
 		 * @param urlString {@link String} containing the URL being loaded by the {@code CampaignMessage}
@@ -173,7 +172,7 @@ class FullScreenMessage extends CampaignMessage {
 		}
 
 		@Override
-		public boolean shouldShowMessage(FullscreenMessage fullscreenMessage) {
+		public boolean shouldShowMessage(final FullscreenMessage fullscreenMessage) {
 			return true;
 		}
 
@@ -265,7 +264,7 @@ class FullScreenMessage extends CampaignMessage {
 	 */
 	private void extractAsset(final List<String> currentAssets) {
 		if (currentAssets == null || currentAssets.isEmpty()) {
-			Log.warning(LOG_TAG, SELF_TAG, "There are no assets to extract.");
+			Log.trace(LOG_TAG, SELF_TAG, "There are no assets to extract.");
 			return;
 		}
 
@@ -292,7 +291,7 @@ class FullScreenMessage extends CampaignMessage {
 	 */
 	@Override
 	void showMessage() {
-		Log.debug(LOG_TAG, "showMessage -  Attempting to show fullscreen message with ID %s", messageId);
+		Log.debug(LOG_TAG, SELF_TAG, "showMessage -  Attempting to show fullscreen message with ID %s", messageId);
 
 		final UIService uiService = ServiceProvider.getInstance().getUIService();
 
@@ -315,14 +314,17 @@ class FullScreenMessage extends CampaignMessage {
 
 		final FullScreenMessageUiListener fullScreenMessageUiListener = new FullScreenMessageUiListener();
 		final MessageSettings messageSettings = new MessageSettings();
+		// display ACS fullscreen messages are displayed at 100% scale
+		messageSettings.setHeight(100);
+		messageSettings.setWidth(100);
 		messageSettings.setParent(this);
-		final FullscreenMessage uiFullScreenMessage = uiService.createFullscreenMessage(htmlContent,
+		final FullscreenMessage fullscreenMessage = uiService.createFullscreenMessage(htmlContent,
 				fullScreenMessageUiListener, !cachedResourcesMap.isEmpty(), messageSettings);
 
 
-		if (uiFullScreenMessage != null) {
-			uiFullScreenMessage.setLocalAssetsMap(cachedResourcesMap);
-			uiFullScreenMessage.show();
+		if (fullscreenMessage != null) {
+			fullscreenMessage.setLocalAssetsMap(cachedResourcesMap);
+			fullscreenMessage.show();
 		}
 	}
 
