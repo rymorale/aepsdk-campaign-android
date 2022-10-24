@@ -191,7 +191,7 @@ public class CampaignExtension extends Extension {
 	}
 
 	/**
-	 * Processes the queued event one by one until queue is empty.
+	 * Processes any queued events one by one until queue is empty.
 	 *
 	 * <p>
 	 * Suspends processing of the events in the queue if the configuration or identity shared state is not ready.

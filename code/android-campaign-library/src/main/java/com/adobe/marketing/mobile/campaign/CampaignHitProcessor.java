@@ -111,27 +111,27 @@ class CampaignHitProcessor implements HitProcessing {
                 campaignHit.timeout,
                 campaignHit.timeout);
 
-        final AtomicBoolean willRetryHIt = new AtomicBoolean(false);
+        final AtomicBoolean retryHit = new AtomicBoolean(false);
         networkService.connectAsync(networkRequest, (NetworkCallback) connection -> {
             if (connection == null || (connection.getResponseCode() == CampaignConstants.INVALID_CONNECTION_RESPONSE_CODE)) {
                 Log.debug(LOG_TAG, SELF_TAG,
                         "network process - Could not process a Campaign network request because the connection was null or response code was invalid. Retrying the request.");
-                willRetryHIt.set(true);
+                retryHit.set(true);
             } else if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
                 Log.debug(LOG_TAG, SELF_TAG, "network process - Request (%s) was sent", campaignHit.url);
                 updateTimestampInNamedCollection(System.currentTimeMillis());
-                willRetryHIt.set(false);
+                retryHit.set(false);
             } else if (!recoverableNetworkErrorCodes.contains(connection.getResponseCode())) {
                 Log.debug(LOG_TAG, SELF_TAG,
                         "network process - Unrecoverable network error while processing requests. Discarding request.");
-                willRetryHIt.set(false);
+                retryHit.set(false);
             } else {
                 Log.debug(LOG_TAG, SELF_TAG,
                         "network process - Recoverable network error while processing requests, will retry.");
-                willRetryHIt.set(true);
+                retryHit.set(true);
             }
         });
-        return willRetryHIt.get();
+        return retryHit.get();
     }
 
     /**
