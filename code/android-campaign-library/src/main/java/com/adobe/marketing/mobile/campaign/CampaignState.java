@@ -15,6 +15,7 @@ import static com.adobe.marketing.mobile.campaign.CampaignConstants.LOG_TAG;
 
 import com.adobe.marketing.mobile.MobilePrivacyStatus;
 import com.adobe.marketing.mobile.services.Log;
+import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.StringUtils;
 
 import java.util.Map;
@@ -209,18 +210,14 @@ final class CampaignState {
 			return;
 		}
 
-		this.campaignServer = (String) configState.get(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_SERVER_KEY);
-		this.campaignPkey = (String) configState.get(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_PKEY_KEY);
-		this.campaignMcias = (String) configState.get(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_MCIAS_KEY);
-		this.propertyId = (String) configState.get(CampaignConstants.EventDataKeys.Configuration.PROPERTY_ID);
-		this.privacyStatus = MobilePrivacyStatus.fromString((String) configState.get(CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY));
-		// setting configuration that need default values if none were given
-		final Integer timeout = (Integer) configState.get(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_TIMEOUT);
-		this.timeout = timeout == null ? CampaignConstants.CAMPAIGN_TIMEOUT_DEFAULT : timeout;
-		final Integer registrationDelay = (Integer) configState.get(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_REGISTRATION_DELAY_KEY);
-		this.campaignRegistrationDelayDays = registrationDelay == null ? CampaignConstants.DEFAULT_REGISTRATION_DELAY_DAYS : registrationDelay;
-		final Boolean registrationPaused = (Boolean) configState.get(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_REGISTRATION_PAUSED_KEY);
-		this.campaignRegistrationPaused = registrationPaused == null ? false : registrationPaused;
+		this.campaignServer = DataReader.optString(configState, CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_SERVER_KEY, "");
+		this.campaignPkey = DataReader.optString(configState, CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_PKEY_KEY, "");
+		this.campaignMcias = DataReader.optString(configState, CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_MCIAS_KEY, "");
+		this.propertyId = DataReader.optString(configState, CampaignConstants.EventDataKeys.Configuration.PROPERTY_ID, "");
+		this.privacyStatus = MobilePrivacyStatus.fromString(DataReader.optString(configState, CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY, ""));
+		this.timeout = DataReader.optInt(configState, CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_TIMEOUT, CampaignConstants.CAMPAIGN_TIMEOUT_DEFAULT);
+		this.campaignRegistrationDelayDays = DataReader.optInt(configState, CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_REGISTRATION_DELAY_KEY, CampaignConstants.DEFAULT_REGISTRATION_DELAY_DAYS);
+		this.campaignRegistrationPaused = DataReader.optBoolean(configState, CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_REGISTRATION_PAUSED_KEY, false);
 		configStateSet = true;
 	}
 
@@ -231,11 +228,11 @@ final class CampaignState {
 	 */
 	private void setIdentity(final Map<String, Object> identityState) {
 		if (identityState == null || identityState.isEmpty()) {
-			Log.debug(LOG_TAG, SELF_TAG, "setIdentity -  Cannot set Identity properties, provided identity data is null.");
+			Log.debug(LOG_TAG, SELF_TAG, "setIdentity - Cannot set Identity properties, provided identity data is null.");
 			return;
 		}
 
-		this.experienceCloudId = (String) identityState.get(CampaignConstants.EventDataKeys.Identity.VISITOR_ID_MID);
+		this.experienceCloudId = DataReader.optString(identityState, CampaignConstants.EventDataKeys.Identity.VISITOR_ID_MID, "");
 		identityStateSet = true;
 	}
 
