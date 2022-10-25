@@ -35,6 +35,8 @@ import com.adobe.marketing.mobile.ExtensionError;
 import com.adobe.marketing.mobile.ExtensionErrorCallback;
 import com.adobe.marketing.mobile.MobilePrivacyStatus;
 import com.adobe.marketing.mobile.SharedStateResolution;
+import com.adobe.marketing.mobile.SharedStateResolver;
+import com.adobe.marketing.mobile.SharedStateResult;
 import com.adobe.marketing.mobile.SharedStateStatus;
 import com.adobe.marketing.mobile.launch.rulesengine.LaunchRule;
 import com.adobe.marketing.mobile.launch.rulesengine.download.RulesLoadResult;
@@ -242,26 +244,12 @@ public class CampaignExtension extends Extension {
     }
 
     private void setCampaignState(final Event event) {
-        ExtensionErrorCallback<ExtensionError> configurationErrorCallback = extensionError -> {
-            if (extensionError != null) {
-                Log.warning(LOG_TAG, SELF_TAG, "CampaignExtension : Could not process event, an error occurred while retrieving configuration shared state: %s",
-                        extensionError.getErrorName());
-            }
-        };
+        final SharedStateResult configSharedState = getApi().getSharedState(CampaignConstants.EventDataKeys.Configuration.EXTENSION_NAME,
+                event, false, SharedStateResolution.LAST_SET);
+        final SharedStateResult identitySharedState = getApi().getSharedState(CampaignConstants.EventDataKeys.Identity.EXTENSION_NAME,
+                event, false, SharedStateResolution.LAST_SET);
 
-        ExtensionErrorCallback<ExtensionError> edgeIdentityErrorCallback = extensionError -> {
-            if (extensionError != null) {
-                Log.warning(LOG_TAG, SELF_TAG, "CampaignExtension : Could not process event, an error occurred while retrieving edge identity shared state: %s",
-                        extensionError.getErrorName());
-            }
-        };
-
-        final Map<String, Object> configSharedState = getApi().getSharedEventState(CampaignConstants.EventDataKeys.Configuration.EXTENSION_NAME,
-                event, configurationErrorCallback);
-        final Map<String, Object> identitySharedState = getApi().getSharedEventState(CampaignConstants.EventDataKeys.Identity.EXTENSION_NAME,
-                event, edgeIdentityErrorCallback);
-
-        campaignState.setState(configSharedState, identitySharedState);
+        campaignState.setState(configSharedState.getValue(), identitySharedState.getValue());
     }
 
     /**
