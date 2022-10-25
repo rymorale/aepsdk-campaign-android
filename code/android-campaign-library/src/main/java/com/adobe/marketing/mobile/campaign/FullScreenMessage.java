@@ -37,7 +37,9 @@ import com.adobe.marketing.mobile.services.ui.FullscreenMessage;
 import com.adobe.marketing.mobile.services.ui.FullscreenMessageDelegate;
 import com.adobe.marketing.mobile.services.ui.MessageSettings;
 import com.adobe.marketing.mobile.services.ui.UIService;
+import com.adobe.marketing.mobile.util.StreamUtils;
 import com.adobe.marketing.mobile.util.StringUtils;
+import com.adobe.marketing.mobile.util.UrlUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -342,7 +344,7 @@ class FullScreenMessage extends CampaignMessage {
 
 			try {
 				htmlInputStream = new FileInputStream(htmlFile);
-				htmlString = Utils.inputStreamToString(htmlInputStream);
+				htmlString = StreamUtils.readAsString(htmlInputStream);
 			} catch (final IOException ex) {
 				Log.debug(LOG_TAG, SELF_TAG, "readHtmlFromFile -  Could not read the html file! (%s)", ex);
 			} finally {
@@ -428,7 +430,7 @@ class FullScreenMessage extends CampaignMessage {
 			// if assetValue is still null, none of our urls have been cached, so we check for a bundled asset
 			if (assetValue == null) {
 				assetValue = currentAssetArray.get(currentAssetArrayCount - 1);
-				boolean isLocalImage = !Utils.stringIsUrl(assetValue);
+				boolean isLocalImage = !UrlUtils.isValidUrl(assetValue);
 
 				if (isLocalImage) {
 					fallbackImagesMap.put(assetUrl, assetValue);
