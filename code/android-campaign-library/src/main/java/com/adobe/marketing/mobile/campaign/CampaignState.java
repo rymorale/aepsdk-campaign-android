@@ -135,10 +135,10 @@ final class CampaignState {
 	 * @see #setIdentity(Map<String, Object>)
 	 */
 	void setState(final SharedStateResult configSharedStateResult, final SharedStateResult identitySharedStateResult) {
-		if (configSharedStateResult.getValue() != null) {
+		if (configSharedStateResult != null && configSharedStateResult.getValue() != null) {
 			setConfiguration(configSharedStateResult.getValue());
 		}
-		if (identitySharedStateResult.getValue() != null) {
+		if (identitySharedStateResult != null && identitySharedStateResult.getValue() != null) {
 			setIdentity(identitySharedStateResult.getValue());
 		}
 	}
