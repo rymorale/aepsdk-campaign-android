@@ -241,12 +241,12 @@ public class CampaignExtension extends Extension {
     }
 
     private void setCampaignState(final Event event) {
-        final SharedStateResult configSharedState = getApi().getSharedState(CampaignConstants.EventDataKeys.Configuration.EXTENSION_NAME,
+        final SharedStateResult configSharedStateResult = getApi().getSharedState(CampaignConstants.EventDataKeys.Configuration.EXTENSION_NAME,
                 event, false, SharedStateResolution.LAST_SET);
-        final SharedStateResult identitySharedState = getApi().getSharedState(CampaignConstants.EventDataKeys.Identity.EXTENSION_NAME,
+        final SharedStateResult identitySharedStateResult = getApi().getSharedState(CampaignConstants.EventDataKeys.Identity.EXTENSION_NAME,
                 event, false, SharedStateResolution.LAST_SET);
 
-        campaignState.setState(configSharedState.getValue(), identitySharedState.getValue());
+        campaignState.setState(configSharedStateResult, identitySharedStateResult);
     }
 
     /**
