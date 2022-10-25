@@ -30,7 +30,8 @@ public class CampaignHit {
         return !StringUtils.isNullOrEmpty(payload) ? HttpMethod.POST : HttpMethod.GET;
     }
 
-    DataEntity toDataEntity() {
+    @Override
+    public String toString() {
         final Map<String, Object> dataMap = new HashMap<String, Object>() {
             {
                 put(URL, url);
@@ -39,6 +40,6 @@ public class CampaignHit {
             }
         };
         final JSONObject jsonData = new JSONObject(dataMap);
-        return new DataEntity(jsonData.toString());
+        return jsonData.toString();
     }
 }
