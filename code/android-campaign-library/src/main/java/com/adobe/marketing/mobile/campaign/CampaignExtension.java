@@ -31,11 +31,8 @@ import com.adobe.marketing.mobile.EventSource;
 import com.adobe.marketing.mobile.EventType;
 import com.adobe.marketing.mobile.Extension;
 import com.adobe.marketing.mobile.ExtensionApi;
-import com.adobe.marketing.mobile.ExtensionError;
-import com.adobe.marketing.mobile.ExtensionErrorCallback;
 import com.adobe.marketing.mobile.MobilePrivacyStatus;
 import com.adobe.marketing.mobile.SharedStateResolution;
-import com.adobe.marketing.mobile.SharedStateResolver;
 import com.adobe.marketing.mobile.SharedStateResult;
 import com.adobe.marketing.mobile.SharedStateStatus;
 import com.adobe.marketing.mobile.launch.rulesengine.LaunchRule;
@@ -78,8 +75,8 @@ import java.util.concurrent.TimeUnit;
  * <ul>
  *     <li>{@link EventType#CAMPAIGN} - {@link EventSource#REQUEST_CONTENT}</li>
  *     <li>{@code EventType.CAMPAIGN} - {@link EventSource#REQUEST_IDENTITY}</li>
- *     <li>{@code EventType.CAMPAIGN} - {@link EventSource#REQUEST_RESET}</li>
  *     <li>{@link EventType#CONFIGURATION} - {@link EventSource#RESPONSE_CONTENT}</li>
+ *     <li>{@link EventType#GENERIC_DATA} - {@link EventSource#OS}</li>
  *     <li>{@link EventType#HUB} - {@link EventSource#SHARED_STATE}</li>
  *     <li>{@link EventType#LIFECYCLE} - {@link EventSource#RESPONSE_CONTENT}</li>
  * </ul>
@@ -227,7 +224,7 @@ public class CampaignExtension extends Extension {
             }
 
             if (eventToProcess.getType() == EventType.LIFECYCLE) {
-                processLifecycleUpdate(eventToProcess, campaignState);
+                processLifecycleUpdate();
             } else if (eventToProcess.getType() == EventType.CONFIGURATION
                     || eventToProcess.getType() == EventType.CAMPAIGN) {
                 if (eventToProcess.getSource() == EventSource.REQUEST_IDENTITY) {
@@ -460,7 +457,7 @@ public class CampaignExtension extends Extension {
         final String url = buildTrackingUrl(campaignState.getCampaignServer(), broadlogId, deliveryId, action,
                 campaignState.getExperienceCloudId());
 
-        processRequest(url, "", campaignState, event);
+        processRequest(url, "", campaignState);
 
     }
 
@@ -471,7 +468,7 @@ public class CampaignExtension extends Extension {
      * @param deliveryId Hexadecimal value which is use to derive message id by converting it to Decimal.
      */
     void dispatchMessageEvent(final String action, final String deliveryId) {
-        //Dispatch event only in case of action value "1"(open) and "2"(click).
+        // Dispatch event only in case of action value "1"(open) and "2"(click).
         String actionKey = null;
 
         if ("2".equals(action)) {
@@ -502,12 +499,9 @@ public class CampaignExtension extends Extension {
      * Processes {@code Lifecycle} event to send registration request to the configured {@code Campaign} server.
      * <p>
      * If current {@code Configuration} properties do not allow sending registration request, no request is sent.
-     *
-     * @param event         {@link Event} object to be processed
-     * @param campaignState {@link CampaignState} instance containing the current Campaign configuration
      * @see CampaignState#canRegisterWithCurrentState()
      */
-    void processLifecycleUpdate(final Event event, final CampaignState campaignState) {
+    void processLifecycleUpdate() {
         if (!campaignState.canRegisterWithCurrentState()) {
             Log.debug(LOG_TAG, SELF_TAG,
                     "processLifecycleUpdate -  Campaign extension is not configured to send registration request.");
@@ -519,7 +513,7 @@ public class CampaignExtension extends Extension {
         final String payload = buildRegistrationPayload("gcm", campaignState.getExperienceCloudId(),
                 new HashMap<>());
 
-        processRequest(url, payload, campaignState, event);
+        processRequest(url, payload, campaignState);
 
     }
 
@@ -634,7 +628,7 @@ public class CampaignExtension extends Extension {
      */
     void loadConsequences(final List<Map<String, Object>> consequences) {
         // generate a list of loaded message ids so we can clear cached files we no longer need
-        final ArrayList<String> loadedMessageIds = new ArrayList<String>();
+        final ArrayList<String> loadedMessageIds = new ArrayList<>();
 
         if (consequences == null || consequences.isEmpty()) {
             Log.debug(LOG_TAG, SELF_TAG,
@@ -823,10 +817,8 @@ public class CampaignExtension extends Extension {
      * @param url           {@link String} containing the registration request URL
      * @param payload       {@link String} containing the registration request payload
      * @param campaignState {@link CampaignState} instance containing the current {@code Campaign} configuration
-     * @param event         {@link Event} which triggered the queuing of the {@code Campaign} registration request
      */
-    private void processRequest(final String url, final String payload, final CampaignState campaignState,
-                                final Event event) {
+    private void processRequest(final String url, final String payload, final CampaignState campaignState) {
         final Networking networkingService = ServiceProvider.getInstance().getNetworkService();
 
         if (networkingService == null) {
