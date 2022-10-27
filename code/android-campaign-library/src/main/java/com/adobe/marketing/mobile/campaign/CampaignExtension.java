@@ -282,7 +282,7 @@ public class CampaignExtension extends Extension {
     }
 
     /**
-     * Processes Campaign request event to display messages.
+     * Processes a Rule Engine response event containing a triggered message.
      * <p>
      * If {@value CampaignConstants.EventDataKeys.RuleEngine#CONSEQUENCE_TRIGGERED} key is present in {@code EventData},
      * it creates a {@code CampaignMessage} object from the corresponding {@code consequence} to show the message.
