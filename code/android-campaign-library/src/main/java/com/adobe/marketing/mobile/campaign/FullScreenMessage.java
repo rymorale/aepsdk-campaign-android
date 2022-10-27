@@ -11,6 +11,7 @@
 
 package com.adobe.marketing.mobile.campaign;
 
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.CACHE_BASE_DIR;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.CAMPAIGN_INTERACTION_TYPE;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_ASSETS_PATH;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL;
@@ -221,11 +222,11 @@ class FullScreenMessage extends CampaignMessage {
 
 		assetsPath = (String) consequence.get(MESSAGE_CONSEQUENCE_ASSETS_PATH);
 
-		if (StringUtils.isNullOrEmpty(assetsPath)) {
-			Log.debug(LOG_TAG, SELF_TAG,
-					"parseFullScreenMessagePayload -  Unable to create fullscreen message, provided assets path is missing/empty.");
-			throw new CampaignMessageRequiredFieldMissingException("Messages - Unable to create fullscreen message, assetPath is missing/empty.");
-		}
+//		if (StringUtils.isNullOrEmpty(assetsPath)) {
+//			Log.debug(LOG_TAG, SELF_TAG,
+//					"parseFullScreenMessagePayload -  Unable to create fullscreen message, provided assets path is missing/empty.");
+//			throw new CampaignMessageRequiredFieldMissingException("Messages - Unable to create fullscreen message, assetPath is missing/empty.");
+//		}
 
 		final Map<String, Object> detailDictionary = (Map<String, Object>) consequence.get(MESSAGE_CONSEQUENCE_DETAIL);
 
@@ -304,7 +305,8 @@ class FullScreenMessage extends CampaignMessage {
 			return;
 		}
 
-		htmlContent = readHtmlFromFile(new File(assetsPath + File.separator + html));
+		final CacheService cacheService = ServiceProvider.getInstance().getCacheService();
+		htmlContent = StreamUtils.readAsString(cacheService.get(CACHE_BASE_DIR, html).getData());
 
 		if (StringUtils.isNullOrEmpty(htmlContent)) {
 			Log.debug(LOG_TAG, SELF_TAG,
@@ -316,10 +318,12 @@ class FullScreenMessage extends CampaignMessage {
 
 		final FullScreenMessageUiListener fullScreenMessageUiListener = new FullScreenMessageUiListener();
 		final MessageSettings messageSettings = new MessageSettings();
-		// display ACS fullscreen messages are displayed at 100% scale
+		// ACS fullscreen messages are displayed at 100% scale
 		messageSettings.setHeight(100);
 		messageSettings.setWidth(100);
 		messageSettings.setParent(this);
+		messageSettings.setVerticalAlign(MessageSettings.MessageAlignment.TOP);
+		messageSettings.setHorizontalAlign(MessageSettings.MessageAlignment.CENTER);
 		final FullscreenMessage fullscreenMessage = uiService.createFullscreenMessage(htmlContent,
 				fullScreenMessageUiListener, !cachedResourcesMap.isEmpty(), messageSettings);
 

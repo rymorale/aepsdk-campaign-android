@@ -14,8 +14,10 @@ package com.adobe.marketing.mobile.campaign;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.CACHE_BASE_DIR;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.CAMPAIGN_NAMED_COLLECTION_NAME;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.CAMPAIGN_TIMEOUT_DEFAULT;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.EXTENSION_NAME;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.CONSEQUENCE_TRIGGERED;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_ASSETS_PATH;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_ID;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_TYPE;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.FRIENDLY_NAME;
@@ -36,6 +38,8 @@ import com.adobe.marketing.mobile.SharedStateResolution;
 import com.adobe.marketing.mobile.SharedStateResult;
 import com.adobe.marketing.mobile.SharedStateStatus;
 import com.adobe.marketing.mobile.launch.rulesengine.LaunchRule;
+import com.adobe.marketing.mobile.launch.rulesengine.LaunchRulesEngine;
+import com.adobe.marketing.mobile.launch.rulesengine.RuleConsequence;
 import com.adobe.marketing.mobile.launch.rulesengine.download.RulesLoadResult;
 import com.adobe.marketing.mobile.launch.rulesengine.download.RulesLoader;
 import com.adobe.marketing.mobile.launch.rulesengine.json.JSONRulesParser;
@@ -43,15 +47,11 @@ import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.DataQueue;
 import com.adobe.marketing.mobile.services.DataQueuing;
 import com.adobe.marketing.mobile.services.DataStoring;
-import com.adobe.marketing.mobile.services.HttpMethod;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
-import com.adobe.marketing.mobile.services.NetworkRequest;
 import com.adobe.marketing.mobile.services.Networking;
 import com.adobe.marketing.mobile.services.PersistentHitQueue;
 import com.adobe.marketing.mobile.services.ServiceProvider;
-import com.adobe.marketing.mobile.services.caching.CacheEntry;
-import com.adobe.marketing.mobile.services.caching.CacheExpiry;
 import com.adobe.marketing.mobile.services.caching.CacheResult;
 import com.adobe.marketing.mobile.services.caching.CacheService;
 import com.adobe.marketing.mobile.util.DataReader;
@@ -61,12 +61,15 @@ import com.google.gson.Gson;
 
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.ZipInputStream;
 
 /**
  * The CampaignExtension class is responsible for showing Messages and downloading/caching their remote assets when applicable.
@@ -94,7 +97,7 @@ public class CampaignExtension extends Extension {
     private final ExtensionApi extensionApi;
     private final RulesLoader rulesLoader;
     private final PersistentHitQueue campaignPersistentHitQueue;
-    private final CampaignRulesEngine campaignRulesEngine;
+    private final LaunchRulesEngine campaignRulesEngine;
     private final CampaignState campaignState;
     private String linkageFields;
     private List<Map<String, Object>> loadedConsequencesList;
@@ -111,7 +114,7 @@ public class CampaignExtension extends Extension {
         rulesLoader = new RulesLoader(CACHE_BASE_DIR);
 
         // initialize campaign rules engine
-        campaignRulesEngine = new CampaignRulesEngine(extensionApi);
+        campaignRulesEngine = new LaunchRulesEngine(extensionApi);
 
         // setup persistent hit queue
         final DataQueuing dataQueuing = ServiceProvider.getInstance().getDataQueueService();
@@ -143,11 +146,6 @@ public class CampaignExtension extends Extension {
         // register listeners
         getApi().registerEventListener(
                 EventType.CAMPAIGN,
-                EventSource.REQUEST_CONTENT,
-                this::processMessageEvent
-        );
-        getApi().registerEventListener(
-                EventType.CAMPAIGN,
                 EventSource.REQUEST_IDENTITY,
                 this::handleLinkageFieldsEvent
         );
@@ -170,6 +168,16 @@ public class CampaignExtension extends Extension {
                 EventType.LIFECYCLE,
                 EventSource.RESPONSE_CONTENT,
                 this::queueAndProcessEvent
+        );
+        getApi().registerEventListener(
+                EventType.WILDCARD,
+                EventSource.WILDCARD,
+                this::handleWildcardEvents
+        );
+        getApi().registerEventListener(
+                EventType.RULES_ENGINE,
+                EventSource.RESPONSE_CONTENT,
+                this::processRuleEngineResponse
         );
     }
 
@@ -224,7 +232,7 @@ public class CampaignExtension extends Extension {
             }
 
             if (eventToProcess.getType() == EventType.LIFECYCLE) {
-                processLifecycleUpdate();
+                processLifecycleUpdate(eventToProcess);
             } else if (eventToProcess.getType() == EventType.CONFIGURATION
                     || eventToProcess.getType() == EventType.CAMPAIGN) {
                 if (eventToProcess.getSource() == EventSource.REQUEST_IDENTITY) {
@@ -240,6 +248,28 @@ public class CampaignExtension extends Extension {
         }
     }
 
+    private void handleWildcardEvents(final Event event) {
+        List<LaunchRule> triggeredRules = campaignRulesEngine.process(event);
+        for (final LaunchRule rule : triggeredRules) {
+            for (final RuleConsequence consequence : rule.getConsequenceList()) {
+                final Map<String, Object> consequenceMap = new HashMap<String, Object>() {
+                    {
+                        put(MESSAGE_CONSEQUENCE_DETAIL, consequence.getDetail());
+                        put(MESSAGE_CONSEQUENCE_TYPE, consequence.getType());
+                        put(MESSAGE_CONSEQUENCE_ID, consequence.getId());
+                        put(MESSAGE_CONSEQUENCE_ASSETS_PATH, CACHE_BASE_DIR);
+                    }
+                };
+                final Map<String, Object> triggeredConsequence = new HashMap<String, Object>() {
+                    {
+                        put(CONSEQUENCE_TRIGGERED, consequenceMap);
+                    }
+                };
+                extensionApi.dispatch(new Event.Builder("triggered consequence", EventType.RULES_ENGINE, EventSource.RESPONSE_CONTENT).setEventData(triggeredConsequence).build());
+            }
+        }
+    }
+
     private void setCampaignState(final Event event) {
         final SharedStateResult configSharedStateResult = getApi().getSharedState(CampaignConstants.EventDataKeys.Configuration.EXTENSION_NAME,
                 event, false, SharedStateResolution.LAST_SET);
@@ -249,6 +279,7 @@ public class CampaignExtension extends Extension {
         campaignState.setState(configSharedStateResult, identitySharedStateResult);
     }
 
+    // TODO: fix docs
     /**
      * Processes Campaign request event to display messages.
      * <p>
@@ -257,19 +288,25 @@ public class CampaignExtension extends Extension {
      *
      * @param event incoming {@link Event} object to be processed
      */
-    void processMessageEvent(final Event event) {
-        Log.trace(LOG_TAG, "processMessageEvent -  processing event %s type: %s source: %s", event.getName(),
+    void processRuleEngineResponse(final Event event) {
+        Log.trace(LOG_TAG, SELF_TAG, "processRuleEngineResponse -  processing event %s type: %s source: %s", event.getName(),
                 event.getType(), event.getSource());
         final Map<String, Object> eventData = event.getEventData();
 
         if (eventData == null || eventData.isEmpty()) {
             Log.debug(LOG_TAG, SELF_TAG,
-                    "processMessageEvent -  Cannot process Campaign request event, eventData is null.");
+                    "processRuleEngineResponse -  Cannot process Campaign request event, eventData is null.");
             return;
         }
 
         // handle triggered consequence
         Map<String, Object> consequenceData = (Map<String, Object>) eventData.get(CampaignConstants.EventDataKeys.RuleEngine.CONSEQUENCE_TRIGGERED);
+
+        if (consequenceData == null || consequenceData.isEmpty()) {
+            Log.debug(LOG_TAG, SELF_TAG,
+                    "processRuleEngineResponse -  Cannot process consequence, data is null.");
+            return;
+        }
 
         try {
             final CampaignMessage triggeredMessage = CampaignMessage.createMessageObject(CampaignExtension.this,
@@ -279,7 +316,7 @@ public class CampaignExtension extends Extension {
                 triggeredMessage.showMessage();
             }
         } catch (final CampaignMessageRequiredFieldMissingException ex) {
-            Log.error(LOG_TAG, SELF_TAG, "processMessageEvent -  Error reading message definition: \n %s", ex);
+            Log.error(LOG_TAG, SELF_TAG, "processRuleEngineResponse -  Error reading message definition: \n %s", ex);
         }
 
     }
@@ -331,7 +368,8 @@ public class CampaignExtension extends Extension {
             return;
         }
 
-        if (shouldLoadCache) {
+        // TODO: fix
+        if (true) {
             Log.debug(LOG_TAG, SELF_TAG, "processConfigurationResponse -  Attempting to load cached rules.");
             loadCachedMessages();
         }
@@ -376,11 +414,12 @@ public class CampaignExtension extends Extension {
         final String rulesDirectory = rulesLoader.getCacheName();
 
         if (!StringUtils.isNullOrEmpty(rulesDirectory)) {
-            Log.trace(LOG_TAG, "loadCachedMessages -  Loading cached rules from: '%s'",
-                    rulesDirectory);
-
             final RulesLoadResult result = rulesLoader.loadFromCache(cachedUrl);
-            campaignRulesEngine.replaceRules(JSONRulesParser.parse(result.toString(), extensionApi));
+            if (!result.getReason().equals(RulesLoadResult.Reason.NO_DATA)) {
+                final List<LaunchRule> cachedRules = JSONRulesParser.parse(result.toString(), extensionApi);
+                Log.trace(LOG_TAG, SELF_TAG, "loadCachedMessages -  Loading %s cached rule(s)", cachedRules.size());
+                campaignRulesEngine.replaceRules(cachedRules);
+            }
         }
 
         shouldLoadCache = false;
@@ -457,8 +496,7 @@ public class CampaignExtension extends Extension {
         final String url = buildTrackingUrl(campaignState.getCampaignServer(), broadlogId, deliveryId, action,
                 campaignState.getExperienceCloudId());
 
-        processRequest(url, "", campaignState);
-
+        processRequest(url, "", campaignState, event);
     }
 
     /**
@@ -500,8 +538,10 @@ public class CampaignExtension extends Extension {
      * <p>
      * If current {@code Configuration} properties do not allow sending registration request, no request is sent.
      * @see CampaignState#canRegisterWithCurrentState()
+     *
+     * @param event The received Lifecycle response {@link Event}
      */
-    void processLifecycleUpdate() {
+    void processLifecycleUpdate(final Event event) {
         if (!campaignState.canRegisterWithCurrentState()) {
             Log.debug(LOG_TAG, SELF_TAG,
                     "processLifecycleUpdate -  Campaign extension is not configured to send registration request.");
@@ -513,7 +553,7 @@ public class CampaignExtension extends Extension {
         final String payload = buildRegistrationPayload("gcm", campaignState.getExperienceCloudId(),
                 new HashMap<>());
 
-        processRequest(url, payload, campaignState);
+        processRequest(url, payload, campaignState, event);
 
     }
 
@@ -817,13 +857,22 @@ public class CampaignExtension extends Extension {
      * @param url           {@link String} containing the registration request URL
      * @param payload       {@link String} containing the registration request payload
      * @param campaignState {@link CampaignState} instance containing the current {@code Campaign} configuration
+     * @param event         {@link Event} which triggered the queuing of the {@code Campaign} registration request
      */
-    private void processRequest(final String url, final String payload, final CampaignState campaignState) {
+    private void processRequest(final String url, final String payload, final CampaignState campaignState,
+                                final Event event) {
         final Networking networkingService = ServiceProvider.getInstance().getNetworkService();
 
         if (networkingService == null) {
             Log.debug(LOG_TAG, SELF_TAG,
                     "processRequest -  Cannot send request, Networking service is not available.");
+            return;
+        }
+
+        // check if this request is a registration request by checking for the presence of a payload
+        // and if it is a registration request, determine if it should be sent.
+        if (!StringUtils.isNullOrEmpty(payload)
+                && !shouldSendRegistrationRequest(campaignState, event.getTimestamp())) {
             return;
         }
 
@@ -911,39 +960,35 @@ public class CampaignExtension extends Extension {
         return bodyJSON.toString();
     }
 
-    /**
-     * Starts synchronous rules download from the provided {@code url}.
-     * <p>
-     * This method uses the {@link Networking} service to download the rules and the {@link CacheService}
-     * to cache the downloaded Campaign rules. Once the rules are downloaded, they are registered with the {@link CampaignRulesEngine}.
-     * <p>
-     * If the given {@code url} is null or empty no rules download happens.
-     *
-     * @param url {@link String} containing Campaign rules download URL
-     */
-    private void downloadRules(final String url) {
-        if (StringUtils.isNullOrEmpty(url)) {
-            Log.warning(LOG_TAG, SELF_TAG,
-                    "Cannot download rules, provided url is null or empty. Cached rules will be used if present.");
-            return;
-        }
+	/**
+	 * Starts synchronous rules download from the provided {@code url}.
+	 * <p>
+	 * This method uses the {@link Networking} service to download the rules and the {@link CacheService}
+	 * to cache the downloaded Campaign rules. Once the rules are downloaded, they are registered with the {@link CampaignRulesEngine}.
+	 * <p>
+	 * If the given {@code url} is null or empty no rules download happens.
+	 *
+	 * @param url {@link String} containing Campaign rules download URL
+	 */
+	private void downloadRules(final String url) {
+		if (StringUtils.isNullOrEmpty(url)) {
+			Log.warning(LOG_TAG, SELF_TAG,
+					"Cannot download rules, provided url is null or empty. Cached rules will be used if present.");
+			return;
+		}
 
         final Map<String, String> requestProperties = new HashMap<>();
 
         if (linkageFields != null && !linkageFields.isEmpty()) {
             requestProperties.put(CampaignConstants.LINKAGE_FIELD_NETWORK_HEADER, linkageFields);
         }
-        final Networking networkService = ServiceProvider.getInstance().getNetworkService();
-        if (networkService != null) {
-            final NetworkRequest networkRequest = new NetworkRequest(url, HttpMethod.GET, null, null, CAMPAIGN_TIMEOUT_DEFAULT, CAMPAIGN_TIMEOUT_DEFAULT);
-            networkService.connectAsync(networkRequest, httpConnecting -> {
-                final CacheEntry downloadedRules = new CacheEntry(httpConnecting.getInputStream(), CacheExpiry.never(), null);
-                final CacheService cacheService = ServiceProvider.getInstance().getCacheService();
-                if (cacheService.set(RULES_CACHE_FOLDER, RULES_CACHE_KEY, downloadedRules)) {
-                    onRulesDownloaded(url);
-                }
-            });
-        }
+        rulesLoader.loadFromUrl(url, requestProperties, rulesLoadResult -> {
+            if (rulesLoadResult.getReason().equals(RulesLoadResult.Reason.NOT_MODIFIED)) {
+                Log.trace(LOG_TAG, SELF_TAG, "Campaign rules are unmodified, will not register Campaign rules.");
+                return;
+            }
+            onRulesDownloaded(url, rulesLoadResult);
+        });
     }
 
     /**
@@ -953,52 +998,22 @@ public class CampaignExtension extends Extension {
      * <ul>
      *     <li>Unregister any previously registered rules.</li>
      *     <li>Persist the provided remotes {@code url} in Campaign data store.</li>
-     *     <li>Register downloaded rules with the {@code EventHub}.</li>
-     *     <li>Download and cache remote assets for the {@link #loadedConsequencesList}.</li>
+     *     <li>Register downloaded rules with the {@code CampaignRulesEngine}.</li>
      * </ul>
-     * If {@link #loadRulesFromDirectory(CacheResult)} cannot parse {@value CampaignConstants#RULES_JSON_FILE_NAME} in the
-     * provided {@code rulesDirectory} and returns empty {@code List<LaunchRule>}, then no rules are registered.
      *
-     * @param url {@link String} containing Campaign rules download URL
+     * @param rulesLoadResult {@link RulesLoadResult} containing the downloaded Campaign rules
      * @see #updateUrlInNamedCollection(String)
      * @see CampaignRulesEngine#replaceRules(List)
      * @see #loadConsequences(List)
      */
-    private void onRulesDownloaded(final String url) {
+    private void onRulesDownloaded(final String url, final RulesLoadResult rulesLoadResult) {
         // save remotes url in Campaign Named Collection
         updateUrlInNamedCollection(url);
 
-        loadedConsequencesList = new ArrayList<>();
         // register all new rules
-        campaignRulesEngine.replaceRules(loadRulesFromDirectory(ServiceProvider.getInstance().getCacheService().get(RULES_CACHE_FOLDER, RULES_CACHE_KEY)));
-
-        loadConsequences(loadedConsequencesList);
-        loadedConsequencesList = null; // We don't need it anymore.
-    }
-
-    /**
-     * Parses {@value CampaignConstants#RULES_JSON_FILE_NAME} in the provided cache {@code rulesDirectory}
-     * and returns the parsed {@code List<LaunchRule>}.
-     * <p>
-     * If provided {@code rulesDirectory} is null or empty then an empty {@code List} is returned.
-     *
-     * @param cachedRules {@link CacheResult} object containing cached rules
-     * @return a {@code List} of {@link LaunchRule} objects that were parsed from the {@value CampaignConstants#RULES_JSON_FILE_NAME} in
-     * the provided {@code rulesDirectory}
-     */
-    private List<LaunchRule> loadRulesFromDirectory(final CacheResult cachedRules) {
-        List<LaunchRule> rulesList = new ArrayList<>();
-
-        // check if we downloaded a valid file
-        if (cachedRules == null) {
-            Log.debug(LOG_TAG, SELF_TAG, "loadRulesFromDirectory -  No valid rules directory found in cache.");
-            // clear existing rules
-            campaignRulesEngine.replaceRules(null);
-            return rulesList;
-        }
-
-        final String jsonString = StreamUtils.readAsString(cachedRules.getData());
-        return JSONRulesParser.parse(jsonString, extensionApi);
+        final List<LaunchRule> campaignRules = JSONRulesParser.parse(rulesLoadResult.getData(), extensionApi);
+        Log.trace(LOG_TAG, SELF_TAG, "Registering %s Campaign rule(s).", campaignRules.size());
+        campaignRulesEngine.replaceRules(campaignRules);
     }
 
     /**
