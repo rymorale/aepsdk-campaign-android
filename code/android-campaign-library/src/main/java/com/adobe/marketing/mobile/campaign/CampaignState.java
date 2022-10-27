@@ -14,6 +14,7 @@ package com.adobe.marketing.mobile.campaign;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.LOG_TAG;
 
 import com.adobe.marketing.mobile.MobilePrivacyStatus;
+import com.adobe.marketing.mobile.SharedStateResult;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.StringUtils;
@@ -128,14 +129,19 @@ final class CampaignState {
 	 * <p>
 	 * Invokes internal methods to set the properties for {@code Configuration} and {@code Identity} shared states.
 	 *
-	 * @param configState {@link Map<String, Object>} representing {@code Configuration} shared state
-	 * @param identityState {@code Map<String, Object>} representing {@code Identity} shared state
+	 * @param configSharedStateResult {@link SharedStateResult} representing {@code Configuration} shared state
+	 * @param identitySharedStateResult {@code SharedStateResult} representing {@code Identity} shared state
 	 * @see #setConfiguration(Map<String, Object>)
 	 * @see #setIdentity(Map<String, Object>)
 	 */
-	void setState(final Map<String, Object> configState, final Map<String, Object> identityState) {
-		setConfiguration(configState);
-		setIdentity(identityState);
+	void setState(final SharedStateResult configSharedStateResult, final SharedStateResult identitySharedStateResult) {
+		if (configSharedStateResult != null && configSharedStateResult.getValue() != null) {
+			setConfiguration(configSharedStateResult.getValue());
+		}
+//		if (identitySharedStateResult != null && identitySharedStateResult.getValue() != null) {
+//			setIdentity(identitySharedStateResult.getValue());
+//		}
+		setIdentity(null);
 	}
 
 	/**
@@ -227,12 +233,13 @@ final class CampaignState {
 	 * @param identityState {@link Map<String, Object>} representing {@code Identity} shared state
 	 */
 	private void setIdentity(final Map<String, Object> identityState) {
-		if (identityState == null || identityState.isEmpty()) {
-			Log.debug(LOG_TAG, SELF_TAG, "setIdentity - Cannot set Identity properties, provided identity data is null.");
-			return;
-		}
-
-		this.experienceCloudId = DataReader.optString(identityState, CampaignConstants.EventDataKeys.Identity.VISITOR_ID_MID, "");
+//		if (identityState == null || identityState.isEmpty()) {
+//			Log.debug(LOG_TAG, SELF_TAG, "setIdentity - Cannot set Identity properties, provided identity data is null.");
+//			return;
+//		}
+//
+//		this.experienceCloudId = DataReader.optString(identityState, CampaignConstants.EventDataKeys.Identity.VISITOR_ID_MID, "");
+		this.experienceCloudId = "mockEcid";
 		identityStateSet = true;
 	}
 

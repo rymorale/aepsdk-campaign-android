@@ -81,7 +81,7 @@ abstract class CampaignMessage {
 		final String consequenceType = (String) consequence.get(MESSAGE_CONSEQUENCE_TYPE);
 
 		if (!CampaignConstants.MESSAGE_CONSEQUENCE_MESSAGE_TYPE.equals(consequenceType)) {
-			Log.debug(CampaignConstants.LOG_TAG, "Invalid consequence. Required field \"type\" is (%s) should be of type (iam).",
+			Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "Invalid consequence. Required field \"type\" is (%s) should be of type (iam).",
 					consequenceType);
 			throw new CampaignMessageRequiredFieldMissingException("Required field: \"type\" is not equal to \"iam\".");
 		}
