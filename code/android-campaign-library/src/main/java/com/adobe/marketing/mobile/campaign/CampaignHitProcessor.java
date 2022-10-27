@@ -112,7 +112,7 @@ class CampaignHitProcessor implements HitProcessing {
                 campaignHit.timeout);
 
         final AtomicBoolean retryHit = new AtomicBoolean(false);
-        networkService.connectAsync(networkRequest, (NetworkCallback) connection -> {
+        networkService.connectAsync(networkRequest, connection -> {
             if (connection == null || (connection.getResponseCode() == CampaignConstants.INVALID_CONNECTION_RESPONSE_CODE)) {
                 Log.debug(LOG_TAG, SELF_TAG,
                         "network process - Could not process a Campaign network request because the connection was null or response code was invalid. Retrying the request.");
