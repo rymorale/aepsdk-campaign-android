@@ -279,7 +279,6 @@ public class CampaignExtension extends Extension {
         campaignState.setState(configSharedStateResult, identitySharedStateResult);
     }
 
-    // TODO: fix docs
     /**
      * Processes a Rule Engine response event containing a triggered message.
      * <p>
