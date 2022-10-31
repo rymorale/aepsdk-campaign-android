@@ -27,6 +27,7 @@ import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.ui.NotificationSetting;
 import com.adobe.marketing.mobile.services.ui.UIService;
+import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.StringUtils;
 
 import java.util.Map;
@@ -54,11 +55,11 @@ class LocalNotificationMessage extends CampaignMessage {
 	 * Constructor.
 	 *
 	 * @param extension   parent {@link CampaignExtension} instance
-	 * @param consequence {@code Map<String, Object>} instance containing a message defining payload
+	 * @param consequence {@code CampaignRuleConsequence} instance containing a message defining payload
 	 * @throws CampaignMessageRequiredFieldMissingException {@code consequence} is null or if any required field for the
 	 *                                                      {@link LocalNotificationMessage} is null or empty
 	 */
-	LocalNotificationMessage(final CampaignExtension extension, final Map<String, Object> consequence)
+	LocalNotificationMessage(final CampaignExtension extension, final CampaignRuleConsequence consequence)
 			throws CampaignMessageRequiredFieldMissingException {
 		super(extension, consequence);
 		parseLocalNotificationMessagePayload(consequence);
@@ -81,40 +82,39 @@ class LocalNotificationMessage extends CampaignMessage {
 	 *     <li>{@value CampaignConstants.EventDataKeys.RuleEngine#MESSAGE_CONSEQUENCE_DETAIL_KEY_TITLE} - {@code String} containing the title for this message.</li>
 	 * </ul>
 	 *
-	 * @param consequence {@code Map<String, Object>} instance containing the message payload to be parsed
+	 * @param consequence {@code CampaignRuleConsequence} instance containing the message payload to be parsed
 	 * @throws CampaignMessageRequiredFieldMissingException if any of the required fields are missing from {@code consequence}
 	 */
 	@SuppressWarnings("unchecked")
-	private void parseLocalNotificationMessagePayload(final Map<String, Object> consequence) throws
+	private void parseLocalNotificationMessagePayload(final CampaignRuleConsequence consequence) throws
 			CampaignMessageRequiredFieldMissingException {
 
 		if (consequence == null) {
 			throw new CampaignMessageRequiredFieldMissingException("Message consequence is null.");
 		}
 
-		final Map<String, Object> detailDictionary = (Map<String, Object>) consequence.get(MESSAGE_CONSEQUENCE_DETAIL_KEY_HTML);
+		final Map<String, Object> detailDictionary = consequence.getDetail();
 
 		if (detailDictionary == null || detailDictionary.isEmpty()) {
 			throw new CampaignMessageRequiredFieldMissingException("Message \"detail\" is missing.");
 		}
 
 		// content is required
-		content = (String) detailDictionary.get(MESSAGE_CONSEQUENCE_DETAIL_KEY_CONTENT);
+		content = DataReader.optString(detailDictionary, MESSAGE_CONSEQUENCE_DETAIL_KEY_CONTENT, "");
 
 		if (StringUtils.isNullOrEmpty(content)) {
 			throw new CampaignMessageRequiredFieldMissingException("Message \"content\" is empty.");
 		}
 
 		// prefer the date specified by fire date, otherwise use provided delay. both are optional
-		fireDate = (long) detailDictionary.get(MESSAGE_CONSEQUENCE_DETAIL_KEY_FIRE_DATE);
+		fireDate = DataReader.optLong(detailDictionary, MESSAGE_CONSEQUENCE_DETAIL_KEY_FIRE_DATE, -1L);
 
 		if (fireDate <= 0) {
-			localNotificationDelay = (int) (detailDictionary.get(DEFAULT_LOCAL_NOTIFICATION_DELAY_SECONDS) == null ?
-					detailDictionary.get(MESSAGE_CONSEQUENCE_DETAIL_KEY_WAIT) : detailDictionary.get(DEFAULT_LOCAL_NOTIFICATION_DELAY_SECONDS));
+			localNotificationDelay = DataReader.optInt(detailDictionary,MESSAGE_CONSEQUENCE_DETAIL_KEY_WAIT, DEFAULT_LOCAL_NOTIFICATION_DELAY_SECONDS);
 		}
 
 		// deeplink is optional
-		deeplink = (String) detailDictionary.get(MESSAGE_CONSEQUENCE_DETAIL_KEY_DEEPLINK_URL);
+		deeplink = DataReader.optString(detailDictionary, MESSAGE_CONSEQUENCE_DETAIL_KEY_DEEPLINK_URL, "");
 
 		if (StringUtils.isNullOrEmpty(deeplink)) {
 			Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
@@ -122,11 +122,7 @@ class LocalNotificationMessage extends CampaignMessage {
 		}
 
 		// userInfo is optional
-		final Object userdataObject = detailDictionary.get(MESSAGE_CONSEQUENCE_DETAIL_KEY_USER_DATA);
-
-		if (userdataObject instanceof Map) {
-			userdata = (Map<String, Object>) userdataObject;
-		}
+		userdata = DataReader.optTypedMap(Object.class, detailDictionary, MESSAGE_CONSEQUENCE_DETAIL_KEY_USER_DATA, null);
 
 		if (userdata == null || userdata.isEmpty()) {
 			Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
@@ -134,7 +130,7 @@ class LocalNotificationMessage extends CampaignMessage {
 		}
 
 		// sound is optional
-		sound = (String) detailDictionary.get(MESSAGE_CONSEQUENCE_DETAIL_KEY_SOUND);
+		sound = DataReader.optString(detailDictionary, MESSAGE_CONSEQUENCE_DETAIL_KEY_SOUND, "");
 
 		if (StringUtils.isNullOrEmpty(sound)) {
 			Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
@@ -142,7 +138,7 @@ class LocalNotificationMessage extends CampaignMessage {
 		}
 
 		// title is optional
-		title = (String) detailDictionary.get(MESSAGE_CONSEQUENCE_DETAIL_KEY_TITLE);
+		title =  DataReader.optString(detailDictionary, MESSAGE_CONSEQUENCE_DETAIL_KEY_TITLE, "");
 
 		if (StringUtils.isNullOrEmpty(title)) {
 			Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,

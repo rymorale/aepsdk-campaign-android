@@ -13,15 +13,13 @@ package com.adobe.marketing.mobile.campaign;
 
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.CAMPAIGN_INTERACTION_URL;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.CHARSET_UTF_8;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_TEMPLATE;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_ID;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_TYPE;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.LOG_TAG;
 
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.ui.UIService;
+import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.StringUtils;
 
 import java.io.UnsupportedEncodingException;
@@ -59,11 +57,11 @@ abstract class CampaignMessage {
 	 * </ul>
 	 *
 	 * @param extension {@link CampaignExtension} instance that is the parent of this {@code CampaignMessage}
-	 * @param consequence {@link Map<String, Object>} containing a {@code CampaignMessage}-defining payload
+	 * @param consequence {@link CampaignRuleConsequence} containing a {@code CampaignMessage}-defining payload
 	 * @throws CampaignMessageRequiredFieldMissingException if {@code consequence} is null or if it does not contain a valid
 	 * {@code id}, {@code type}, or {@code detail}
 	 */
-	protected CampaignMessage(final CampaignExtension extension, final Map<String, Object> consequence)
+	protected CampaignMessage(final CampaignExtension extension, final CampaignRuleConsequence consequence)
 			throws CampaignMessageRequiredFieldMissingException {
 		parentModule = extension;
 
@@ -71,14 +69,14 @@ abstract class CampaignMessage {
 			throw new CampaignMessageRequiredFieldMissingException("Consequence cannot be null!");
 		}
 
-		messageId = (String) consequence.get(MESSAGE_CONSEQUENCE_ID);
+		messageId = consequence.getId();
 
 		if (StringUtils.isNullOrEmpty(messageId)) {
 			Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "Invalid consequence. Required field \"id\" is null or empty.");
 			throw new CampaignMessageRequiredFieldMissingException("Required field: Message \"id\" is null or empty.");
 		}
 
-		final String consequenceType = (String) consequence.get(MESSAGE_CONSEQUENCE_TYPE);
+		final String consequenceType = consequence.getType();
 
 		if (!CampaignConstants.MESSAGE_CONSEQUENCE_MESSAGE_TYPE.equals(consequenceType)) {
 			Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "Invalid consequence. Required field \"type\" is (%s) should be of type (iam).",
@@ -86,7 +84,7 @@ abstract class CampaignMessage {
 			throw new CampaignMessageRequiredFieldMissingException("Required field: \"type\" is not equal to \"iam\".");
 		}
 
-		final Map<String, Object> details = (Map<String, Object>) consequence.get(MESSAGE_CONSEQUENCE_DETAIL);
+		final Map<String, Object> details = consequence.getDetail();
 
 		if (details == null || details.isEmpty()) {
 			Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
@@ -104,24 +102,23 @@ abstract class CampaignMessage {
 	 * At this stage in {@code CampaignMessage} initialization, the only required JSON field is {@value CampaignConstants.EventDataKeys.RuleEngine#MESSAGE_CONSEQUENCE_DETAIL_KEY_TEMPLATE}.
 	 * If this value is missing, null, or empty, a {@link CampaignMessageRequiredFieldMissingException} will be thrown.
 	 *
-	 * @param extension {@link CampaignExtension} instance that is the parent of this {@code CampaignMessage}
-	 * @param consequenceData {@link Map<String, Object>} instance containing a {@code CampaignMessage}-defining payload
+	 * @param consequence {@link CampaignRuleConsequence} instance containing a {@code CampaignMessage}-defining payload
 	 *
 	 * @return {@code CampaignMessage} that has been initialized using its proper constructor
 	 * @throws CampaignMessageRequiredFieldMissingException if {@code consequence} is null or if any required field for a
 	 * {@code CampaignMessage} is null or empty
 	 */
 	@SuppressWarnings("unchecked") // reflective access to the proper message constructor requires this access
-	static CampaignMessage createMessageObject(final CampaignExtension extension, final Map<String, Object> consequenceData)
+	static CampaignMessage createMessageObject(final CampaignRuleConsequence consequence)
 			throws CampaignMessageRequiredFieldMissingException {
 		// fast fail
-		if (consequenceData == null || consequenceData.isEmpty()) {
+		if (consequence == null) {
 			Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "createMessageObject -  No message consequence found. Unable to proceed.");
 			throw new CampaignMessageRequiredFieldMissingException("Message consequence is null.");
 		}
 
 		// detail is required
-		final Map<String, Object> detailObject = (Map<String, Object>) consequenceData.get(MESSAGE_CONSEQUENCE_DETAIL);
+		final Map<String, Object> detailObject = consequence.getDetail();
 
 		if (detailObject == null || detailObject.isEmpty()) {
 			Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "createMessageObject -  No detail dictionary found. Unable to proceed.");
@@ -129,7 +126,7 @@ abstract class CampaignMessage {
 		}
 
 		// template is required
-		final String template = (String) detailObject.get(MESSAGE_CONSEQUENCE_DETAIL_KEY_TEMPLATE);
+		final String template = DataReader.optString(detailObject, MESSAGE_CONSEQUENCE_DETAIL_KEY_TEMPLATE, "");
 
 		if (StringUtils.isNullOrEmpty(template)) {
 			Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "createMessageObject -  No message template found. Unable to proceed.");
@@ -148,7 +145,7 @@ abstract class CampaignMessage {
 
 		try {
 			msgObject = (CampaignMessage) messageClass.getDeclaredConstructor(CampaignExtension.class,
-					Map.class).newInstance(extension, consequenceData);
+					Map.class).newInstance(consequence);
 
 			if (msgObject.shouldDownloadAssets()) {
 				msgObject.downloadAssets();
@@ -177,15 +174,14 @@ abstract class CampaignMessage {
 	 * Creates an instance of the {@code CampaignMessage} subclass and invokes method on the class to handle asset downloading,
 	 * if it supports remote assets.
 	 *
-	 * @param extension parent {@link CampaignExtension} instance for this {@code CampaignMessage}
-	 * @param consequenceData {@link Map<String, Object>} instance containing a {@code CampaignMessage}-defining payload
+	 * @param consequence {@link CampaignRuleConsequence} instance containing a {@code CampaignMessage}-defining payload
 	 *
 	 * @see #shouldDownloadAssets()
 	 * @see #downloadAssets()
 	 */
-	static void downloadRemoteAssets(final CampaignExtension extension, final Map<String, Object> consequenceData) {
+	static void downloadRemoteAssets(final CampaignRuleConsequence consequence) {
 		try {
-			CampaignMessage.createMessageObject(extension, consequenceData); // Assets download call is there inside createMessageObject.
+			CampaignMessage.createMessageObject(consequence); // Assets download call is there inside createMessageObject.
 		} catch (final CampaignMessageRequiredFieldMissingException ex) {
 			Log.warning(CampaignConstants.LOG_TAG, SELF_TAG,"Error reading message definition: %s", ex);
 		}
