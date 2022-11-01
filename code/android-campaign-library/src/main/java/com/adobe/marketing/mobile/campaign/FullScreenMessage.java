@@ -57,13 +57,12 @@ import java.util.Map;
  */
 class FullScreenMessage extends CampaignMessage {
 	private final String SELF_TAG = "FullScreenMessage";
-	private final CacheService cacheService = ServiceProvider.getInstance().getCacheService();
+	private final CacheService cacheService;
 
 	private String html;
 	private String htmlContent;
 	private String assetsPath;
-
-	List<List<String>> foundAssets;
+	List<List<String>> assets;
 
 	class FullScreenMessageUiListener implements FullscreenMessageDelegate {
 		/**
@@ -193,6 +192,7 @@ class FullScreenMessage extends CampaignMessage {
 	 */
 	FullScreenMessage(final CampaignExtension extension, final CampaignRuleConsequence consequence) throws CampaignMessageRequiredFieldMissingException {
 		super(extension, consequence);
+		cacheService = ServiceProvider.getInstance().getCacheService();
 		parseFullScreenMessagePayload(consequence);
 	}
 
@@ -245,7 +245,7 @@ class FullScreenMessage extends CampaignMessage {
 		final List<Object> assetsList = DataReader.optTypedList(Object.class, detailDictionary, MESSAGE_CONSEQUENCE_DETAIL_KEY_REMOTE_ASSETS, null);
 		if (assetsList != null && !assetsList.isEmpty()) {
 			for (final Object asset : assetsList) {
-				foundAssets.addAll((Collection<? extends List<String>>) asset);
+				assets.addAll((Collection<? extends List<String>>) asset);
 			}
 		} else {
 			Log.trace(LOG_TAG, SELF_TAG,
@@ -320,6 +320,28 @@ class FullScreenMessage extends CampaignMessage {
 		return true;
 	}
 
+	/**
+	 * Attempts to prefetch and cache all {@code assets} for this {@code FullScreenMessage}.
+	 * <p>
+	 * If there are no {@link #assets} for this instance, method does nothing..
+	 */
+	@Override
+	protected void downloadAssets() {
+		if (assets == null || assets.isEmpty()) {
+			Log.trace(CampaignConstants.LOG_TAG, SELF_TAG, "downloadAssets -  No assets to download for message %s", messageId);
+			return;
+		}
+
+		for (final List<String> currentAssetArray : assets) {
+			if (currentAssetArray.isEmpty()) {
+				continue;
+			}
+
+			final CampaignMessageAssetsDownloader assetsDownloader = new CampaignMessageAssetsDownloader(currentAssetArray, messageId);
+			assetsDownloader.downloadAssetCollection();
+		}
+	}
+
 
 	/**
 	 * Returns a {@code Map<String,String>} containing remote resource URL as key and cached resource path as value for all remote resource that are cached.
@@ -337,7 +359,7 @@ class FullScreenMessage extends CampaignMessage {
 	 */
 	private Map<String, String> getCachedResourcesMapAndUpdateHtml() {
 		// early bail if we don't have assets or if cache service is unavailable
-		if (foundAssets == null || foundAssets.isEmpty()) {
+		if (assets == null || assets.isEmpty()) {
 			Log.debug(LOG_TAG, SELF_TAG, "generateExpandedHtml -  No cached assets found, cannot expand URLs in the HTML.");
 			return Collections.emptyMap();
 		}
@@ -351,7 +373,7 @@ class FullScreenMessage extends CampaignMessage {
 		final HashMap<String, String> cachedImagesMap = new HashMap<String, String>();
 		final Map<String, String> fallbackImagesMap = new HashMap<String, String>();
 
-		for (final List<String> currentAssetArray : foundAssets) {
+		for (final List<String> currentAssetArray : assets) {
 			if (currentAssetArray.isEmpty()) {
 				continue;
 			}

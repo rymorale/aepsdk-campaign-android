@@ -83,7 +83,6 @@ public class CampaignExtension extends Extension {
     private static final String INTERNAL_GENERIC_DATA_EVENT_NAME = "InternalGenericDataEvent";
     private final String SELF_TAG = "CampaignExtension";
     private final ExtensionApi extensionApi;
-    private final RulesLoader rulesLoader;
     private final LaunchRulesEngine campaignRulesEngine;
     private final CampaignRulesDownloader campaignRulesDownloader;
     private final CampaignState campaignState;
@@ -98,13 +97,12 @@ public class CampaignExtension extends Extension {
     public CampaignExtension(final ExtensionApi extensionApi) {
         super(extensionApi);
         this.extensionApi = extensionApi;
-        rulesLoader = new RulesLoader(CACHE_BASE_DIR);
 
         // initialize campaign rules engine
         campaignRulesEngine = new LaunchRulesEngine(extensionApi);
 
         // initialize campaign rules downloader
-        campaignRulesDownloader = new CampaignRulesDownloader(extensionApi, campaignRulesEngine, rulesLoader, getNamedCollection());
+        campaignRulesDownloader = new CampaignRulesDownloader(extensionApi, campaignRulesEngine, getNamedCollection());
 
         // setup persistent hit queue
         final DataQueuing dataQueuing = ServiceProvider.getInstance().getDataQueueService();

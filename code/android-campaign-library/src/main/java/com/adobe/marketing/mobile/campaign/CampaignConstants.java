@@ -84,6 +84,10 @@ public final class CampaignConstants {
 	static final String MESSAGE_TRIGGERED_ACTION_VALUE = "7";
 	static final String CHARSET_UTF_8 = "UTF-8";
 
+	static final String HTTP_HEADER_IF_MODIFIED_SINCE = "If-Modified-Since";
+	static final String HTTP_HEADER_IF_NONE_MATCH = "If-None-Match";
+	static final String HTTP_HEADER_IF_RANGE = "If-Range";
+
 	private CampaignConstants() {
 	}
 
