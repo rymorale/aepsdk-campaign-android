@@ -139,18 +139,18 @@ class CampaignRulesDownloader {
      *     <li>Register downloaded rules with the {@code CampaignRulesEngine}.</li>
      * </ul>
      *
-     * @param response {@link HttpConnecting} containing the downloaded Campaign rules
+     * @param connection {@link HttpConnecting} containing the downloaded Campaign rules
      * @see #updateUrlInNamedCollection(String)
      * @see LaunchRulesEngine#replaceRules(List)
      * @see #cacheRemoteAssets(List)
      */
-    private void onRulesDownloaded(final String url, final HttpConnecting response) {
+    private void onRulesDownloaded(final String url, final HttpConnecting connection) {
         // process the downloaded bundle
         RulesLoadResult rulesLoadResult;
-        switch (response.getResponseCode()) {
+        switch (connection.getResponseCode()) {
             case HttpURLConnection.HTTP_OK:
                 Log.trace(LOG_TAG, SELF_TAG, "Registering new Campaign rules downloaded from %s.", url);
-                rulesLoadResult = extractRules(url, response.getInputStream(), extractMetadataFromResponse(response));
+                rulesLoadResult = extractRules(url, connection.getInputStream(), extractMetadataFromResponse(connection));
                 // save remotes url in Campaign Named Collection
                 updateUrlInNamedCollection(url);
                 break;
@@ -160,9 +160,10 @@ class CampaignRulesDownloader {
                 break;
             case HttpURLConnection.HTTP_NOT_FOUND:
             default:
-                Log.trace(LOG_TAG, SELF_TAG, "Received download response: %s", response.getResponseCode());
+                Log.trace(LOG_TAG, SELF_TAG, "Received download response: %s", connection.getResponseCode());
                 return;
         }
+        connection.close();
 
         // register rules
         final List<LaunchRule> campaignRules = JSONRulesParser.parse(Objects.requireNonNull(rulesLoadResult.getData()), extensionApi);

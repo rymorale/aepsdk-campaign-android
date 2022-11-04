@@ -88,12 +88,13 @@ class CampaignMessageAssetsDownloader {
         // download assets within the assets to retain list
         for (final String url : assetsToRetain) {
             final NetworkRequest networkRequest = new NetworkRequest(url, HttpMethod.GET, null, null, CAMPAIGN_TIMEOUT_DEFAULT, CAMPAIGN_TIMEOUT_DEFAULT);
-            networkService.connectAsync(networkRequest, httpConnecting -> {
-                if (httpConnecting.getResponseCode() != HttpURLConnection.HTTP_OK) {
+            networkService.connectAsync(networkRequest, connection -> {
+                if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
                     Log.debug(LOG_TAG, SELF_TAG, "downloadAssetCollection - Failed to download asset from URL: %s", url);
                     return;
                 }
-                cacheAssetData(httpConnecting.getInputStream(), url, messageId);
+                connection.close();
+                cacheAssetData(connection.getInputStream(), url, messageId);
             });
         }
     }
