@@ -14,6 +14,8 @@ package com.adobe.marketing.mobile.campaign;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.CACHE_BASE_DIR;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.CAMPAIGN_TIMEOUT_DEFAULT;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_REMOTE_ASSETS;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_TEMPLATE;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.HTTP_HEADER_ETAG;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.HTTP_HEADER_IF_MODIFIED_SINCE;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.HTTP_HEADER_IF_NONE_MATCH;
@@ -22,7 +24,7 @@ import static com.adobe.marketing.mobile.campaign.CampaignConstants.LOG_TAG;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.MESSAGE_CACHE_DIR;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.MESSAGE_CONSEQUENCE_MESSAGE_TYPE;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.RULES_JSON_FILE_NAME;
-import static com.adobe.marketing.mobile.campaign.FileUtils.deleteFile;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.ZIP_HANDLE;
 
 import com.adobe.marketing.mobile.ExtensionApi;
 import com.adobe.marketing.mobile.internal.util.StringEncoder;
@@ -30,7 +32,6 @@ import com.adobe.marketing.mobile.launch.rulesengine.LaunchRule;
 import com.adobe.marketing.mobile.launch.rulesengine.LaunchRulesEngine;
 import com.adobe.marketing.mobile.launch.rulesengine.RuleConsequence;
 import com.adobe.marketing.mobile.launch.rulesengine.download.RulesLoadResult;
-import com.adobe.marketing.mobile.launch.rulesengine.download.RulesLoader;
 import com.adobe.marketing.mobile.launch.rulesengine.json.JSONRulesParser;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.HttpMethod;
@@ -43,6 +44,7 @@ import com.adobe.marketing.mobile.services.caching.CacheEntry;
 import com.adobe.marketing.mobile.services.caching.CacheExpiry;
 import com.adobe.marketing.mobile.services.caching.CacheResult;
 import com.adobe.marketing.mobile.services.caching.CacheService;
+import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.StreamUtils;
 import com.adobe.marketing.mobile.util.StringUtils;
 import com.adobe.marketing.mobile.util.TimeUtils;
@@ -69,53 +71,14 @@ class CampaignRulesDownloader {
     private final CacheService cacheService;
     private final Networking networkService;
     private static final String TEMP_RULES_DIR = "campaign_temp";
-    private final String cacheName;
+    private CampaignMessageAssetsDownloader campaignMessageAssetsDownloader;
 
-    CampaignRulesDownloader(final ExtensionApi extensionApi, final LaunchRulesEngine campaignRulesEngine, final NamedCollection campaignNamedCollection, final String cacheName) {
+    CampaignRulesDownloader(final ExtensionApi extensionApi, final LaunchRulesEngine campaignRulesEngine, final NamedCollection campaignNamedCollection, final CacheService cacheService) {
         this.extensionApi = extensionApi;
         this.campaignRulesEngine = campaignRulesEngine;
         this.campaignNamedCollection = campaignNamedCollection;
-        this.cacheService = ServiceProvider.getInstance().getCacheService();
+        this.cacheService = cacheService;
         this.networkService = ServiceProvider.getInstance().getNetworkService();
-        this.cacheName = cacheName;
-    }
-
-    /**
-     * Loads cached rules from the previous rules download and registers those rules with the Campaign extension's {@link LaunchRulesEngine} instance.
-     * <p>
-     * This method reads the persisted {@value CampaignConstants#CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY} from the Campaign
-     * named collection, gets cache path for the corresponding rules and loads then registers the rules with the {@link RulesLoader}.
-     * <p>
-     * If the Campaign {@link NamedCollection} is null or if rules directory does not exist in cache as determined from
-     * {@link RulesLoader#getCacheName()}, then no rules are registered.
-     */
-    void loadRulesFromCache() {
-        if (cacheService == null) {
-            Log.error(LOG_TAG, SELF_TAG,
-                    "Cannot load cached rules, Campaign cache service is not available.");
-            return;
-        }
-
-        if (campaignNamedCollection == null) {
-            Log.error(LOG_TAG, SELF_TAG,
-                    "Cannot load cached rules, Campaign Data store is not available.");
-            return;
-        }
-
-        final String campaignRulesUrl = campaignNamedCollection.getString(CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY, "");
-
-        if (StringUtils.isNullOrEmpty(campaignRulesUrl)) {
-            Log.debug(LOG_TAG, SELF_TAG,
-                    "loadCachedMessages -  Cannot load cached rules, Campaign Data store does not have the campaign rules remote url.");
-            return;
-        }
-
-        final CacheResult result = cacheService.get(CACHE_BASE_DIR, campaignRulesUrl);
-        if (result.getData() != null) {
-            final List<LaunchRule> cachedRules = JSONRulesParser.parse(StreamUtils.readAsString(result.getData()), extensionApi);
-            Log.trace(LOG_TAG, SELF_TAG, "loadCachedMessages -  Loading %s cached rule(s)", cachedRules.size());
-            campaignRulesEngine.replaceRules(cachedRules);
-        }
     }
 
     /**
@@ -132,19 +95,22 @@ class CampaignRulesDownloader {
     void loadRulesFromUrl(final String url, final String linkageFields) {
         if (networkService == null) {
             Log.debug(LOG_TAG, SELF_TAG,
-                    "Cannot download rules, the network service is unavailable.");
+                    "loadRulesFromUrl - Cannot download rules, the network service is unavailable.");
             return;
         }
 
         if (StringUtils.isNullOrEmpty(url)) {
             Log.warning(LOG_TAG, SELF_TAG,
-                    "Cannot download rules, provided url is null or empty. Cached rules will be used if present.");
+                    "loadRulesFromUrl - Cannot download rules, provided url is null or empty. Cached rules will be used if present.");
             return;
         }
 
         // 304 - Not Modified support
-        final CacheResult cachedRules = cacheService.get(CACHE_BASE_DIR, url);
-        final Map<String, String> requestProperties = extractHeadersFromCache(cachedRules);
+        Map<String, String> requestProperties = new HashMap<>();
+        final CacheResult cachedRules = cacheService.get(CACHE_BASE_DIR, ZIP_HANDLE);
+        if (cachedRules != null) {
+            requestProperties = extractHeadersFromCache(cachedRules);
+        }
 
         if (!StringUtils.isNullOrEmpty(linkageFields)) {
             requestProperties.put(CampaignConstants.LINKAGE_FIELD_NETWORK_HEADER, linkageFields);
@@ -179,25 +145,26 @@ class CampaignRulesDownloader {
      * @see #cacheRemoteAssets(List)
      */
     private void onRulesDownloaded(final String url, final HttpConnecting response) {
-        // save remotes url in Campaign Named Collection
-        updateUrlInNamedCollection(url);
-
         // process the downloaded bundle
         RulesLoadResult rulesLoadResult;
         switch (response.getResponseCode()) {
             case HttpURLConnection.HTTP_OK:
+                Log.trace(LOG_TAG, SELF_TAG, "Registering new Campaign rules downloaded from %s.", url);
                 rulesLoadResult = extractRules(url, response.getInputStream(), extractMetadataFromResponse(response));
-
+                // save remotes url in Campaign Named Collection
+                updateUrlInNamedCollection(url);
+                break;
             case HttpURLConnection.HTTP_NOT_MODIFIED:
-                rulesLoadResult = new RulesLoadResult(null, RulesLoadResult.Reason.NOT_MODIFIED);
-
+                Log.trace(LOG_TAG, SELF_TAG, "Campaign rules are not modified, retrieving rules from cache.");
+                rulesLoadResult = new RulesLoadResult(StreamUtils.readAsString(cacheService.get(CACHE_BASE_DIR, RULES_JSON_FILE_NAME).getData()), RulesLoadResult.Reason.NOT_MODIFIED);
+                break;
             case HttpURLConnection.HTTP_NOT_FOUND:
             default:
                 Log.trace(LOG_TAG, SELF_TAG, "Received download response: %s", response.getResponseCode());
-                rulesLoadResult = new RulesLoadResult(null, RulesLoadResult.Reason.NO_DATA);
+                return;
         }
 
-        // register all new rules
+        // register rules
         final List<LaunchRule> campaignRules = JSONRulesParser.parse(Objects.requireNonNull(rulesLoadResult.getData()), extensionApi);
         if (campaignRules != null) {
             Log.trace(LOG_TAG, SELF_TAG, "Registering %s Campaign rule(s).", campaignRules.size());
@@ -217,8 +184,7 @@ class CampaignRulesDownloader {
      * This method also cleans up any cached files it has on disk for messages which are no longer loaded.
      *
      * @param campaignRules {@code List<LaunchRule>} of rules retrieved from the Campaign instance
-     * @see CampaignMessage#downloadRemoteAssets(CampaignRuleConsequence)
-     * @see #clearCachedAssetsForMessagesNotInList(List)
+     * @see Utils#clearCachedAssetsNotInList(File, List)
      */
     void cacheRemoteAssets(final List<LaunchRule> campaignRules) {
         if (campaignRules == null || campaignRules.isEmpty()) {
@@ -233,43 +199,33 @@ class CampaignRulesDownloader {
             for (final RuleConsequence consequence : rule.getConsequenceList()) {
                 final String consequenceType = consequence.getType();
 
+                final Map<String, Object> details = consequence.getDetail();
+                final String templateType = DataReader.optString(details, MESSAGE_CONSEQUENCE_DETAIL_KEY_TEMPLATE, "");
                 if (StringUtils.isNullOrEmpty(consequenceType)
-                        || !consequenceType.equals(MESSAGE_CONSEQUENCE_MESSAGE_TYPE)) {
+                        || !consequenceType.equals(MESSAGE_CONSEQUENCE_MESSAGE_TYPE)
+                        || !templateType.equals("fullscreen")) {
                     continue;
                 }
 
                 final String consequenceId = consequence.getId();
-
                 if (!StringUtils.isNullOrEmpty(consequenceId)) {
-                    final CampaignRuleConsequence campaignRuleConsequence = new CampaignRuleConsequence(consequenceId, consequenceType, consequenceId, consequence.getDetail());
-                    CampaignMessage.downloadRemoteAssets(campaignRuleConsequence);
                     loadedMessageIds.add(consequenceId);
+                    final List<String> assetUrls = createAssetUrlList(details);
+                    if (assetUrls == null || assetUrls.isEmpty()) {
+                        Log.debug(LOG_TAG, SELF_TAG, "cacheRemoteAssets - Can't download assets, no remote assets found in consequence for message id %s", consequence.getId());
+                        break;
+                    }
+                    campaignMessageAssetsDownloader = new CampaignMessageAssetsDownloader(assetUrls, consequenceId);
+                    campaignMessageAssetsDownloader.downloadAssetCollection();
                 } else {
-                    Log.debug(LOG_TAG, SELF_TAG, "loadConsequences -  Can't download assets, Consequence id is null");
+                    Log.debug(LOG_TAG, SELF_TAG, "cacheRemoteAssets - Can't download assets, Consequence id is null");
                 }
             }
         }
 
-        clearCachedAssetsForMessagesNotInList(loadedMessageIds);
-    }
-
-    /**
-     * Deletes cached message assets for message Ids not listed in {@code activeMessageIds}.
-     * <p>
-     * If {@code CacheService} is not available, no cached assets are cleared.
-     *
-     * @param activeMessageIds {@code List<String>} containing the Ids of active messages
-     */
-    void clearCachedAssetsForMessagesNotInList(final List<String> activeMessageIds) {
-        final CacheService cacheService = ServiceProvider.getInstance().getCacheService();
-        if (cacheService == null) {
-            Log.error(LOG_TAG, SELF_TAG, "Cannot clear cached assets, cache service is not available.");
-            return;
-        }
-
-        for (final String messageId : activeMessageIds) {
-            cacheService.remove(MESSAGE_CACHE_DIR, messageId);
-        }
+        final File messageCacheDir = new File(ServiceProvider.getInstance().getDeviceInfoService().getApplicationCacheDir() + File.separator + CACHE_BASE_DIR + File.separator
+                + MESSAGE_CACHE_DIR);
+        Utils.clearCachedAssetsNotInList(messageCacheDir, loadedMessageIds);
     }
 
     /**
@@ -312,7 +268,7 @@ class CampaignRulesDownloader {
         // Cache the extracted contents
         final boolean cached = cacheExtractedFiles(tempDirectory, metadata);
         if (!cached) {
-            Log.debug(LOG_TAG, cacheName, "Could not cache rules from source %s", key);
+            Log.debug(LOG_TAG, CACHE_BASE_DIR, "Could not cache rules from source %s", key);
         }
 
         // Delete the temporary directory created for processing
@@ -323,21 +279,33 @@ class CampaignRulesDownloader {
         return new RulesLoadResult(rulesJsonString, RulesLoadResult.Reason.SUCCESS);
     }
 
+    private List<String> createAssetUrlList(final Map<String, Object> detailMap) {
+        final List<List<String>> assets = (List<List<String>>) detailMap.get(MESSAGE_CONSEQUENCE_DETAIL_KEY_REMOTE_ASSETS);
+        if (assets == null || assets.isEmpty()) {
+            return null;
+        }
+        final List<String> assetsToDownload = new ArrayList<>();
+        for(final List<String> asset : assets) {
+            assetsToDownload.addAll(asset);
+        }
+        return assetsToDownload;
+    }
+
     private File getTemporaryDirectory(final String tag) {
         final String hash = StringEncoder.sha2hash(tag);
-        return new File(ServiceProvider.getInstance().getDeviceInfoService().getApplicationCacheDir().getPath()
+        final String tempDir = ServiceProvider.getInstance().getDeviceInfoService().getApplicationCacheDir().getPath()
                 + File.separator + TEMP_RULES_DIR
-                + File.separator + hash);
+                + File.separator + hash;
+        return new File(tempDir);
     }
 
     private File getZipFileHandle(final String tag) {
-        return new File(getTemporaryDirectory(tag).getPath() + File.separator + TEMP_RULES_DIR);
+        return new File(getTemporaryDirectory(tag).getPath() + File.separator + ZIP_HANDLE);
     }
 
     private void deleteTemporaryDirectory(final String tag) {
         if (StringUtils.isNullOrEmpty(tag)) return;
-
-        deleteFile(getTemporaryDirectory(tag), true);
+        FileUtils.deleteFile(getTemporaryDirectory(tag), true);
     }
 
     private boolean cacheExtractedFiles(final File tempDirectory, final Map<String, String> metadata) {
@@ -346,8 +314,9 @@ class CampaignRulesDownloader {
                 cacheExtractedFiles(fileEntry, metadata);
             } else {
                 try {
-                    Log.trace(LOG_TAG, SELF_TAG, "Caching file (%s)", fileEntry.getName());
-                    cacheService.set(CACHE_BASE_DIR, fileEntry.getName(), new CacheEntry(new FileInputStream(fileEntry), CacheExpiry.never(), metadata));
+                    final String fileName = fileEntry.getName();
+                    Log.trace(LOG_TAG, SELF_TAG, "Caching file (%s)", fileName);
+                    cacheService.set(CACHE_BASE_DIR, fileName, new CacheEntry(new FileInputStream(fileEntry), CacheExpiry.never(), metadata));
                 } catch (final FileNotFoundException exception) {
                     return false;
                 }

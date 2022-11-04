@@ -11,7 +11,6 @@
 
 package com.adobe.marketing.mobile.campaign;
 
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.CACHE_BASE_DIR;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.CAMPAIGN_NAMED_COLLECTION_NAME;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.ContextDataKeys.MESSAGE_CLICKED;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.ContextDataKeys.MESSAGE_ID;
@@ -20,7 +19,8 @@ import static com.adobe.marketing.mobile.campaign.CampaignConstants.EXTENSION_NA
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.Campaign.TRACK_INFO_KEY_ACTION;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.Campaign.TRACK_INFO_KEY_BROADLOG_ID;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.Campaign.TRACK_INFO_KEY_DELIVERY_ID;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.CONSEQUENCE_TRIGGERED;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.Lifecycle.LAUNCH_EVENT;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.Lifecycle.LIFECYCLE_CONTEXT_DATA;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.FRIENDLY_NAME;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.LOG_TAG;
 
@@ -38,7 +38,6 @@ import com.adobe.marketing.mobile.SharedStateStatus;
 import com.adobe.marketing.mobile.launch.rulesengine.LaunchRule;
 import com.adobe.marketing.mobile.launch.rulesengine.LaunchRulesEngine;
 import com.adobe.marketing.mobile.launch.rulesengine.RuleConsequence;
-import com.adobe.marketing.mobile.launch.rulesengine.download.RulesLoader;
 import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.DataQueue;
 import com.adobe.marketing.mobile.services.DataQueuing;
@@ -46,6 +45,7 @@ import com.adobe.marketing.mobile.services.DataStoring;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.services.Networking;
+import com.adobe.marketing.mobile.services.PersistentHitQueue;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.caching.CacheService;
 import com.adobe.marketing.mobile.util.DataReader;
@@ -67,8 +67,8 @@ import java.util.concurrent.TimeUnit;
  * <ul>
  *     <li>{@link EventType#CAMPAIGN} - {@link EventSource#REQUEST_CONTENT}</li>
  *     <li>{@code EventType.CAMPAIGN} - {@link EventSource#REQUEST_IDENTITY}</li>
- *     <li>{@code EventType.CAMPAIGN} - {@link EventSource#REQUEST_RESET}</li>
  *     <li>{@link EventType#CONFIGURATION} - {@link EventSource#RESPONSE_CONTENT}</li>
+ *     <li>{@link EventType#GENERIC_DATA} - {@link EventSource#OS}</li>
  *     <li>{@link EventType#HUB} - {@link EventSource#SHARED_STATE}</li>
  *     <li>{@link EventType#LIFECYCLE} - {@link EventSource#RESPONSE_CONTENT}</li>
  * </ul>
@@ -83,11 +83,13 @@ public class CampaignExtension extends Extension {
     private static final String INTERNAL_GENERIC_DATA_EVENT_NAME = "InternalGenericDataEvent";
     private final String SELF_TAG = "CampaignExtension";
     private final ExtensionApi extensionApi;
+    //private final PersistentHitQueue campaignPersistentHitQueue;
     private final LaunchRulesEngine campaignRulesEngine;
+    private final CacheService cacheService;
     private final CampaignRulesDownloader campaignRulesDownloader;
     private final CampaignState campaignState;
     private String linkageFields;
-    private boolean shouldLoadCache = true;
+    private boolean initialCampaignRuleFetchCompleted = false;
 
     /**
      * Constructor.
@@ -102,11 +104,13 @@ public class CampaignExtension extends Extension {
         campaignRulesEngine = new LaunchRulesEngine(extensionApi);
 
         // initialize campaign rules downloader
-        campaignRulesDownloader = new CampaignRulesDownloader(extensionApi, campaignRulesEngine, getNamedCollection());
+        cacheService = ServiceProvider.getInstance().getCacheService();
+        campaignRulesDownloader = new CampaignRulesDownloader(extensionApi, campaignRulesEngine, getNamedCollection(), cacheService);
 
         // setup persistent hit queue
         final DataQueuing dataQueuing = ServiceProvider.getInstance().getDataQueueService();
         final DataQueue campaignDataQueue = dataQueuing.getDataQueue(FRIENDLY_NAME);
+        //campaignPersistentHitQueue = new PersistentHitQueue(campaignDataQueue, new CampaignHitProcessor());
 
         // initialize the campaign state
         campaignState = new CampaignState();
@@ -156,20 +160,11 @@ public class CampaignExtension extends Extension {
                 EventSource.WILDCARD,
                 this::handleWildcardEvents
         );
-        getApi().registerEventListener(
-                EventType.RULES_ENGINE,
-                EventSource.RESPONSE_CONTENT,
-                this::processRuleEngineResponse
-        );
     }
 
     @Override
     public boolean readyForEvent(final Event event) {
-        final Map<String, Object> eventData = event.getEventData();
-        if (eventData == null || eventData.isEmpty()) {
-            return false;
-        }
-        final String stateName = DataReader.optString(eventData, CampaignConstants.EventDataKeys.STATE_OWNER, "");
+        final String stateName = DataReader.optString(event.getEventData(), CampaignConstants.EventDataKeys.STATE_OWNER, "");
 
         if (CampaignConstants.EventDataKeys.Configuration.EXTENSION_NAME.equals(stateName) ||
                 CampaignConstants.EventDataKeys.Identity.EXTENSION_NAME.equals(stateName)) {
@@ -185,34 +180,41 @@ public class CampaignExtension extends Extension {
     // ========================================================================
     // package-private methods
     // ========================================================================
-
+    /**
+     * Processes all events dispatched to the {@code EventHub} to determine if any rules are matched.
+     * <p>
+     * If a rule is triggered then an appropriate {@link CampaignMessage} object is instantiated and the message is shown.
+     *
+     * @param event incoming {@link Event} object to be processed
+     */
     private void handleWildcardEvents(final Event event) {
-        if (event == null) {
-            Log.debug(LOG_TAG, SELF_TAG, "handleWildcardEvents - Unable to process event, event received is null.");
-            return;
-        }
-
-        final Map<String, Object> eventData = event.getEventData();
-        if (eventData == null || eventData.isEmpty()) {
-            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "handleWildcardEvents - Ignoring event with null or empty EventData.");
-            return;
-        }
-
         List<LaunchRule> triggeredRules = campaignRulesEngine.process(event);
         final List<RuleConsequence> consequences = new ArrayList<>();
 
         for (final LaunchRule rule : triggeredRules) {
-                consequences.addAll(rule.getConsequenceList());
+            consequences.addAll(rule.getConsequenceList());
         }
-        final Map<String, Object> triggeredConsequence = new HashMap<String, Object>() {
-            {
-                put(CONSEQUENCE_TRIGGERED, consequences);
+
+        if (consequences.isEmpty()) {
+            return;
+        }
+
+        try {
+            final CampaignMessage triggeredMessage = CampaignMessage.createMessageObject(this, consequences.get(0));
+
+            if (triggeredMessage != null && ServiceProvider.getInstance().getUIService() != null) {
+                triggeredMessage.showMessage();
             }
-        };
-        extensionApi.dispatch(new Event.Builder("triggered consequence", EventType.RULES_ENGINE, EventSource.RESPONSE_CONTENT).setEventData(triggeredConsequence).build());
+        } catch (final CampaignMessageRequiredFieldMissingException ex) {
+            Log.error(LOG_TAG, SELF_TAG, "processRuleEngineResponse -  Error reading message definition: \n %s", ex);
+        }
     }
 
-
+    /**
+     * Stores {@code Identity} and {@code Configuration} information.
+     *
+     * @param event incoming {@link Event} object to be processed
+     */
     private void setCampaignState(final Event event) {
         final SharedStateResult configSharedStateResult = getApi().getSharedState(CampaignConstants.EventDataKeys.Configuration.EXTENSION_NAME,
                 event, false, SharedStateResolution.LAST_SET);
@@ -223,56 +225,8 @@ public class CampaignExtension extends Extension {
     }
 
     /**
-     * Processes a Rule Engine response event containing a triggered message.
-     * <p>
-     * If {@value CampaignConstants.EventDataKeys.RuleEngine#CONSEQUENCE_TRIGGERED} key is present in {@code EventData},
-     * it creates a {@code CampaignMessage} object from the corresponding {@code consequence} to show the message.
-     *
-     * @param event incoming {@link Event} object to be processed
-     */
-    void processRuleEngineResponse(final Event event) {
-        if (event == null) {
-            Log.debug(LOG_TAG, SELF_TAG, "processRuleEngineResponse - Unable to process event, event received is null.");
-            return;
-        }
-        final Map<String, Object> eventData = event.getEventData();
-
-        if (eventData == null || eventData.isEmpty()) {
-            Log.debug(LOG_TAG, SELF_TAG,
-                    "processRuleEngineResponse -  Cannot process Campaign request event, eventData is null.");
-            return;
-        }
-        Log.trace(LOG_TAG, SELF_TAG, "processRuleEngineResponse -  processing event %s type: %s source: %s", event.getName(),
-                event.getType(), event.getSource());
-
-        // handle triggered consequence
-        RuleConsequence consequence = (RuleConsequence) eventData.get(CONSEQUENCE_TRIGGERED);
-
-        if (consequence == null) {
-            Log.debug(LOG_TAG, SELF_TAG,
-                    "processRuleEngineResponse -  Cannot process consequence, data is null.");
-            return;
-        }
-
-        try {
-            final CampaignMessage triggeredMessage = CampaignMessage.createMessageObject(consequence);
-
-            if (triggeredMessage != null && ServiceProvider.getInstance().getUIService() != null) {
-                triggeredMessage.showMessage();
-            }
-        } catch (final CampaignMessageRequiredFieldMissingException ex) {
-            Log.error(LOG_TAG, SELF_TAG, "processRuleEngineResponse -  Error reading message definition: \n %s", ex);
-        }
-
-    }
-
-    /**
      * Processes {@code Configuration} response to handle any update to {@code MobilePrivacyStatus}, handle any update
-     * to the number of days to delay or pause the sending of the Campaign registration request, and to queue then process
-     * events for Campaign rules download.
-     * <p>
-     * Initially on App launch when {@link #shouldLoadCache} is true, {@link CampaignRulesDownloader#loadCachedMessages()} is invoked to
-     * register previously downloaded and cached Campaign rules before re-attempting rules download.
+     * to the number of days to delay or pause the sending of the Campaign registration request, and to trigger Campaign rules download.
      * <p>
      * If {@link MobilePrivacyStatus} is changed to {@link MobilePrivacyStatus#OPT_OUT},
      * invokes #processPrivacyOptOut() to handle privacy change. No event is queued for rules download in this case.
@@ -292,20 +246,17 @@ public class CampaignExtension extends Extension {
             return;
         }
 
-        if (campaignRulesDownloader.shouldLoadCache()) {
-            Log.debug(LOG_TAG, SELF_TAG, "processConfigurationResponse -  Attempting to load cached rules.");
-            campaignRulesDownloader.loadCachedMessages();
-        }
-
         MobilePrivacyStatus privacyStatus = campaignState.getMobilePrivacyStatus();
         // notify campaign persistent hit queue of any privacy status changes
-        campaignPersistentHitQueue.handlePrivacyChange(privacyStatus);
+        //campaignPersistentHitQueue.handlePrivacyChange(privacyStatus);
         if (privacyStatus.equals(MobilePrivacyStatus.OPT_OUT)) {
             processPrivacyOptOut();
             return;
         }
 
-        triggerRulesDownload();
+        if (!initialCampaignRuleFetchCompleted) {
+            triggerRulesDownload();
+        }
     }
 
     /**
@@ -334,11 +285,11 @@ public class CampaignExtension extends Extension {
     }
 
     /**
-     * Processes {@code Generic Data} event to send message tracking request to the configured {@code Campaign} server.
+     * Processes {@code Generic Data} events to send message tracking request to the configured {@code Campaign} server.
      * <p>
      * If the current {@code Configuration} properties do not allow sending track request, no request is sent.
      *
-     * @param event         {@link Event} object to be processed
+     * @param event {@link Event} object to be processed
      * @see CampaignState#canSendTrackInfoWithCurrentState()
      */
     void processMessageInformation(final Event event) {
@@ -380,7 +331,6 @@ public class CampaignExtension extends Extension {
                 campaignState.getExperienceCloudId());
 
         processRequest(url, "", campaignState, event);
-
     }
 
     /**
@@ -437,6 +387,15 @@ public class CampaignExtension extends Extension {
             return;
         }
 
+        // trigger rules download on non initial lifecycle launch events
+        final Map<String, Object> lifecycleContextData = DataReader.optTypedMap(Object.class, eventData, LIFECYCLE_CONTEXT_DATA, null);
+        if (lifecycleContextData != null
+                && !lifecycleContextData.isEmpty()
+                && (DataReader.optString(lifecycleContextData, LAUNCH_EVENT, null)).equals(LAUNCH_EVENT)
+                && initialCampaignRuleFetchCompleted) {
+            triggerRulesDownload();
+        }
+
         if (!campaignState.canRegisterWithCurrentState()) {
             Log.debug(LOG_TAG, SELF_TAG,
                     "processLifecycleUpdate -  Campaign extension is not configured to send registration request.");
@@ -449,7 +408,6 @@ public class CampaignExtension extends Extension {
                 new HashMap<>());
 
         processRequest(url, payload, campaignState, event);
-
     }
 
     /**
@@ -458,7 +416,7 @@ public class CampaignExtension extends Extension {
      * If current {@code Configuration} properties do not allow downloading {@code Campaign} rules, no request is sent.
      *
      * @see CampaignState#canDownloadRulesWithCurrentState()
-     * @see CampaignRulesDownloader#downloadRules(String, String)
+     * @see CampaignRulesDownloader#loadRulesFromUrl(String, String)
      */
     void triggerRulesDownload() {
         if (!campaignState.canDownloadRulesWithCurrentState()) {
@@ -471,7 +429,8 @@ public class CampaignExtension extends Extension {
                 campaignState.getCampaignServer(), campaignState.getPropertyId(),
                 campaignState.getExperienceCloudId());
 
-        campaignRulesDownloader.downloadRules(rulesUrl, getLinkageFields());
+        campaignRulesDownloader.loadRulesFromUrl(rulesUrl, getLinkageFields());
+        initialCampaignRuleFetchCompleted = true;
     }
 
     /**
@@ -545,8 +504,6 @@ public class CampaignExtension extends Extension {
      * {@value CampaignConstants#RULES_CACHE_FOLDER} directory.
      */
     void clearRulesCacheDirectory() {
-        final CacheService cacheService = ServiceProvider.getInstance().getCacheService();
-
         if (cacheService != null) {
             cacheService.remove(CampaignConstants.RULES_CACHE_FOLDER, "");
         }
@@ -636,11 +593,11 @@ public class CampaignExtension extends Extension {
     private void updateEcidInNamedCollection(final String ecid) {
         final NamedCollection campaignNamedCollection = getNamedCollection();
 
-		if (campaignNamedCollection == null) {
-			Log.trace(LOG_TAG, SELF_TAG,
-					"updateEcidInNamedCollection - Campaign Named Collection is null, cannot store ecid.");
-			return;
-		}
+        if (campaignNamedCollection == null) {
+            Log.trace(LOG_TAG, SELF_TAG,
+                    "updateEcidInNamedCollection - Campaign Named Collection is null, cannot store ecid.");
+            return;
+        }
 
         if (StringUtils.isNullOrEmpty(ecid)) {
             Log.trace(LOG_TAG, SELF_TAG,
@@ -684,9 +641,9 @@ public class CampaignExtension extends Extension {
 
         // create a data entity and add it to the data queue
         final CampaignHit campaignHit = new CampaignHit(url, payload, campaignState.getCampaignTimeout());
-        DataEntity dataEntity = new DataEntity(campaignHit.toString());
+        final DataEntity dataEntity = new DataEntity(campaignHit.toString());
         Log.debug(LOG_TAG, SELF_TAG, "processRequest - Campaign Request Queued with url (%s) and body (%s)", url, payload);
-        campaignPersistentHitQueue.queue(dataEntity);
+        //campaignPersistentHitQueue.queue(dataEntity);
     }
 
     /**

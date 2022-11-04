@@ -18,6 +18,7 @@ import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKey
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_URL;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.LOG_TAG;
 
+import com.adobe.marketing.mobile.launch.rulesengine.RuleConsequence;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.ui.AlertListener;
@@ -119,7 +120,7 @@ class AlertMessage extends CampaignMessage {
 	 * @throws CampaignMessageRequiredFieldMissingException if {@code consequence} is null or if any required field for an
 	 * {@link AlertMessage} is null or empty
 	 */
-	AlertMessage(final CampaignExtension extension, final CampaignRuleConsequence consequence)
+	AlertMessage(final CampaignExtension extension, final RuleConsequence consequence)
 			throws CampaignMessageRequiredFieldMissingException {
 		super(extension, consequence);
 		parseAlertMessagePayload(consequence);
@@ -140,11 +141,11 @@ class AlertMessage extends CampaignMessage {
 	 *     <li>{@value CampaignConstants.EventDataKeys.RuleEngine#MESSAGE_CONSEQUENCE_DETAIL_KEY_URL} - {@code String} containing a URL destination to be shown on positive click-through</li>
 	 * </ul>
 	 *
-	 * @param consequence {@code CampaignRuleConsequence} instance containing the message payload to be parsed
+	 * @param consequence {@code RuleConsequence} instance containing the message payload to be parsed
 	 * @throws CampaignMessageRequiredFieldMissingException if any of the required fields are missing from {@code consequence}
 	 */
 	@SuppressWarnings("unchecked")
-	private void parseAlertMessagePayload(final CampaignRuleConsequence consequence) throws
+	private void parseAlertMessagePayload(final RuleConsequence consequence) throws
 			CampaignMessageRequiredFieldMissingException {
 		Log.trace(CampaignConstants.LOG_TAG,
 				"parseAlertMessagePayload - Parsing rule consequence to show alert message with messageid %s", messageId);

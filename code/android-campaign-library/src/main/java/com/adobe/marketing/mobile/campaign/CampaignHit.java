@@ -1,31 +1,44 @@
-/*
-  Copyright 2022 Adobe. All rights reserved.
-  This file is licensed to you under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy
-  of the License at http://www.apache.org/licenses/LICENSE-2.0
-  Unless required by applicable law or agreed to in writing, software distributed under
-  the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
-  OF ANY KIND, either express or implied. See the License for the specific language
-  governing permissions and limitations under the License.
-*/
-
 package com.adobe.marketing.mobile.campaign;
 
-/**
- * Extends {@code AbstractHit} and defines Campaign fields needed to make a request.
- */
-class CampaignHit extends AbstractHit {
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.CampaignHit.PAYLOAD;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.CampaignHit.TIMEOUT;
+import static com.adobe.marketing.mobile.campaign.CampaignConstants.CampaignHit.URL;
+
+import com.adobe.marketing.mobile.services.HttpMethod;
+import com.adobe.marketing.mobile.util.StringUtils;
+
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class CampaignHit {
+	private final String SELF_TAG = "CampaignHit";
+
 	String url;
-	String body;
+	String payload;
 	int timeout;
 
-	/**
-	 *  Determine the Http command based off the request body
-	 *
-	 * @return {@link NetworkService.HttpCommand#POST} if the body has content, otherwise {@code NetworkService.HttpCommand.GET}
-	 *
-	 */
-	NetworkService.HttpCommand getHttpCommand() {
-		return StringUtils.isNullOrEmpty(body) ? NetworkService.HttpCommand.GET : NetworkService.HttpCommand.POST;
+	CampaignHit(final String url, final String payload, final int timeout) {
+		this.url = url;
+		this.payload = payload;
+		this.timeout = timeout;
+	}
+
+	HttpMethod getHttpCommand() {
+		return !StringUtils.isNullOrEmpty(payload) ? HttpMethod.POST : HttpMethod.GET;
+	}
+
+	@Override
+	public String toString() {
+		final Map<String, Object> dataMap = new HashMap<String, Object>() {
+			{
+				put(URL, url);
+				put(PAYLOAD, payload);
+				put(TIMEOUT, timeout);
+			}
+		};
+		final JSONObject jsonData = new JSONObject(dataMap);
+		return jsonData.toString();
 	}
 }

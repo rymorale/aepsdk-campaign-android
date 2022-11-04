@@ -17,12 +17,12 @@ import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKey
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_CONTENT;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_DEEPLINK_URL;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_FIRE_DATE;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_HTML;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_SOUND;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_TITLE;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_USER_DATA;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_WAIT;
 
+import com.adobe.marketing.mobile.launch.rulesengine.RuleConsequence;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.ui.NotificationSetting;
@@ -55,11 +55,11 @@ class LocalNotificationMessage extends CampaignMessage {
 	 * Constructor.
 	 *
 	 * @param extension   parent {@link CampaignExtension} instance
-	 * @param consequence {@code CampaignRuleConsequence} instance containing a message defining payload
+	 * @param consequence {@link RuleConsequence} instance containing a message defining payload
 	 * @throws CampaignMessageRequiredFieldMissingException {@code consequence} is null or if any required field for the
 	 *                                                      {@link LocalNotificationMessage} is null or empty
 	 */
-	LocalNotificationMessage(final CampaignExtension extension, final CampaignRuleConsequence consequence)
+	LocalNotificationMessage(final CampaignExtension extension, final RuleConsequence consequence)
 			throws CampaignMessageRequiredFieldMissingException {
 		super(extension, consequence);
 		parseLocalNotificationMessagePayload(consequence);
@@ -82,11 +82,11 @@ class LocalNotificationMessage extends CampaignMessage {
 	 *     <li>{@value CampaignConstants.EventDataKeys.RuleEngine#MESSAGE_CONSEQUENCE_DETAIL_KEY_TITLE} - {@code String} containing the title for this message.</li>
 	 * </ul>
 	 *
-	 * @param consequence {@code CampaignRuleConsequence} instance containing the message payload to be parsed
+	 * @param consequence {@link RuleConsequence} instance containing the message payload to be parsed
 	 * @throws CampaignMessageRequiredFieldMissingException if any of the required fields are missing from {@code consequence}
 	 */
 	@SuppressWarnings("unchecked")
-	private void parseLocalNotificationMessagePayload(final CampaignRuleConsequence consequence) throws
+	private void parseLocalNotificationMessagePayload(final RuleConsequence consequence) throws
 			CampaignMessageRequiredFieldMissingException {
 
 		if (consequence == null) {

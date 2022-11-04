@@ -11,6 +11,9 @@
 
 package com.adobe.marketing.mobile.campaign;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 /**
  * Contains {@code static} constants used by the classes within the Campaign extension.
  * <p>
@@ -22,9 +25,6 @@ public final class CampaignConstants {
 	static final String EXTENSION_NAME = "com.adobe.module.campaign";
 	static final String FRIENDLY_NAME = "Campaign";
 
-	static final String CAMPAIGN_DATABASE_FILENAME = "ADBMobileCampaign.sqlite";
-	static final String CAMPAIGN_TABLE_NAME = "CAMPAIGN_HITS";
-
 	static final String CAMPAIGN_NAMED_COLLECTION_NAME = "CampaignCollection";
 	static final String CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY = "CampaignRemoteUrl";
 	static final String CAMPAIGN_NAMED_COLLECTION_EXPERIENCE_CLOUD_ID_KEY = "ExperienceCloudId";
@@ -32,7 +32,7 @@ public final class CampaignConstants {
 
 	static final String CACHE_BASE_DIR = "campaign";
 	static final String MESSAGE_CACHE_DIR = "messages";
-	static final String ASSETS_DIR = "assets";
+	static final String ZIP_HANDLE = "campaign_rules.zip";
 
 	static final String MESSAGE_SCHEME = "adbinapp";
 	static final String MESSAGE_SCHEME_PATH_CANCEL = "cancel";
@@ -83,10 +83,19 @@ public final class CampaignConstants {
 
 	static final String MESSAGE_TRIGGERED_ACTION_VALUE = "7";
 	static final String CHARSET_UTF_8 = "UTF-8";
-
+	static final String HTTP_HEADER_KEY_ACCEPT = "Accept";
+	static final String HTTP_HEADER_KEY_CONNECTION = "connection";
+	static final String HTTP_HEADER_KEY_CONTENT_TYPE = "Content-Type";
+	static final String HTTP_HEADER_CONTENT_TYPE_JSON_APPLICATION = "application/json";
+	static final ArrayList<Integer> recoverableNetworkErrorCodes = new ArrayList(Arrays.asList(408, 504, 503));
 	static final String HTTP_HEADER_IF_MODIFIED_SINCE = "If-Modified-Since";
+	static final String HTTP_HEADER_LAST_MODIFIED = "Last-Modified";
 	static final String HTTP_HEADER_IF_NONE_MATCH = "If-None-Match";
 	static final String HTTP_HEADER_IF_RANGE = "If-Range";
+	static final String HTTP_HEADER_ETAG = "Etag";
+
+	// cache service metadata
+	static final String METADATA_PATH = "pathToFile";
 
 	private CampaignConstants() {
 	}
@@ -102,6 +111,15 @@ public final class CampaignConstants {
 		static final String MESSAGE_ID = "a.message.id";
 
 		private ContextDataKeys() {
+		}
+	}
+
+	public static final class CampaignHit {
+		static final String URL = "url";
+		static final String PAYLOAD = "payload";
+		static final String TIMEOUT = "timeout";
+
+		private CampaignHit() {
 		}
 	}
 
