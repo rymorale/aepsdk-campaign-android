@@ -13,12 +13,7 @@ package com.adobe.marketing.mobile.campaign
 
 import com.adobe.marketing.mobile.campaign.CampaignConstants.LOG_TAG
 import com.adobe.marketing.mobile.services.Log
-import java.io.BufferedReader
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
-import java.io.InputStream
-import java.io.InputStreamReader
+import java.io.*
 import java.util.zip.ZipInputStream
 
 internal object FileUtils {

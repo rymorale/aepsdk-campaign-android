@@ -52,7 +52,7 @@ class CampaignMessageAssetsDownloader {
     /**
      * Constructor.
      *
-     * @param assets {@code ArrayList<String>} of assets to download and cache
+     * @param assets          {@code ArrayList<String>} of assets to download and cache
      * @param parentMessageId {@link String} containing the message Id of the requesting message used as a cache subdirectory
      */
     CampaignMessageAssetsDownloader(final List<String> assets, final String parentMessageId) {
@@ -102,7 +102,7 @@ class CampaignMessageAssetsDownloader {
      * Caches the provided {@link InputStream} containing the data downloaded from the given URL for the given message Id.
      *
      * @param assetData {@link InputStream} containing the download remote asset data.
-     * @param key {@code String} The asset download URL. Used to name the cache folder.
+     * @param key       {@code String} The asset download URL. Used to name the cache folder.
      * @param messageId {@code String} The id of the message
      */
     private void cacheAssetData(final InputStream assetData, final String key, final String messageId) {
@@ -115,7 +115,7 @@ class CampaignMessageAssetsDownloader {
         final String assetCacheLocation = CACHE_BASE_DIR + File.separator + MESSAGE_CACHE_DIR + File.separator + messageId;
 
         // check if asset already cached
-        if(cacheService.get(assetCacheLocation, key) != null) {
+        if (cacheService.get(assetCacheLocation, key) != null) {
             Log.debug(LOG_TAG, SELF_TAG, "cacheAssetData - Found cached asset for message id %s.", key, messageId);
             return;
         }
@@ -162,6 +162,7 @@ class CampaignMessageAssetsDownloader {
      * Creates assets cache directory for a {@code CampaignMessage}.
      * <p>
      * This method checks if the cache directory already exists in which case no new directory is created for assets.
+     *
      * @param messageId {@code String} The id of the message
      * @return {@code boolean} if true, the asset cache directory for the message id was created successfully
      */

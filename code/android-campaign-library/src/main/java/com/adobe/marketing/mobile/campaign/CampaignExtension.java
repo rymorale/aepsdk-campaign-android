@@ -45,7 +45,6 @@ import com.adobe.marketing.mobile.services.DataStoring;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.services.Networking;
-import com.adobe.marketing.mobile.services.PersistentHitQueue;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.caching.CacheService;
 import com.adobe.marketing.mobile.util.DataReader;
@@ -180,6 +179,7 @@ public class CampaignExtension extends Extension {
     // ========================================================================
     // package-private methods
     // ========================================================================
+
     /**
      * Processes all events dispatched to the {@code EventHub} to determine if any rules are matched.
      * <p>
@@ -371,9 +371,9 @@ public class CampaignExtension extends Extension {
      * Processes {@code Lifecycle} event to send registration request to the configured {@code Campaign} server.
      * <p>
      * If current {@code Configuration} properties do not allow sending registration request, no request is sent.
-     * @see CampaignState#canRegisterWithCurrentState()
      *
      * @param event The received Lifecycle response {@link Event}
+     * @see CampaignState#canRegisterWithCurrentState()
      */
     void processLifecycleUpdate(final Event event) {
         if (event == null) {
@@ -563,6 +563,7 @@ public class CampaignExtension extends Extension {
     // ========================================================================
     // private methods
     // ========================================================================
+
     /**
      * Returns {@code CampaignExtension}'s {@link NamedCollection}.
      * <p>

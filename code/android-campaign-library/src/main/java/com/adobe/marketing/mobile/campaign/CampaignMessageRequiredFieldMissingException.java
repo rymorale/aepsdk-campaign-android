@@ -16,12 +16,12 @@ package com.adobe.marketing.mobile.campaign;
  */
 class CampaignMessageRequiredFieldMissingException extends Exception {
 
-	/**
-	 * Constructor.
-	 *
-	 * @param message {@link String} containing the message for the new exception
-	 */
-	protected CampaignMessageRequiredFieldMissingException(final String message) {
-		super(message);
-	}
+    /**
+     * Constructor.
+     *
+     * @param message {@link String} containing the message for the new exception
+     */
+    protected CampaignMessageRequiredFieldMissingException(final String message) {
+        super(message);
+    }
 }

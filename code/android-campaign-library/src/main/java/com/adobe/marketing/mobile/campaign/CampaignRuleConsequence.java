@@ -19,16 +19,16 @@ import java.util.Map;
 class CampaignRuleConsequence {
     private final String id;
     private final String type;
-    private String assetsPath;
     private final Map<String, Object> detail;
+    private String assetsPath;
 
     /**
      * Constructor
      *
-     * @param id {@link String} containing unique consequence Id
-     * @param type {@code String} containing message consequence type
+     * @param id         {@link String} containing unique consequence Id
+     * @param type       {@code String} containing message consequence type
      * @param assetsPath optional {@code String} containing path for the cached html asset for fullscreen messages
-     * @param detail {@code Map<String, Object>} containing consequence detail
+     * @param detail     {@code Map<String, Object>} containing consequence detail
      */
     CampaignRuleConsequence(final String id, final String type, final String assetsPath,
                             final Map<String, Object> detail) {
@@ -36,15 +36,6 @@ class CampaignRuleConsequence {
         this.type = type;
         this.assetsPath = assetsPath;
         this.detail = detail;
-    }
-
-    /**
-     * Set this CampaignRuleConsequence {@code assetsPath} with the provided value.
-     *
-     * @param assetsPath {@link String} containing the assets path
-     */
-    void setAssetsPath(final String assetsPath) {
-        this.assetsPath = assetsPath;
     }
 
     /**
@@ -72,6 +63,15 @@ class CampaignRuleConsequence {
      */
     String getAssetsPath() {
         return assetsPath;
+    }
+
+    /**
+     * Set this CampaignRuleConsequence {@code assetsPath} with the provided value.
+     *
+     * @param assetsPath {@link String} containing the assets path
+     */
+    void setAssetsPath(final String assetsPath) {
+        this.assetsPath = assetsPath;
     }
 
     /**

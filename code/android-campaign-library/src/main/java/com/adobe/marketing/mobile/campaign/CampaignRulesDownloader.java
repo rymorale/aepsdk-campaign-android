@@ -65,12 +65,12 @@ import java.util.TimeZone;
 
 class CampaignRulesDownloader {
     private final static String SELF_TAG = "CampaignRulesDownloader";
+    private static final String TEMP_RULES_DIR = "campaign_temp";
     private final ExtensionApi extensionApi;
     private final LaunchRulesEngine campaignRulesEngine;
     private final NamedCollection campaignNamedCollection;
     private final CacheService cacheService;
     private final Networking networkService;
-    private static final String TEMP_RULES_DIR = "campaign_temp";
     private CampaignMessageAssetsDownloader campaignMessageAssetsDownloader;
 
     CampaignRulesDownloader(final ExtensionApi extensionApi, final LaunchRulesEngine campaignRulesEngine, final NamedCollection campaignNamedCollection, final CacheService cacheService) {
@@ -230,8 +230,8 @@ class CampaignRulesDownloader {
 
     /**
      * Responsible for reading and extracting {@code zipContentStream} and returning a {@code RulesDownloadResult}
-     *  with rules. if successful. If the extraction is unsuccessful, returns a {@code RulesDownloadResult} with the
-     *  error reason.
+     * with rules. if successful. If the extraction is unsuccessful, returns a {@code RulesDownloadResult} with the
+     * error reason.
      *
      * @param key              the key that will be used for e
      * @param zipContentStream the zip stream that will need to be processed
@@ -254,13 +254,13 @@ class CampaignRulesDownloader {
         }
 
         // Copy the content of zipContentStream into the previously created temporary folder
-        if(!FileUtils.readInputStreamIntoFile(getZipFileHandle(key), zipContentStream, false)) {
+        if (!FileUtils.readInputStreamIntoFile(getZipFileHandle(key), zipContentStream, false)) {
             Log.debug(LOG_TAG, SELF_TAG, "Couldn't extract zip contents to temp directory.");
             return new RulesLoadResult(null, RulesLoadResult.Reason.CANNOT_STORE_IN_TEMP_DIR);
         }
 
         // Extract the rules zip
-        if(!FileUtils.extractFromZip(getZipFileHandle(key), tempDirectory.getPath())){
+        if (!FileUtils.extractFromZip(getZipFileHandle(key), tempDirectory.getPath())) {
             Log.debug(LOG_TAG, SELF_TAG, "Failed to extract rules response zip into temp dir.");
             return new RulesLoadResult(null, RulesLoadResult.Reason.ZIP_EXTRACTION_FAILED);
         }
@@ -285,7 +285,7 @@ class CampaignRulesDownloader {
             return null;
         }
         final List<String> assetsToDownload = new ArrayList<>();
-        for(final List<String> asset : assets) {
+        for (final List<String> asset : assets) {
             assetsToDownload.addAll(asset);
         }
         return assetsToDownload;

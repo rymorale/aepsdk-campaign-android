@@ -13,32 +13,32 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class CampaignHit {
-	private final String SELF_TAG = "CampaignHit";
+    private final String SELF_TAG = "CampaignHit";
 
-	String url;
-	String payload;
-	int timeout;
+    String url;
+    String payload;
+    int timeout;
 
-	CampaignHit(final String url, final String payload, final int timeout) {
-		this.url = url;
-		this.payload = payload;
-		this.timeout = timeout;
-	}
+    CampaignHit(final String url, final String payload, final int timeout) {
+        this.url = url;
+        this.payload = payload;
+        this.timeout = timeout;
+    }
 
-	HttpMethod getHttpCommand() {
-		return !StringUtils.isNullOrEmpty(payload) ? HttpMethod.POST : HttpMethod.GET;
-	}
+    HttpMethod getHttpCommand() {
+        return !StringUtils.isNullOrEmpty(payload) ? HttpMethod.POST : HttpMethod.GET;
+    }
 
-	@Override
-	public String toString() {
-		final Map<String, Object> dataMap = new HashMap<String, Object>() {
-			{
-				put(URL, url);
-				put(PAYLOAD, payload);
-				put(TIMEOUT, timeout);
-			}
-		};
-		final JSONObject jsonData = new JSONObject(dataMap);
-		return jsonData.toString();
-	}
+    @Override
+    public String toString() {
+        final Map<String, Object> dataMap = new HashMap<String, Object>() {
+            {
+                put(URL, url);
+                put(PAYLOAD, payload);
+                put(TIMEOUT, timeout);
+            }
+        };
+        final JSONObject jsonData = new JSONObject(dataMap);
+        return jsonData.toString();
+    }
 }

@@ -14,6 +14,7 @@ package com.adobe.marketing.mobile.campaign;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.CampaignHit.PAYLOAD;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.CampaignHit.TIMEOUT;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.CampaignHit.URL;
+
 import com.adobe.marketing.mobile.services.DataEntity;
 
 import org.json.JSONException;
@@ -23,7 +24,8 @@ import java.io.File;
 import java.util.List;
 
 class Utils {
-    private Utils() {}
+    private Utils() {
+    }
 
     static CampaignHit campaignHitFromDataEntity(final DataEntity dataEntity) throws JSONException {
         final JSONObject jsonData = new JSONObject(dataEntity.getData());
@@ -33,7 +35,7 @@ class Utils {
     /**
      * Recursively checks and deletes files within the cached assets directory which aren't within the {@code assetsToRetain} list.
      *
-     * @param cacheAsset {@link File} containing the cached assets directory
+     * @param cacheAsset     {@link File} containing the cached assets directory
      * @param assetsToRetain {@code List<String>} containing assets which should be retained
      */
     static void clearCachedAssetsNotInList(final File cacheAsset, final List<String> assetsToRetain) {
