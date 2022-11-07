@@ -38,20 +38,10 @@ dependencies {
     implementation project(":${rootProject.moduleProjectName}")
     //implementation "com.adobe.marketing.mobile:core:$rootProject.mavenCoreVersion"
     //implementation 'com.github.adobe.aepsdk-core-android:core:v2.0.0-experimental.2'
-    implementation ('com.github.adobe.aepsdk-core-android:core:v2.0.0-alpha.3') {
-        transitive(false)
-    }
-    implementation ('com.adobe.marketing.mobile:userprofile:+') {
-        transitive(false)
-    }
-    implementation ('com.adobe.marketing.mobile:identity:+') {
-        transitive(false)
-    }
-    implementation ('com.adobe.marketing.mobile:lifecycle:+') {
-        transitive(false)
-    }
-    implementation ('com.adobe.marketing.mobile:signal:+') {
-        transitive(false)
-    }
+    implementation 'com.github.adobe.aepsdk-core-android:core:v2.0.0-alpha.3'
+    implementation 'com.adobe.marketing.mobile:userprofile:+'
+    implementation 'com.adobe.marketing.mobile:identity:+'
+    implementation 'com.adobe.marketing.mobile:lifecycle:+'
+    implementation 'com.adobe.marketing.mobile:signal:+'
 }
 apply plugin: 'com.google.gms.google-services'

@@ -32,7 +32,7 @@ public final class CampaignConstants {
 
     static final String CACHE_BASE_DIR = "campaign";
     static final String MESSAGE_CACHE_DIR = "messages";
-    static final String ASSETS_DIR = "assets";
+    static final String ZIP_HANDLE = "campaign_rules.zip";
 
     static final String MESSAGE_SCHEME = "adbinapp";
     static final String MESSAGE_SCHEME_PATH_CANCEL = "cancel";
@@ -87,7 +87,16 @@ public final class CampaignConstants {
     static final String HTTP_HEADER_KEY_CONNECTION = "connection";
     static final String HTTP_HEADER_KEY_CONTENT_TYPE = "Content-Type";
     static final String HTTP_HEADER_CONTENT_TYPE_JSON_APPLICATION = "application/json";
+    static final String HTTP_HEADER_IF_MODIFIED_SINCE = "If-Modified-Since";
+    static final String HTTP_HEADER_LAST_MODIFIED = "Last-Modified";
+    static final String HTTP_HEADER_IF_NONE_MATCH = "If-None-Match";
+    static final String HTTP_HEADER_IF_RANGE = "If-Range";
+    static final String HTTP_HEADER_ETAG = "Etag";
     static final ArrayList<Integer> recoverableNetworkErrorCodes = new ArrayList(Arrays.asList(408, 504, 503));
+    
+
+    // cache service metadata
+    static final String METADATA_PATH = "pathToFile";
 
     private CampaignConstants() {
     }

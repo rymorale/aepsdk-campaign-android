@@ -18,12 +18,35 @@ import com.adobe.marketing.mobile.services.DataEntity;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import java.io.File;
+import java.util.List;
 
 class Utils {
-    private Utils() {}
+    private Utils() {
+    }
 
     static CampaignHit campaignHitFromDataEntity(final DataEntity dataEntity) throws JSONException {
         final JSONObject jsonData = new JSONObject(dataEntity.getData());
         return new CampaignHit(jsonData.getString(URL), jsonData.getString(PAYLOAD), jsonData.getInt(TIMEOUT));
+    }
+
+    /**
+     * Recursively checks and deletes files within the cached assets directory which aren't within the {@code assetsToRetain} list.
+     *
+     * @param cacheAsset     {@link File} containing the cached assets directory
+     * @param assetsToRetain {@code List<String>} containing assets which should be retained
+     */
+    static void clearCachedAssetsNotInList(final File cacheAsset, final List<String> assetsToRetain) {
+        if (cacheAsset.isDirectory()) {
+            for (final File child : cacheAsset.listFiles()) {
+                clearCachedAssetsNotInList(child, assetsToRetain);
+            }
+        } else {
+            if (!assetsToRetain.contains(cacheAsset.getName())) {
+                if (cacheAsset.exists()) {
+                    cacheAsset.delete();
+                }
+            }
+        }
     }
 }
