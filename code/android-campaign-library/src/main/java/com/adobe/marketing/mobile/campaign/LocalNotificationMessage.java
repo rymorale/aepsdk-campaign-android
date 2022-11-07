@@ -118,7 +118,7 @@ class LocalNotificationMessage extends CampaignMessage {
 
         if (StringUtils.isNullOrEmpty(deeplink)) {
             Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
-                    "parseLocalNotificationMessagePayload -  Tried to read \"adb_deeplink\" for local notification but found none. This is not a required field.");
+                    "parseLocalNotificationMessagePayload - Tried to read \"adb_deeplink\" for local notification but found none. This is not a required field.");
         }
 
         // userInfo is optional
@@ -126,7 +126,7 @@ class LocalNotificationMessage extends CampaignMessage {
 
         if (userdata == null || userdata.isEmpty()) {
             Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
-                    "parseLocalNotificationMessagePayload -  Tried to read \"userData\" for local notification but found none. This is not a required field.");
+                    "parseLocalNotificationMessagePayload - Tried to read \"userData\" for local notification but found none. This is not a required field.");
         }
 
         // sound is optional
@@ -134,7 +134,7 @@ class LocalNotificationMessage extends CampaignMessage {
 
         if (StringUtils.isNullOrEmpty(sound)) {
             Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
-                    "parseLocalNotificationMessagePayload -  Tried to read \"sound\" for local notification but found none. This is not a required field.");
+                    "parseLocalNotificationMessagePayload - Tried to read \"sound\" for local notification but found none. This is not a required field.");
         }
 
         // title is optional
@@ -142,7 +142,7 @@ class LocalNotificationMessage extends CampaignMessage {
 
         if (StringUtils.isNullOrEmpty(title)) {
             Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
-                    "parseLocalNotificationMessagePayload -  Tried to read \"title\" for local notification but found none. This is not a required field.");
+                    "parseLocalNotificationMessagePayload - Tried to read \"title\" for local notification but found none. This is not a required field.");
         }
 
     }
@@ -153,7 +153,7 @@ class LocalNotificationMessage extends CampaignMessage {
      * parent {@code CampaignMessage} class to dispatch a triggered event.
      *
      * @see CampaignMessage#triggered()
-     * @see com.adobe.marketing.mobile.services.ui.UIService#showLocalNotification(NotificationSetting)
+     * @see UIService#showLocalNotification(NotificationSetting)
      */
     @Override
     void showMessage() {
@@ -169,12 +169,12 @@ class LocalNotificationMessage extends CampaignMessage {
 
             if (!StringUtils.isNullOrEmpty(broadlogId) || !StringUtils.isNullOrEmpty(deliveryId)) {
                 Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
-                        "showMessage -  Calling dispatch message Info with broadlogId(%s) and deliveryId(%s) for the triggered message.",
+                        "showMessage - Calling dispatch message Info with broadlogId (%s) and deliveryId (%s) for the triggered message.",
                         broadlogId, deliveryId);
                 callDispatchMessageInfo(broadlogId, deliveryId, CampaignConstants.MESSAGE_TRIGGERED_ACTION_VALUE);
             } else {
                 Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
-                        "showMessage -  Cannot dispatch message info because broadlogid and/or deliveryid are empty.");
+                        "showMessage - Cannot dispatch message info because broadlogid and/or deliveryid are empty.");
 
             }
         }
@@ -184,7 +184,7 @@ class LocalNotificationMessage extends CampaignMessage {
 
         if (uiService != null) {
             final NotificationSetting notificationSetting = NotificationSetting.build(messageId, content, fireDate, localNotificationDelay, deeplink, userdata, sound, title);
-            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "showMessage -  Scheduling local notification message with ID (%s)", messageId);
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "showMessage - Scheduling local notification message with ID (%s)", messageId);
             uiService.showLocalNotification(notificationSetting);
         } else {
             Log.warning(CampaignConstants.LOG_TAG, SELF_TAG,

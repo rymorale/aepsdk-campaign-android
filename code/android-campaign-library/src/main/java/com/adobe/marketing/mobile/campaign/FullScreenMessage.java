@@ -62,11 +62,10 @@ class FullScreenMessage extends CampaignMessage {
     private final String MESSAGES_CACHE = CACHE_BASE_DIR + File.separator + MESSAGE_CACHE_DIR + File.separator;
     private final CacheService cacheService;
     private final UIService uiService;
-
+    private final List<List<String>> assets = new ArrayList<>();
     private String html;
     private String htmlContent;
     private String messageId;
-    private final List<List<String>> assets = new ArrayList<>();
 
     /**
      * Constructor.
@@ -115,7 +114,7 @@ class FullScreenMessage extends CampaignMessage {
 
         if (StringUtils.isNullOrEmpty(html)) {
             Log.debug(LOG_TAG, SELF_TAG,
-                    "parseFullScreenMessagePayload -  Unable to create fullscreen message, html is missing/empty.");
+                    "parseFullScreenMessagePayload - Unable to create fullscreen message, html is missing/empty.");
             throw new CampaignMessageRequiredFieldMissingException("Messages - Unable to create fullscreen message, html is missing/empty.");
         }
 
@@ -127,7 +126,7 @@ class FullScreenMessage extends CampaignMessage {
             }
         } else {
             Log.trace(LOG_TAG, SELF_TAG,
-                    "parseFullScreenMessagePayload -  Tried to read \"assets\" for fullscreen message but none found.  This is not a required field.");
+                    "parseFullScreenMessagePayload - Tried to read \"assets\" for fullscreen message but none found.  This is not a required field.");
         }
 
         // store message id for retrieving cached assets
@@ -188,7 +187,7 @@ class FullScreenMessage extends CampaignMessage {
 
         if (StringUtils.isNullOrEmpty(htmlContent)) {
             Log.debug(LOG_TAG, SELF_TAG,
-                    "showMessage -  No html content in file (%s). File is missing or invalid!", html);
+                    "showMessage - No html content in file (%s). File is missing or invalid!", html);
             return;
         }
 
@@ -196,7 +195,7 @@ class FullScreenMessage extends CampaignMessage {
 
         final FullScreenMessageUiListener fullScreenMessageUiListener = new FullScreenMessageUiListener();
         final MessageSettings messageSettings = new MessageSettings();
-        // ACS fullscreen messages are displayed at 100% scale
+        // Creating default Message Settings as ACS fullscreen IAM do not create their own
         messageSettings.setHeight(100);
         messageSettings.setWidth(100);
         messageSettings.setParent(this);
@@ -204,7 +203,7 @@ class FullScreenMessage extends CampaignMessage {
         messageSettings.setHorizontalAlign(MessageSettings.MessageAlignment.CENTER);
         messageSettings.setDisplayAnimation(MessageSettings.MessageAnimation.NONE);
         messageSettings.setDismissAnimation(MessageSettings.MessageAnimation.NONE);
-        messageSettings.setBackdropColor("#FFFFFF"); // html code for white
+        messageSettings.setBackdropColor("#FFFFFF"); // html color code for "white"
         messageSettings.setBackdropOpacity(1);
         final FullscreenMessage fullscreenMessage = uiService.createFullscreenMessage(htmlContent,
                 fullScreenMessageUiListener, !cachedResourcesMap.isEmpty(), messageSettings);
@@ -242,13 +241,13 @@ class FullScreenMessage extends CampaignMessage {
     private Map<String, String> getCachedResourcesMapAndUpdateHtml() {
         // early bail if we don't have assets or if cache service is unavailable
         if (assets == null || assets.isEmpty()) {
-            Log.debug(LOG_TAG, SELF_TAG, "generateExpandedHtml -  No cached assets found, cannot expand URLs in the HTML.");
+            Log.debug(LOG_TAG, SELF_TAG, "generateExpandedHtml - No cached assets found, cannot expand URLs in the HTML.");
             return Collections.emptyMap();
         }
 
         if (cacheService == null) {
             Log.debug(LOG_TAG, SELF_TAG,
-                    "getLocalResourcesMapping -  No cache service found, cannot generate local resource mapping.");
+                    "getLocalResourcesMapping - No cache service found, cannot generate local resource mapping.");
             return Collections.emptyMap();
         }
 
@@ -311,7 +310,7 @@ class FullScreenMessage extends CampaignMessage {
     private void processMessageInteraction(final Map<String, String> query) {
         if (query == null || query.isEmpty()) {
             Log.debug(LOG_TAG, SELF_TAG,
-                    "processMessageInteraction -  Cannot process message interaction, input query is null or empty.");
+                    "processMessageInteraction - Cannot process message interaction, input query is null or empty.");
             return;
         }
 
@@ -321,7 +320,7 @@ class FullScreenMessage extends CampaignMessage {
 
             if (strTokens.length != MESSAGE_DATA_ID_TOKENS_LEN) {
                 Log.debug(LOG_TAG, MESSAGE_CONSEQUENCE_ID,
-                        "processMessageInteraction -  Cannot process message interaction, input query contains insufficient id tokens.");
+                        "processMessageInteraction - Cannot process message interaction, input query contains insufficient id tokens.");
                 return;
             }
 
@@ -331,7 +330,7 @@ class FullScreenMessage extends CampaignMessage {
                 tagId = Integer.parseInt(strTokens[2]);
             } catch (NumberFormatException e) {
                 Log.debug(LOG_TAG, SELF_TAG,
-                        "processMessageInteraction -  Cannot parse tag Id from the id field in given query (%s).", e);
+                        "processMessageInteraction - Cannot parse tag Id from the id field in given query (%s).", e);
             }
 
             switch (tagId) {
@@ -344,7 +343,7 @@ class FullScreenMessage extends CampaignMessage {
 
                 default:
                     Log.debug(LOG_TAG, SELF_TAG,
-                            "processMessageInteraction -  Unsupported tag Id found in the id field in the given query (%s).", tagId);
+                            "processMessageInteraction - Unsupported tag Id found in the id field in the given query (%s).", tagId);
                     break;
 
             }
@@ -450,7 +449,7 @@ class FullScreenMessage extends CampaignMessage {
                 uri = new URI(urlString);
 
             } catch (URISyntaxException ex) {
-                Log.debug(LOG_TAG, "overrideUrlLoad -  Invalid message URI found (%s).", urlString);
+                Log.debug(LOG_TAG, "overrideUrlLoad - Invalid message URI found (%s).", urlString);
                 return true;
             }
 
@@ -458,7 +457,7 @@ class FullScreenMessage extends CampaignMessage {
             final String messageScheme = uri.getScheme();
 
             if (!messageScheme.equals(MESSAGE_SCHEME)) {
-                Log.debug(LOG_TAG, "overrideUrlLoad -  Invalid message scheme found in URI. (%s)", urlString);
+                Log.debug(LOG_TAG, "overrideUrlLoad - Invalid message scheme found in URI. (%s)", urlString);
                 return false;
             }
 
@@ -468,7 +467,7 @@ class FullScreenMessage extends CampaignMessage {
             if (!host.equals(MESSAGE_SCHEME_PATH_CONFIRM) &&
                     !host.equals(MESSAGE_SCHEME_PATH_CANCEL)) {
                 Log.debug(LOG_TAG,
-                        "overrideUrlLoad -  Unsupported URI host found, neither \"confirm\" nor \"cancel\". (%s)", urlString);
+                        "overrideUrlLoad - Unsupported URI host found, neither \"confirm\" nor \"cancel\". (%s)", urlString);
                 return false;
             }
 
@@ -499,7 +498,7 @@ class FullScreenMessage extends CampaignMessage {
 
         @Override
         public void onShowFailure() {
-            Log.debug(LOG_TAG, SELF_TAG, "onShowFailure -  Fullscreen message failed to show.");
+            Log.debug(LOG_TAG, SELF_TAG, "onShowFailure - Fullscreen message failed to show.");
         }
     }
 }

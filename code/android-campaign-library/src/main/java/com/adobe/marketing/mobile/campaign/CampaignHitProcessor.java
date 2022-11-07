@@ -23,7 +23,6 @@ import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.HitProcessing;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
-import com.adobe.marketing.mobile.services.NetworkCallback;
 import com.adobe.marketing.mobile.services.NetworkRequest;
 import com.adobe.marketing.mobile.services.Networking;
 import com.adobe.marketing.mobile.services.ServiceProvider;
@@ -42,8 +41,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * send network requests for the Campaign Extension.
  */
 class CampaignHitProcessor implements HitProcessing {
-    private final String SELF_TAG = "CampaignHitProcessor";
     private static final int RETRY_INTERVAL = 30;
+    private final String SELF_TAG = "CampaignHitProcessor";
 
     @Override
     public int retryInterval(final DataEntity dataEntity) {

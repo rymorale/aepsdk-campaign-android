@@ -16,16 +16,6 @@ import static com.adobe.marketing.mobile.campaign.CampaignConstants.ContextDataK
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.ContextDataKeys.MESSAGE_ID;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.ContextDataKeys.MESSAGE_VIEWED;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.EXTENSION_NAME;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.CONSEQUENCE_TRIGGERED;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_ASSETS_PATH;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_ID;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_TYPE;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.FRIENDLY_NAME;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.LOG_TAG;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.MESSAGE_CACHE_DIR;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.RULES_CACHE_FOLDER;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.RULES_CACHE_KEY;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.Campaign.TRACK_INFO_KEY_ACTION;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.Campaign.TRACK_INFO_KEY_BROADLOG_ID;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.Campaign.TRACK_INFO_KEY_DELIVERY_ID;
@@ -35,6 +25,7 @@ import static com.adobe.marketing.mobile.campaign.CampaignConstants.FRIENDLY_NAM
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.LOG_TAG;
 
 import android.util.Base64;
+import android.util.JsonReader;
 
 import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.EventSource;
@@ -57,11 +48,9 @@ import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.services.Networking;
 import com.adobe.marketing.mobile.services.PersistentHitQueue;
 import com.adobe.marketing.mobile.services.ServiceProvider;
-import com.adobe.marketing.mobile.services.caching.CacheResult;
 import com.adobe.marketing.mobile.services.caching.CacheService;
 import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.StringUtils;
-import com.google.gson.Gson;
 
 import org.json.JSONObject;
 
@@ -94,14 +83,12 @@ public class CampaignExtension extends Extension {
     private static final String INTERNAL_GENERIC_DATA_EVENT_NAME = "InternalGenericDataEvent";
     private final String SELF_TAG = "CampaignExtension";
     private final ExtensionApi extensionApi;
-    private final RulesLoader rulesLoader;
     private final PersistentHitQueue campaignPersistentHitQueue;
     private final LaunchRulesEngine campaignRulesEngine;
     private final CacheService cacheService;
     private final CampaignRulesDownloader campaignRulesDownloader;
     private final CampaignState campaignState;
     private String linkageFields;
-    private List<Map<String, Object>> loadedConsequencesList;
     private boolean initialCampaignRuleFetchCompleted = false;
 
     /**
@@ -262,7 +249,7 @@ public class CampaignExtension extends Extension {
 
         MobilePrivacyStatus privacyStatus = campaignState.getMobilePrivacyStatus();
         // notify campaign persistent hit queue of any privacy status changes
-        //campaignPersistentHitQueue.handlePrivacyChange(privacyStatus);
+        campaignPersistentHitQueue.handlePrivacyChange(privacyStatus);
         if (privacyStatus.equals(MobilePrivacyStatus.OPT_OUT)) {
             processPrivacyOptOut();
             return;
@@ -474,8 +461,8 @@ public class CampaignExtension extends Extension {
             return;
         }
 
-        final Gson gson = new Gson();
-        final String linkageFieldsJsonString = gson.toJson(linkageFields);
+        final JSONObject linkageFieldsJsonObject = new JSONObject(linkageFields);
+        final String linkageFieldsJsonString =  linkageFieldsJsonObject.toString();
 
         if (StringUtils.isNullOrEmpty(linkageFieldsJsonString)) {
             Log.debug(LOG_TAG, SELF_TAG,
@@ -598,34 +585,6 @@ public class CampaignExtension extends Extension {
     }
 
     /**
-     * Updates {@value CampaignConstants#CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY} in {@code CampaignExtension}'s {@link NamedCollection}.
-     * <p>
-     * If provided {@code url} is null or empty, {@value CampaignConstants#CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY} key is removed from
-     * the collecyion.
-     *
-     * @param url {@code String} containing a Campaign rules download remotes URL.
-     */
-    private void updateUrlInNamedCollection(final String url) {
-        final NamedCollection campaignNamedCollection = getNamedCollection();
-
-        if (campaignNamedCollection == null) {
-            Log.trace(LOG_TAG, SELF_TAG,
-                    "updateUrlInNamedCollection - Campaign Named Collection is null, cannot store url.");
-            return;
-        }
-
-        if (StringUtils.isNullOrEmpty(url)) {
-            Log.trace(LOG_TAG, SELF_TAG,
-                    "updateUrlInNamedCollection - Removing remotes URL key in Campaign Named Collection.");
-            campaignNamedCollection.remove(CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY);
-        } else {
-            Log.trace(LOG_TAG, SELF_TAG,
-                    "updateUrlInDataStore - Persisting remotes URL (%s) in in Campaign Named Collection.", url);
-            campaignNamedCollection.setString(CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY, url);
-        }
-    }
-
-    /**
      * Updates {@value CampaignConstants#CAMPAIGN_NAMED_COLLECTION_EXPERIENCE_CLOUD_ID_KEY} in {@code CampaignExtension}'s {@link NamedCollection}.
      * <p>
      * If provided {@code ecid} is null or empty, {@value CampaignConstants#CAMPAIGN_NAMED_COLLECTION_EXPERIENCE_CLOUD_ID_KEY} key is removed from
@@ -686,7 +645,7 @@ public class CampaignExtension extends Extension {
         final CampaignHit campaignHit = new CampaignHit(url, payload, campaignState.getCampaignTimeout());
         final DataEntity dataEntity = new DataEntity(campaignHit.toString());
         Log.debug(LOG_TAG, SELF_TAG, "processRequest - Campaign Request Queued with url (%s) and body (%s)", url, payload);
-        //campaignPersistentHitQueue.queue(dataEntity);
+        campaignPersistentHitQueue.queue(dataEntity);
     }
 
     /**

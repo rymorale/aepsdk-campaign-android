@@ -93,7 +93,7 @@ public final class CampaignConstants {
     static final String HTTP_HEADER_IF_RANGE = "If-Range";
     static final String HTTP_HEADER_ETAG = "Etag";
     static final ArrayList<Integer> recoverableNetworkErrorCodes = new ArrayList(Arrays.asList(408, 504, 503));
-    
+
 
     // cache service metadata
     static final String METADATA_PATH = "pathToFile";

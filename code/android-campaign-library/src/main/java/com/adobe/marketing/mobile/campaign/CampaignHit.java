@@ -4,7 +4,6 @@ import static com.adobe.marketing.mobile.campaign.CampaignConstants.CampaignHit.
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.CampaignHit.TIMEOUT;
 import static com.adobe.marketing.mobile.campaign.CampaignConstants.CampaignHit.URL;
 
-import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.HttpMethod;
 import com.adobe.marketing.mobile.util.StringUtils;
 
