@@ -10,6 +10,9 @@ LIB_VERSION = $(shell cat $(ROOT_DIR)/code/gradle.properties | grep "moduleVersi
 SOURCE_FILE_DIR =  $(ROOT_DIR)/code/$(PROJECT_NAME)
 AAR_FILE_DIR =  $(ROOT_DIR)/code/$(PROJECT_NAME)/build/outputs/aar
 
+checkstyle:
+		(./code/gradlew -info -p code/android-campaign-library checkstyle)
+
 create-ci: clean
 	(mkdir -p ci)
 

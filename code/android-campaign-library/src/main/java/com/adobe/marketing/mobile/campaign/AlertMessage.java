@@ -11,13 +11,6 @@
 
 package com.adobe.marketing.mobile.campaign;
 
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_CANCEL;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_CONFIRM;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_CONTENT;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_TITLE;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_URL;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.LOG_TAG;
-
 import com.adobe.marketing.mobile.launch.rulesengine.RuleConsequence;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.ServiceProvider;
@@ -38,6 +31,7 @@ import java.util.Map;
  */
 class AlertMessage extends CampaignMessage {
     private final String SELF_TAG = "AlertMessage";
+    private final UIService uiService;
 
     // ================================================================================
     // protected class members
@@ -59,6 +53,7 @@ class AlertMessage extends CampaignMessage {
     AlertMessage(final CampaignExtension extension, final RuleConsequence consequence)
             throws CampaignMessageRequiredFieldMissingException {
         super(extension, consequence);
+        uiService = ServiceProvider.getInstance().getUIService();
         parseAlertMessagePayload(consequence);
     }
 
@@ -83,7 +78,7 @@ class AlertMessage extends CampaignMessage {
     @SuppressWarnings("unchecked")
     private void parseAlertMessagePayload(final RuleConsequence consequence) throws
             CampaignMessageRequiredFieldMissingException {
-        Log.trace(CampaignConstants.LOG_TAG,
+        Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
                 "parseAlertMessagePayload - Parsing rule consequence to show alert message with messageid %s", messageId);
 
         if (consequence == null) {
@@ -97,28 +92,28 @@ class AlertMessage extends CampaignMessage {
         }
 
         // title is required
-        title = DataReader.optString(detailDictionary, MESSAGE_CONSEQUENCE_DETAIL_KEY_TITLE, "");
+        title = DataReader.optString(detailDictionary, CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_TITLE, "");
 
         if (StringUtils.isNullOrEmpty(title)) {
             throw new CampaignMessageRequiredFieldMissingException("Alert Message title is empty.");
         }
 
         // content is required
-        content = DataReader.optString(detailDictionary, MESSAGE_CONSEQUENCE_DETAIL_KEY_CONTENT, "");
+        content = DataReader.optString(detailDictionary, CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_CONTENT, "");
 
         if (StringUtils.isNullOrEmpty(content)) {
             throw new CampaignMessageRequiredFieldMissingException("Alert Message content is empty.");
         }
 
         // cancel button text is required
-        cancelButtonText = DataReader.optString(detailDictionary, MESSAGE_CONSEQUENCE_DETAIL_KEY_CANCEL, "");
+        cancelButtonText = DataReader.optString(detailDictionary, CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_CANCEL, "");
 
         if (StringUtils.isNullOrEmpty(cancelButtonText)) {
             throw new CampaignMessageRequiredFieldMissingException("Alert Message cancel button text is empty.");
         }
 
         // confirm button text is optional
-        confirmButtonText = DataReader.optString(detailDictionary, MESSAGE_CONSEQUENCE_DETAIL_KEY_CONFIRM, "");
+        confirmButtonText = DataReader.optString(detailDictionary, CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_CONFIRM, "");
 
         if (StringUtils.isNullOrEmpty(confirmButtonText)) {
             Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
@@ -126,7 +121,7 @@ class AlertMessage extends CampaignMessage {
         }
 
         // url is optional
-        url = DataReader.optString(detailDictionary, MESSAGE_CONSEQUENCE_DETAIL_KEY_URL, "");
+        url = DataReader.optString(detailDictionary, CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_URL, "");
 
         if (StringUtils.isNullOrEmpty(url)) {
             Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
@@ -145,15 +140,11 @@ class AlertMessage extends CampaignMessage {
      */
     @Override
     void showMessage() {
-        Log.debug(CampaignConstants.LOG_TAG, "Attempting to show Alert message with ID %s ", messageId);
+        Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "Attempting to show Alert message with ID %s ", messageId);
 
-        final UIService uiService = ServiceProvider.getInstance().getUIService();
-
-        if (uiService != null) {
-            final UIAlertMessageUIListener uiListener = new UIAlertMessageUIListener();
-            final AlertSetting alertSetting = AlertSetting.build(title, content, confirmButtonText, cancelButtonText);
-            uiService.showAlert(alertSetting, uiListener);
-        }
+        final UIAlertMessageUIListener uiListener = new UIAlertMessageUIListener();
+        final AlertSetting alertSetting = AlertSetting.build(title, content, confirmButtonText, cancelButtonText);
+        uiService.showAlert(alertSetting, uiListener);
     }
 
     /**
@@ -193,7 +184,7 @@ class AlertMessage extends CampaignMessage {
             viewed();
 
             if (url != null && !url.isEmpty()) {
-                Map<String, String> contextData = new HashMap<String, String>();
+                final Map<String, String> contextData = new HashMap<>();
                 contextData.put(CampaignConstants.CAMPAIGN_INTERACTION_URL, url);
                 clickedWithData(contextData);
             } else {
@@ -237,7 +228,7 @@ class AlertMessage extends CampaignMessage {
          */
         @Override
         public void onError(final UIError uiError) {
-            Log.debug(LOG_TAG, SELF_TAG, "Error occurred when attempting to display the alert message: %s.", uiError.toString());
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "Error occurred when attempting to display the alert message: %s.", uiError.toString());
         }
     }
 }

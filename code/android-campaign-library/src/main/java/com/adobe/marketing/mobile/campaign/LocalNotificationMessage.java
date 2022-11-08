@@ -11,17 +11,6 @@
 
 package com.adobe.marketing.mobile.campaign;
 
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.DEFAULT_LOCAL_NOTIFICATION_DELAY_SECONDS;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.Campaign.TRACK_INFO_KEY_BROADLOG_ID;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.Campaign.TRACK_INFO_KEY_DELIVERY_ID;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_CONTENT;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_DEEPLINK_URL;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_FIRE_DATE;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_SOUND;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_TITLE;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_USER_DATA;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_WAIT;
-
 import com.adobe.marketing.mobile.launch.rulesengine.RuleConsequence;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.ServiceProvider;
@@ -39,6 +28,8 @@ import java.util.Map;
  */
 class LocalNotificationMessage extends CampaignMessage {
     private final String SELF_TAG = "LocalNotificationMessage";
+    private final static long DEFAULT_DELAY = -1L;
+    private final UIService uiService;
 
     // ================================================================================
     // protected class members
@@ -62,6 +53,7 @@ class LocalNotificationMessage extends CampaignMessage {
     LocalNotificationMessage(final CampaignExtension extension, final RuleConsequence consequence)
             throws CampaignMessageRequiredFieldMissingException {
         super(extension, consequence);
+        uiService = ServiceProvider.getInstance().getUIService();
         parseLocalNotificationMessagePayload(consequence);
     }
 
@@ -100,21 +92,21 @@ class LocalNotificationMessage extends CampaignMessage {
         }
 
         // content is required
-        content = DataReader.optString(detailDictionary, MESSAGE_CONSEQUENCE_DETAIL_KEY_CONTENT, "");
+        content = DataReader.optString(detailDictionary, CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_CONTENT, "");
 
         if (StringUtils.isNullOrEmpty(content)) {
             throw new CampaignMessageRequiredFieldMissingException("Message \"content\" is empty.");
         }
 
         // prefer the date specified by fire date, otherwise use provided delay. both are optional
-        fireDate = DataReader.optLong(detailDictionary, MESSAGE_CONSEQUENCE_DETAIL_KEY_FIRE_DATE, -1L);
+        fireDate = DataReader.optLong(detailDictionary, CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_FIRE_DATE, DEFAULT_DELAY);
 
         if (fireDate <= 0) {
-            localNotificationDelay = DataReader.optInt(detailDictionary, MESSAGE_CONSEQUENCE_DETAIL_KEY_WAIT, DEFAULT_LOCAL_NOTIFICATION_DELAY_SECONDS);
+            localNotificationDelay = DataReader.optInt(detailDictionary, CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_WAIT, CampaignConstants.DEFAULT_LOCAL_NOTIFICATION_DELAY_SECONDS);
         }
 
         // deeplink is optional
-        deeplink = DataReader.optString(detailDictionary, MESSAGE_CONSEQUENCE_DETAIL_KEY_DEEPLINK_URL, "");
+        deeplink = DataReader.optString(detailDictionary, CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_DEEPLINK_URL, "");
 
         if (StringUtils.isNullOrEmpty(deeplink)) {
             Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
@@ -122,7 +114,7 @@ class LocalNotificationMessage extends CampaignMessage {
         }
 
         // userInfo is optional
-        userdata = DataReader.optTypedMap(Object.class, detailDictionary, MESSAGE_CONSEQUENCE_DETAIL_KEY_USER_DATA, null);
+        userdata = DataReader.optTypedMap(Object.class, detailDictionary, CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_USER_DATA, null);
 
         if (userdata == null || userdata.isEmpty()) {
             Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
@@ -130,7 +122,7 @@ class LocalNotificationMessage extends CampaignMessage {
         }
 
         // sound is optional
-        sound = DataReader.optString(detailDictionary, MESSAGE_CONSEQUENCE_DETAIL_KEY_SOUND, "");
+        sound = DataReader.optString(detailDictionary, CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_SOUND, "");
 
         if (StringUtils.isNullOrEmpty(sound)) {
             Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
@@ -138,7 +130,7 @@ class LocalNotificationMessage extends CampaignMessage {
         }
 
         // title is optional
-        title = DataReader.optString(detailDictionary, MESSAGE_CONSEQUENCE_DETAIL_KEY_TITLE, "");
+        title = DataReader.optString(detailDictionary, CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_TITLE, "");
 
         if (StringUtils.isNullOrEmpty(title)) {
             Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
@@ -161,11 +153,11 @@ class LocalNotificationMessage extends CampaignMessage {
 
         // Dispatch message info to send track request to Campaign
         if (userdata != null && !userdata.isEmpty()
-                && userdata.containsKey(TRACK_INFO_KEY_BROADLOG_ID)
-                && userdata.containsKey(TRACK_INFO_KEY_DELIVERY_ID)) {
+                && userdata.containsKey(CampaignConstants.EventDataKeys.Campaign.TRACK_INFO_KEY_BROADLOG_ID)
+                && userdata.containsKey(CampaignConstants.EventDataKeys.Campaign.TRACK_INFO_KEY_DELIVERY_ID)) {
 
-            final String broadlogId = (String) userdata.get(TRACK_INFO_KEY_BROADLOG_ID);
-            final String deliveryId = (String) userdata.get(TRACK_INFO_KEY_DELIVERY_ID);
+            final String broadlogId = DataReader.optString(userdata, CampaignConstants.EventDataKeys.Campaign.TRACK_INFO_KEY_BROADLOG_ID, "");
+            final String deliveryId = DataReader.optString(userdata, CampaignConstants.EventDataKeys.Campaign.TRACK_INFO_KEY_DELIVERY_ID, "");
 
             if (!StringUtils.isNullOrEmpty(broadlogId) || !StringUtils.isNullOrEmpty(deliveryId)) {
                 Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
@@ -179,18 +171,9 @@ class LocalNotificationMessage extends CampaignMessage {
             }
         }
 
-
-        final UIService uiService = ServiceProvider.getInstance().getUIService();
-
-        if (uiService != null) {
-            final NotificationSetting notificationSetting = NotificationSetting.build(messageId, content, fireDate, localNotificationDelay, deeplink, userdata, sound, title);
-            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "showMessage -  Scheduling local notification message with ID (%s)", messageId);
-            uiService.showLocalNotification(notificationSetting);
-        } else {
-            Log.warning(CampaignConstants.LOG_TAG, SELF_TAG,
-                    "UI Service is unavailable. Unable to schedule message with ID (%s)",
-                    messageId);
-        }
+        final NotificationSetting notificationSetting = NotificationSetting.build(messageId, content, fireDate, localNotificationDelay, deeplink, userdata, sound, title);
+        Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "showMessage -  Scheduling local notification message with ID (%s)", messageId);
+        uiService.showLocalNotification(notificationSetting);
     }
 
     @Override

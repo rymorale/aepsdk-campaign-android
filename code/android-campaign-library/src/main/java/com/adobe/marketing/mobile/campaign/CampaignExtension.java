@@ -11,19 +11,6 @@
 
 package com.adobe.marketing.mobile.campaign;
 
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.CAMPAIGN_NAMED_COLLECTION_NAME;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.ContextDataKeys.MESSAGE_CLICKED;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.ContextDataKeys.MESSAGE_ID;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.ContextDataKeys.MESSAGE_VIEWED;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EXTENSION_NAME;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.Campaign.TRACK_INFO_KEY_ACTION;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.Campaign.TRACK_INFO_KEY_BROADLOG_ID;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.Campaign.TRACK_INFO_KEY_DELIVERY_ID;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.Lifecycle.LAUNCH_EVENT;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.Lifecycle.LIFECYCLE_CONTEXT_DATA;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.FRIENDLY_NAME;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.LOG_TAG;
-
 import android.util.Base64;
 
 import com.adobe.marketing.mobile.Event;
@@ -44,12 +31,10 @@ import com.adobe.marketing.mobile.services.DataQueuing;
 import com.adobe.marketing.mobile.services.DataStoring;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
-import com.adobe.marketing.mobile.services.Networking;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.caching.CacheService;
 import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.StringUtils;
-import com.google.gson.Gson;
 
 import org.json.JSONObject;
 
@@ -80,6 +65,8 @@ import java.util.concurrent.TimeUnit;
 public class CampaignExtension extends Extension {
     private static final String DATA_FOR_MESSAGE_REQUEST_EVENT_NAME = "DataForMessageRequest";
     private static final String INTERNAL_GENERIC_DATA_EVENT_NAME = "InternalGenericDataEvent";
+    private static final String CLICKED_STRING_VALUE = "2";
+    private static final String VIEWED_STRING_VALUE = "1";
     private final String SELF_TAG = "CampaignExtension";
     private final ExtensionApi extensionApi;
     //private final PersistentHitQueue campaignPersistentHitQueue;
@@ -87,6 +74,7 @@ public class CampaignExtension extends Extension {
     private final CacheService cacheService;
     private final CampaignRulesDownloader campaignRulesDownloader;
     private final CampaignState campaignState;
+    private final DataStoring dataStoreService;
     private String linkageFields;
     private boolean initialCampaignRuleFetchCompleted = false;
 
@@ -99,6 +87,9 @@ public class CampaignExtension extends Extension {
         super(extensionApi);
         this.extensionApi = extensionApi;
 
+        // retrieve service dependencies
+        dataStoreService = ServiceProvider.getInstance().getDataStoreService();
+
         // initialize campaign rules engine
         campaignRulesEngine = new LaunchRulesEngine(extensionApi);
 
@@ -108,7 +99,7 @@ public class CampaignExtension extends Extension {
 
         // setup persistent hit queue
         final DataQueuing dataQueuing = ServiceProvider.getInstance().getDataQueueService();
-        final DataQueue campaignDataQueue = dataQueuing.getDataQueue(FRIENDLY_NAME);
+        final DataQueue campaignDataQueue = dataQueuing.getDataQueue(getFriendlyName());
         //campaignPersistentHitQueue = new PersistentHitQueue(campaignDataQueue, new CampaignHitProcessor());
 
         // initialize the campaign state
@@ -117,12 +108,12 @@ public class CampaignExtension extends Extension {
 
     @Override
     protected String getName() {
-        return EXTENSION_NAME;
+        return CampaignConstants.EXTENSION_NAME;
     }
 
     @Override
     protected String getFriendlyName() {
-        return FRIENDLY_NAME;
+        return CampaignConstants.FRIENDLY_NAME;
     }
 
     @Override
@@ -132,7 +123,7 @@ public class CampaignExtension extends Extension {
 
     @Override
     protected void onRegistered() {
-        Log.debug(LOG_TAG, SELF_TAG, "Registered Campaign extension - version %s", getVersion());
+        Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "Registered Campaign extension - version %s", getVersion());
         // register listeners
         getApi().registerEventListener(
                 EventType.CAMPAIGN,
@@ -202,11 +193,11 @@ public class CampaignExtension extends Extension {
         try {
             final CampaignMessage triggeredMessage = CampaignMessage.createMessageObject(this, consequences.get(0));
 
-            if (triggeredMessage != null && ServiceProvider.getInstance().getUIService() != null) {
+            if (triggeredMessage != null) {
                 triggeredMessage.showMessage();
             }
         } catch (final CampaignMessageRequiredFieldMissingException ex) {
-            Log.error(LOG_TAG, SELF_TAG, "processRuleEngineResponse -  Error reading message definition: \n %s", ex);
+            Log.error(CampaignConstants.LOG_TAG, SELF_TAG, "processRuleEngineResponse -  Error reading message definition: \n %s", ex);
         }
     }
 
@@ -236,7 +227,7 @@ public class CampaignExtension extends Extension {
      */
     void processConfigurationResponse(final Event event) {
         if (event == null) {
-            Log.debug(LOG_TAG, SELF_TAG, "processConfigurationResponse - Unable to process event, event received is null.");
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "processConfigurationResponse - Unable to process event, event received is null.");
             return;
         }
 
@@ -246,7 +237,7 @@ public class CampaignExtension extends Extension {
             return;
         }
 
-        MobilePrivacyStatus privacyStatus = campaignState.getMobilePrivacyStatus();
+        final MobilePrivacyStatus privacyStatus = campaignState.getMobilePrivacyStatus();
         // notify campaign persistent hit queue of any privacy status changes
         //campaignPersistentHitQueue.handlePrivacyChange(privacyStatus);
         if (privacyStatus.equals(MobilePrivacyStatus.OPT_OUT)) {
@@ -270,7 +261,7 @@ public class CampaignExtension extends Extension {
      * </ul>
      */
     void processPrivacyOptOut() {
-        Log.trace(LOG_TAG, SELF_TAG, "processPrivacyOptOut -  Clearing out cached data.");
+        Log.trace(CampaignConstants.LOG_TAG, SELF_TAG, "processPrivacyOptOut -  Clearing out cached data.");
 
         linkageFields = "";
 
@@ -294,31 +285,31 @@ public class CampaignExtension extends Extension {
      */
     void processMessageInformation(final Event event) {
         if (!campaignState.canSendTrackInfoWithCurrentState()) {
-            Log.debug(LOG_TAG, SELF_TAG,
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
                     "processMessageInformation -  Campaign extension is not configured to send message track request.");
             return;
         }
 
         if (event == null) {
-            Log.debug(LOG_TAG, SELF_TAG, "processMessageInformation - Unable to process event, event received is null.");
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "processMessageInformation - Unable to process event, event received is null.");
             return;
         }
 
         final Map<String, Object> eventData = event.getEventData();
 
         if (eventData == null || eventData.isEmpty()) {
-            Log.debug(LOG_TAG, SELF_TAG,
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
                     "processMessageInformation -  Cannot send message track request, eventData is null.");
             return;
         }
 
-        final String broadlogId = DataReader.optString(eventData, TRACK_INFO_KEY_BROADLOG_ID, "");
-        final String deliveryId = DataReader.optString(eventData, TRACK_INFO_KEY_DELIVERY_ID, "");
-        final String action = DataReader.optString(eventData, TRACK_INFO_KEY_ACTION, "");
+        final String broadlogId = DataReader.optString(eventData, CampaignConstants.EventDataKeys.Campaign.TRACK_INFO_KEY_BROADLOG_ID, "");
+        final String deliveryId = DataReader.optString(eventData, CampaignConstants.EventDataKeys.Campaign.TRACK_INFO_KEY_DELIVERY_ID, "");
+        final String action = DataReader.optString(eventData, CampaignConstants.EventDataKeys.Campaign.TRACK_INFO_KEY_ACTION, "");
 
         if (StringUtils.isNullOrEmpty(broadlogId) || StringUtils.isNullOrEmpty(deliveryId)
                 || StringUtils.isNullOrEmpty(action)) {
-            Log.debug(LOG_TAG, SELF_TAG,
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
                     "processMessageInformation -  Cannot send message track request, %s %s %s null or empty.",
                     StringUtils.isNullOrEmpty(broadlogId) ? "broadlogId" : "", StringUtils.isNullOrEmpty(deliveryId) ? "deliveryId" : "",
                     StringUtils.isNullOrEmpty(action) ? "action" : "");
@@ -343,14 +334,14 @@ public class CampaignExtension extends Extension {
         // Dispatch event only in case of action value "1"(open) and "2"(click).
         String actionKey = null;
 
-        if ("2".equals(action)) {
-            actionKey = MESSAGE_CLICKED;
-        } else if ("1".equals(action)) {
-            actionKey = MESSAGE_VIEWED;
+        if (CLICKED_STRING_VALUE.equals(action)) {
+            actionKey = CampaignConstants.ContextDataKeys.MESSAGE_CLICKED;
+        } else if (VIEWED_STRING_VALUE.equals(action)) {
+            actionKey = CampaignConstants.ContextDataKeys.MESSAGE_VIEWED;
         }
 
         if (actionKey == null) {
-            Log.trace(LOG_TAG, SELF_TAG,
+            Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
                     "dispatchMessageEvent -  Action received is other than viewed or clicked, so cannot dispatch Campaign response. ");
             return;
         }
@@ -359,7 +350,7 @@ public class CampaignExtension extends Extension {
         final Map<String, Object> contextData = new HashMap<>(hashMapCapacity);
         // Convert hex format deliveryId to base 10, which is message id.
         final int hexBase = 16;
-        contextData.put(MESSAGE_ID, String.valueOf(Integer.parseInt(deliveryId,
+        contextData.put(CampaignConstants.ContextDataKeys.MESSAGE_ID, String.valueOf(Integer.parseInt(deliveryId,
                 hexBase)));
         contextData.put(actionKey, String.valueOf(1));
 
@@ -377,7 +368,7 @@ public class CampaignExtension extends Extension {
      */
     void processLifecycleUpdate(final Event event) {
         if (event == null) {
-            Log.debug(LOG_TAG, SELF_TAG, "processLifecycleUpdate - Unable to process event, event received is null.");
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "processLifecycleUpdate - Unable to process event, event received is null.");
             return;
         }
 
@@ -388,16 +379,16 @@ public class CampaignExtension extends Extension {
         }
 
         // trigger rules download on non initial lifecycle launch events
-        final Map<String, Object> lifecycleContextData = DataReader.optTypedMap(Object.class, eventData, LIFECYCLE_CONTEXT_DATA, null);
+        final Map<String, Object> lifecycleContextData = DataReader.optTypedMap(Object.class, eventData, CampaignConstants.EventDataKeys.Lifecycle.LIFECYCLE_CONTEXT_DATA, null);
         if (lifecycleContextData != null
                 && !lifecycleContextData.isEmpty()
-                && (DataReader.optString(lifecycleContextData, LAUNCH_EVENT, null)).equals(LAUNCH_EVENT)
+                && (DataReader.optString(lifecycleContextData, CampaignConstants.EventDataKeys.Lifecycle.LAUNCH_EVENT, null)).equals(CampaignConstants.EventDataKeys.Lifecycle.LAUNCH_EVENT)
                 && initialCampaignRuleFetchCompleted) {
             triggerRulesDownload();
         }
 
         if (!campaignState.canRegisterWithCurrentState()) {
-            Log.debug(LOG_TAG, SELF_TAG,
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
                     "processLifecycleUpdate -  Campaign extension is not configured to send registration request.");
             return;
         }
@@ -420,7 +411,7 @@ public class CampaignExtension extends Extension {
      */
     void triggerRulesDownload() {
         if (!campaignState.canDownloadRulesWithCurrentState()) {
-            Log.debug(LOG_TAG, SELF_TAG,
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
                     "triggerRulesDownload -  Campaign extension is not configured to download rules.");
             return;
         }
@@ -443,7 +434,7 @@ public class CampaignExtension extends Extension {
      */
     void handleLinkageFieldsEvent(final Event event) {
         if (event == null) {
-            Log.debug(LOG_TAG, SELF_TAG, "handleLinkageFieldsEvent - Unable to process event, event received is null.");
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "handleLinkageFieldsEvent - Unable to process event, event received is null.");
             return;
         }
 
@@ -460,18 +451,17 @@ public class CampaignExtension extends Extension {
             return;
         }
 
-        final Gson gson = new Gson();
-        final String linkageFieldsJsonString = gson.toJson(linkageFields);
+        final String linkageFieldsJsonString = new JSONObject(linkageFields).toString();
 
         if (StringUtils.isNullOrEmpty(linkageFieldsJsonString)) {
-            Log.debug(LOG_TAG, SELF_TAG,
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
                     "handleLinkageFieldsEvent -  Cannot set linkage fields, linkageFields JSON string is null or empty.");
             return;
         }
         this.linkageFields = Base64.encodeToString(linkageFieldsJsonString.getBytes(), Base64.NO_WRAP);
 
         if (StringUtils.isNullOrEmpty(this.linkageFields)) {
-            Log.debug(LOG_TAG, SELF_TAG,
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
                     "handleLinkageFieldsEvent -  Cannot set linkage fields, base64 encoded linkage fields string is empty.");
             return;
         }
@@ -541,9 +531,9 @@ public class CampaignExtension extends Extension {
         // Dispatch a generic data OS event to the event hub
         final Map<String, Object> eventData = new HashMap<>();
 
-        eventData.put(TRACK_INFO_KEY_BROADLOG_ID, broadlogId);
-        eventData.put(TRACK_INFO_KEY_DELIVERY_ID, deliveryId);
-        eventData.put(TRACK_INFO_KEY_ACTION, action);
+        eventData.put(CampaignConstants.EventDataKeys.Campaign.TRACK_INFO_KEY_BROADLOG_ID, broadlogId);
+        eventData.put(CampaignConstants.EventDataKeys.Campaign.TRACK_INFO_KEY_DELIVERY_ID, deliveryId);
+        eventData.put(CampaignConstants.EventDataKeys.Campaign.TRACK_INFO_KEY_ACTION, action);
 
         final Event messageEvent = new Event.Builder(INTERNAL_GENERIC_DATA_EVENT_NAME,
                 EventType.GENERIC_DATA, EventSource.OS).setEventData(eventData).build();
@@ -572,15 +562,7 @@ public class CampaignExtension extends Extension {
      * @return {@link NamedCollection} object for this {@link CampaignExtension}
      */
     private NamedCollection getNamedCollection() {
-        final DataStoring dataStoreService = ServiceProvider.getInstance().getDataStoreService();
-
-        if (dataStoreService == null) {
-            Log.debug(LOG_TAG, SELF_TAG,
-                    "getDataStore -  Cannot get Campaign Data store, data store service is not available.");
-            return null;
-        }
-
-        return dataStoreService.getNamedCollection(CAMPAIGN_NAMED_COLLECTION_NAME);
+        return dataStoreService.getNamedCollection(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_NAME);
     }
 
     /**
@@ -595,17 +577,17 @@ public class CampaignExtension extends Extension {
         final NamedCollection campaignNamedCollection = getNamedCollection();
 
         if (campaignNamedCollection == null) {
-            Log.trace(LOG_TAG, SELF_TAG,
+            Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
                     "updateEcidInNamedCollection - Campaign Named Collection is null, cannot store ecid.");
             return;
         }
 
         if (StringUtils.isNullOrEmpty(ecid)) {
-            Log.trace(LOG_TAG, SELF_TAG,
+            Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
                     "updateEcidInNamedCollection -  Removing experience cloud id key in Campaign Named Collection.");
             campaignNamedCollection.remove(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_EXPERIENCE_CLOUD_ID_KEY);
         } else {
-            Log.trace(LOG_TAG, SELF_TAG,
+            Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
                     "updateEcidInNamedCollection -  Persisting experience cloud id (%s) in Campaign Named Collection.", ecid);
             campaignNamedCollection.setString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_EXPERIENCE_CLOUD_ID_KEY, ecid);
         }
@@ -615,8 +597,7 @@ public class CampaignExtension extends Extension {
      * Queues a {@code Campaign} registration request by creating a {@link com.adobe.marketing.mobile.services.DataEntity} object and inserting it to
      * the Campaign {@link DataQueue} instance.
      * <p>
-     * If the {@code payload} is null, empty, or if the {@link Networking} service is not available,
-     * then the {@code Campaign} registration request is dropped.
+     * If the {@code payload} is null or empty then the {@code Campaign} registration request is dropped.
      *
      * @param url           {@link String} containing the registration request URL
      * @param payload       {@link String} containing the registration request payload
@@ -625,14 +606,6 @@ public class CampaignExtension extends Extension {
      */
     private void processRequest(final String url, final String payload, final CampaignState campaignState,
                                 final Event event) {
-        final Networking networkingService = ServiceProvider.getInstance().getNetworkService();
-
-        if (networkingService == null) {
-            Log.debug(LOG_TAG, SELF_TAG,
-                    "processRequest -  Cannot send request, Networking service is not available.");
-            return;
-        }
-
         // check if this request is a registration request by checking for the presence of a payload
         // and if it is a registration request, determine if it should be sent.
         if (!StringUtils.isNullOrEmpty(payload)
@@ -643,7 +616,7 @@ public class CampaignExtension extends Extension {
         // create a data entity and add it to the data queue
         final CampaignHit campaignHit = new CampaignHit(url, payload, campaignState.getCampaignTimeout());
         final DataEntity dataEntity = new DataEntity(campaignHit.toString());
-        Log.debug(LOG_TAG, SELF_TAG, "processRequest - Campaign Request Queued with url (%s) and body (%s)", url, payload);
+        Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "processRequest - Campaign Request Queued with url (%s) and body (%s)", url, payload);
         //campaignPersistentHitQueue.queue(dataEntity);
     }
 
@@ -654,7 +627,7 @@ public class CampaignExtension extends Extension {
         final NamedCollection campaignNamedCollection = getNamedCollection();
 
         if (campaignNamedCollection == null) {
-            Log.debug(LOG_TAG, SELF_TAG,
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
                     "clearCampaignNamedCollection -  Campaign Named Collection is not available to be cleared.");
             return;
         }
@@ -729,7 +702,7 @@ public class CampaignExtension extends Extension {
         final boolean shouldPauseRegistration = campaignState.getCampaignRegistrationPaused();
 
         if (shouldPauseRegistration) {
-            Log.debug(LOG_TAG, SELF_TAG,
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
                     "shouldSendRegistrationRequest -  Registration requests are paused.");
             return false;
         }
@@ -743,7 +716,7 @@ public class CampaignExtension extends Extension {
         final long registrationDelayInMilliseconds = TimeUnit.DAYS.toMillis(registrationDelay);
 
         if (!retrievedEcid.equals(currentEcid)) {
-            Log.debug(LOG_TAG, SELF_TAG,
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
                     "shouldSendRegistrationRequest - The current ecid (%s) is new, sending the registration request.",
                     currentEcid);
             updateEcidInNamedCollection(currentEcid);
@@ -752,13 +725,13 @@ public class CampaignExtension extends Extension {
         }
 
         if (eventTimestamp - retrievedTimestamp >= registrationDelayInMilliseconds) {
-            Log.debug(LOG_TAG, SELF_TAG,
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
                     "shouldSendRegistrationRequest -  Registration delay of (%d) days has elapsed. Sending the Campaign registration request.",
                     registrationDelay);
             return true;
         }
 
-        Log.debug(LOG_TAG, SELF_TAG,
+        Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
                 "shouldSendRegistrationRequest - The registration request will not be sent because the registration delay of (%d) days has not elapsed.",
                 registrationDelay);
         return false;
