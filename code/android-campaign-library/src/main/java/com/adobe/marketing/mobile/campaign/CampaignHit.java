@@ -1,9 +1,5 @@
 package com.adobe.marketing.mobile.campaign;
 
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.CampaignHit.PAYLOAD;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.CampaignHit.TIMEOUT;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.CampaignHit.URL;
-
 import com.adobe.marketing.mobile.services.HttpMethod;
 import com.adobe.marketing.mobile.util.StringUtils;
 

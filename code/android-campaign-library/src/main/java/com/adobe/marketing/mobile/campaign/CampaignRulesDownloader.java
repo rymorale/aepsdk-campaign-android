@@ -11,21 +11,6 @@
 
 package com.adobe.marketing.mobile.campaign;
 
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.CACHE_BASE_DIR;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.CAMPAIGN_TIMEOUT_DEFAULT;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_REMOTE_ASSETS;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_TEMPLATE;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.HTTP_HEADER_ETAG;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.HTTP_HEADER_IF_MODIFIED_SINCE;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.HTTP_HEADER_IF_NONE_MATCH;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.HTTP_HEADER_LAST_MODIFIED;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.LOG_TAG;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.MESSAGE_CACHE_DIR;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.MESSAGE_CONSEQUENCE_MESSAGE_TYPE;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.RULES_JSON_FILE_NAME;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.ZIP_HANDLE;
-
 import com.adobe.marketing.mobile.ExtensionApi;
 import com.adobe.marketing.mobile.internal.util.StringEncoder;
 import com.adobe.marketing.mobile.launch.rulesengine.LaunchRule;
@@ -94,20 +79,20 @@ class CampaignRulesDownloader {
      */
     void loadRulesFromUrl(final String url, final String linkageFields) {
         if (networkService == null) {
-            Log.debug(LOG_TAG, SELF_TAG,
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
                     "loadRulesFromUrl - Cannot download rules, the network service is unavailable.");
             return;
         }
 
         if (StringUtils.isNullOrEmpty(url)) {
-            Log.warning(LOG_TAG, SELF_TAG,
+            Log.warning(CampaignConstants.LOG_TAG, SELF_TAG,
                     "loadRulesFromUrl - Cannot download rules, provided url is null or empty. Cached rules will be used if present.");
             return;
         }
 
         // 304 - Not Modified support
         Map<String, String> requestProperties = new HashMap<>();
-        final CacheResult cachedRules = cacheService.get(CACHE_BASE_DIR, ZIP_HANDLE);
+        final CacheResult cachedRules = cacheService.get(CampaignConstants.CACHE_BASE_DIR, CampaignConstants.ZIP_HANDLE);
         if (cachedRules != null) {
             requestProperties = extractHeadersFromCache(cachedRules);
         }
@@ -121,8 +106,8 @@ class CampaignRulesDownloader {
                 HttpMethod.GET,
                 null,
                 requestProperties,
-                CAMPAIGN_TIMEOUT_DEFAULT,
-                CAMPAIGN_TIMEOUT_DEFAULT
+                CampaignConstants.CAMPAIGN_TIMEOUT_DEFAULT,
+                CampaignConstants.CAMPAIGN_TIMEOUT_DEFAULT
         );
         networkService.connectAsync(networkRequest, httpConnecting -> {
             onRulesDownloaded(url, httpConnecting);
@@ -149,18 +134,18 @@ class CampaignRulesDownloader {
         RulesLoadResult rulesLoadResult;
         switch (connection.getResponseCode()) {
             case HttpURLConnection.HTTP_OK:
-                Log.trace(LOG_TAG, SELF_TAG, "Registering new Campaign rules downloaded from %s.", url);
+                Log.trace(CampaignConstants.LOG_TAG, SELF_TAG, "Registering new Campaign rules downloaded from %s.", url);
                 rulesLoadResult = extractRules(url, connection.getInputStream(), extractMetadataFromResponse(connection));
                 // save remotes url in Campaign Named Collection
                 updateUrlInNamedCollection(url);
                 break;
             case HttpURLConnection.HTTP_NOT_MODIFIED:
-                Log.trace(LOG_TAG, SELF_TAG, "Campaign rules are not modified, retrieving rules from cache.");
-                rulesLoadResult = new RulesLoadResult(StreamUtils.readAsString(cacheService.get(CACHE_BASE_DIR, RULES_JSON_FILE_NAME).getData()), RulesLoadResult.Reason.NOT_MODIFIED);
+                Log.trace(CampaignConstants.LOG_TAG, SELF_TAG, "Campaign rules are not modified, retrieving rules from cache.");
+                rulesLoadResult = new RulesLoadResult(StreamUtils.readAsString(cacheService.get(CampaignConstants.CACHE_BASE_DIR, CampaignConstants.RULES_JSON_FILE_NAME).getData()), RulesLoadResult.Reason.NOT_MODIFIED);
                 break;
             case HttpURLConnection.HTTP_NOT_FOUND:
             default:
-                Log.trace(LOG_TAG, SELF_TAG, "Received download response: %s", connection.getResponseCode());
+                Log.trace(CampaignConstants.LOG_TAG, SELF_TAG, "Received download response: %s", connection.getResponseCode());
                 return;
         }
         connection.close();
@@ -168,7 +153,7 @@ class CampaignRulesDownloader {
         // register rules
         final List<LaunchRule> campaignRules = JSONRulesParser.parse(Objects.requireNonNull(rulesLoadResult.getData()), extensionApi);
         if (campaignRules != null) {
-            Log.trace(LOG_TAG, SELF_TAG, "Registering %s Campaign rule(s).", campaignRules.size());
+            Log.trace(CampaignConstants.LOG_TAG, SELF_TAG, "Registering %s Campaign rule(s).", campaignRules.size());
             campaignRulesEngine.replaceRules(campaignRules);
         }
 
@@ -189,7 +174,7 @@ class CampaignRulesDownloader {
      */
     void cacheRemoteAssets(final List<LaunchRule> campaignRules) {
         if (campaignRules == null || campaignRules.isEmpty()) {
-            Log.debug(LOG_TAG, SELF_TAG,
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
                     "cacheRemoteAssets - Cannot load consequences, campaign rules list is null or empty.");
             return;
         }
@@ -201,10 +186,10 @@ class CampaignRulesDownloader {
                 final String consequenceType = consequence.getType();
 
                 final Map<String, Object> details = consequence.getDetail();
-                final String templateType = DataReader.optString(details, MESSAGE_CONSEQUENCE_DETAIL_KEY_TEMPLATE, "");
+                final String templateType = DataReader.optString(details, CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_TEMPLATE, "");
                 if (StringUtils.isNullOrEmpty(consequenceType)
-                        || !consequenceType.equals(MESSAGE_CONSEQUENCE_MESSAGE_TYPE)
-                        || !templateType.equals("fullscreen")) {
+                        || !consequenceType.equals(CampaignConstants.MESSAGE_CONSEQUENCE_MESSAGE_TYPE)
+                        || !templateType.equals(CampaignConstants.MESSAGE_TEMPLATE_FULLSCREEN)) {
                     continue;
                 }
 
@@ -213,19 +198,22 @@ class CampaignRulesDownloader {
                     loadedMessageIds.add(consequenceId);
                     final List<String> assetUrls = createAssetUrlList(details);
                     if (assetUrls == null || assetUrls.isEmpty()) {
-                        Log.debug(LOG_TAG, SELF_TAG, "cacheRemoteAssets - Can't download assets, no remote assets found in consequence for message id %s", consequence.getId());
+                        Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "cacheRemoteAssets - Can't download assets, no remote assets found in consequence for message id %s", consequence.getId());
                         break;
                     }
                     campaignMessageAssetsDownloader = new CampaignMessageAssetsDownloader(assetUrls, consequenceId);
                     campaignMessageAssetsDownloader.downloadAssetCollection();
                 } else {
-                    Log.debug(LOG_TAG, SELF_TAG, "cacheRemoteAssets - Can't download assets, Consequence id is null");
+                    Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "cacheRemoteAssets - Can't download assets, Consequence id is null");
                 }
             }
         }
 
-        final File messageCacheDir = new File(ServiceProvider.getInstance().getDeviceInfoService().getApplicationCacheDir() + File.separator + CACHE_BASE_DIR + File.separator
-                + MESSAGE_CACHE_DIR);
+        final File messageCacheDir = new File(ServiceProvider.getInstance().getDeviceInfoService().getApplicationCacheDir()
+                + File.separator
+                + CampaignConstants.CACHE_BASE_DIR
+                + File.separator
+                + CampaignConstants.MESSAGE_CACHE_DIR);
         Utils.clearCachedAssetsNotInList(messageCacheDir, loadedMessageIds);
     }
 
@@ -243,45 +231,45 @@ class CampaignRulesDownloader {
                                          final Map<String, String> metadata) {
 
         if (zipContentStream == null) {
-            Log.debug(LOG_TAG, CACHE_BASE_DIR, "Zip content stream is null");
+            Log.debug(CampaignConstants.LOG_TAG, CampaignConstants.CACHE_BASE_DIR, "Zip content stream is null");
             return new RulesLoadResult(null, RulesLoadResult.Reason.NO_DATA);
         }
 
         // Attempt to create a temporary directory for copying the zipContentStream
         final File tempDirectory = getTemporaryDirectory(key);
         if (!tempDirectory.exists() && !tempDirectory.mkdirs()) {
-            Log.debug(LOG_TAG, SELF_TAG, "Cannot access application cache directory to create temp dir.");
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "Cannot access application cache directory to create temp dir.");
             return new RulesLoadResult(null, RulesLoadResult.Reason.CANNOT_CREATE_TEMP_DIR);
         }
 
         // Copy the content of zipContentStream into the previously created temporary folder
         if (!FileUtils.readInputStreamIntoFile(getZipFileHandle(key), zipContentStream, false)) {
-            Log.debug(LOG_TAG, SELF_TAG, "Couldn't extract zip contents to temp directory.");
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "Couldn't extract zip contents to temp directory.");
             return new RulesLoadResult(null, RulesLoadResult.Reason.CANNOT_STORE_IN_TEMP_DIR);
         }
 
         // Extract the rules zip
         if (!FileUtils.extractFromZip(getZipFileHandle(key), tempDirectory.getPath())) {
-            Log.debug(LOG_TAG, SELF_TAG, "Failed to extract rules response zip into temp dir.");
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "Failed to extract rules response zip into temp dir.");
             return new RulesLoadResult(null, RulesLoadResult.Reason.ZIP_EXTRACTION_FAILED);
         }
 
         // Cache the extracted contents
         final boolean cached = cacheExtractedFiles(tempDirectory, metadata);
         if (!cached) {
-            Log.debug(LOG_TAG, CACHE_BASE_DIR, "Could not cache rules from source %s", key);
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "Could not cache rules from source %s", key);
         }
 
         // Delete the temporary directory created for processing
         deleteTemporaryDirectory(key);
 
-        final CacheResult cachedRulesJson = cacheService.get(CACHE_BASE_DIR, RULES_JSON_FILE_NAME);
+        final CacheResult cachedRulesJson = cacheService.get(CampaignConstants.CACHE_BASE_DIR, CampaignConstants.RULES_JSON_FILE_NAME);
         final String rulesJsonString = StreamUtils.readAsString(cachedRulesJson.getData());
         return new RulesLoadResult(rulesJsonString, RulesLoadResult.Reason.SUCCESS);
     }
 
     private List<String> createAssetUrlList(final Map<String, Object> detailMap) {
-        final List<List<String>> assets = (List<List<String>>) detailMap.get(MESSAGE_CONSEQUENCE_DETAIL_KEY_REMOTE_ASSETS);
+        final List<List<String>> assets = (List<List<String>>) detailMap.get(CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_REMOTE_ASSETS);
         if (assets == null || assets.isEmpty()) {
             return null;
         }
@@ -301,7 +289,7 @@ class CampaignRulesDownloader {
     }
 
     private File getZipFileHandle(final String tag) {
-        return new File(getTemporaryDirectory(tag).getPath() + File.separator + ZIP_HANDLE);
+        return new File(getTemporaryDirectory(tag).getPath() + File.separator + CampaignConstants.ZIP_HANDLE);
     }
 
     private void deleteTemporaryDirectory(final String tag) {
@@ -316,8 +304,8 @@ class CampaignRulesDownloader {
             } else {
                 try {
                     final String fileName = fileEntry.getName();
-                    Log.trace(LOG_TAG, SELF_TAG, "Caching file (%s)", fileName);
-                    cacheService.set(CACHE_BASE_DIR, fileName, new CacheEntry(new FileInputStream(fileEntry), CacheExpiry.never(), metadata));
+                    Log.trace(CampaignConstants.LOG_TAG, SELF_TAG, "Caching file (%s)", fileName);
+                    cacheService.set(CampaignConstants.CACHE_BASE_DIR, fileName, new CacheEntry(new FileInputStream(fileEntry), CacheExpiry.never(), metadata));
                 } catch (final FileNotFoundException exception) {
                     return false;
                 }
@@ -336,16 +324,16 @@ class CampaignRulesDownloader {
     private Map<String, String> extractMetadataFromResponse(final HttpConnecting response) {
         final HashMap<String, String> metadata = new HashMap<>();
 
-        final String lastModifiedProp = response.getResponsePropertyValue(HTTP_HEADER_LAST_MODIFIED);
+        final String lastModifiedProp = response.getResponsePropertyValue(CampaignConstants.HTTP_HEADER_LAST_MODIFIED);
         final Date lastModifiedDate = TimeUtils.parseRFC2822Date(
                 lastModifiedProp, TimeZone.getTimeZone("GMT"), Locale.US);
         final String lastModifiedMetadata = lastModifiedDate == null
                 ? String.valueOf(new Date(0L).getTime())
                 : String.valueOf(lastModifiedDate.getTime());
-        metadata.put(HTTP_HEADER_LAST_MODIFIED, lastModifiedMetadata);
+        metadata.put(CampaignConstants.HTTP_HEADER_LAST_MODIFIED, lastModifiedMetadata);
 
-        final String eTagProp = response.getResponsePropertyValue(HTTP_HEADER_ETAG);
-        metadata.put(HTTP_HEADER_ETAG, eTagProp == null ? "" : eTagProp);
+        final String eTagProp = response.getResponsePropertyValue(CampaignConstants.HTTP_HEADER_ETAG);
+        metadata.put(CampaignConstants.HTTP_HEADER_ETAG, eTagProp == null ? "" : eTagProp);
 
         return metadata;
     }
@@ -365,11 +353,11 @@ class CampaignRulesDownloader {
         }
 
         final Map<String, String> metadata = cacheResult.getMetadata();
-        final String eTag = metadata == null ? "" : metadata.get(HTTP_HEADER_ETAG);
-        headers.put(HTTP_HEADER_IF_NONE_MATCH, eTag != null ? eTag : "");
+        final String eTag = metadata == null ? "" : metadata.get(CampaignConstants.HTTP_HEADER_ETAG);
+        headers.put(CampaignConstants.HTTP_HEADER_IF_NONE_MATCH, eTag != null ? eTag : "");
 
         // Last modified in cache metadata is stored in epoch string. So Convert it to RFC-2822 date format.
-        final String lastModified = metadata == null ? null : metadata.get(HTTP_HEADER_LAST_MODIFIED);
+        final String lastModified = metadata == null ? null : metadata.get(CampaignConstants.HTTP_HEADER_LAST_MODIFIED);
         long lastModifiedEpoch;
         try {
             lastModifiedEpoch = lastModified != null ? Long.parseLong(lastModified) : 0L;
@@ -379,7 +367,7 @@ class CampaignRulesDownloader {
 
         final String ifModifiedSince = TimeUtils.getRFC2822Date(lastModifiedEpoch,
                 TimeZone.getTimeZone("GMT"), Locale.US);
-        headers.put(HTTP_HEADER_IF_MODIFIED_SINCE, ifModifiedSince);
+        headers.put(CampaignConstants.HTTP_HEADER_IF_MODIFIED_SINCE, ifModifiedSince);
         return headers;
     }
 
@@ -393,19 +381,19 @@ class CampaignRulesDownloader {
      */
     private void updateUrlInNamedCollection(final String url) {
         if (campaignNamedCollection == null) {
-            Log.trace(LOG_TAG, SELF_TAG,
+            Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
                     "updateUrlInNamedCollection - Campaign Named Collection is null, cannot store url.");
             return;
         }
 
         if (StringUtils.isNullOrEmpty(url)) {
-            Log.trace(LOG_TAG, SELF_TAG,
+            Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
                     "updateUrlInNamedCollection - Removing remotes URL key in Campaign Named Collection.");
-            campaignNamedCollection.remove(CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY);
+            campaignNamedCollection.remove(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY);
         } else {
-            Log.trace(LOG_TAG, SELF_TAG,
+            Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
                     "updateUrlInDataStore - Persisting remotes URL (%s) in in Campaign Named Collection.", url);
-            campaignNamedCollection.setString(CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY, url);
+            campaignNamedCollection.setString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY, url);
         }
     }
 }

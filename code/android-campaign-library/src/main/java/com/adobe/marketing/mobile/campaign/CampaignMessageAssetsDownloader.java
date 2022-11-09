@@ -11,12 +11,6 @@
 
 package com.adobe.marketing.mobile.campaign;
 
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.CACHE_BASE_DIR;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.CAMPAIGN_TIMEOUT_DEFAULT;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.LOG_TAG;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.MESSAGE_CACHE_DIR;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.METADATA_PATH;
-
 import com.adobe.marketing.mobile.services.DeviceInforming;
 import com.adobe.marketing.mobile.services.HttpMethod;
 import com.adobe.marketing.mobile.services.Log;
@@ -87,10 +81,10 @@ class CampaignMessageAssetsDownloader {
 
         // download assets within the assets to retain list
         for (final String url : assetsToRetain) {
-            final NetworkRequest networkRequest = new NetworkRequest(url, HttpMethod.GET, null, null, CAMPAIGN_TIMEOUT_DEFAULT, CAMPAIGN_TIMEOUT_DEFAULT);
+            final NetworkRequest networkRequest = new NetworkRequest(url, HttpMethod.GET, null, null, CampaignConstants.CAMPAIGN_TIMEOUT_DEFAULT, CampaignConstants.CAMPAIGN_TIMEOUT_DEFAULT);
             networkService.connectAsync(networkRequest, connection -> {
                 if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
-                    Log.debug(LOG_TAG, SELF_TAG, "downloadAssetCollection - Failed to download asset from URL: %s", url);
+                    Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "downloadAssetCollection - Failed to download asset from URL: %s", url);
                     return;
                 }
                 connection.close();
@@ -109,21 +103,21 @@ class CampaignMessageAssetsDownloader {
     private void cacheAssetData(final InputStream assetData, final String key, final String messageId) {
         // create message asset cache directory if needed
         if (!createDirectoryIfNeeded(messageId)) {
-            Log.debug(LOG_TAG, SELF_TAG, "cacheAssetData - Cannot cache asset for message id %s, failed to create cache directory.", messageId);
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "cacheAssetData - Cannot cache asset for message id %s, failed to create cache directory.", messageId);
             return;
         }
 
-        final String assetCacheLocation = CACHE_BASE_DIR + File.separator + MESSAGE_CACHE_DIR + File.separator + messageId;
+        final String assetCacheLocation = CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.MESSAGE_CACHE_DIR + File.separator + messageId;
 
         // check if asset already cached
         if (cacheService.get(assetCacheLocation, key) != null) {
-            Log.debug(LOG_TAG, SELF_TAG, "cacheAssetData - Found cached asset for message id %s.", key, messageId);
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "cacheAssetData - Found cached asset for message id %s.", key, messageId);
             return;
         }
 
-        Log.debug(LOG_TAG, SELF_TAG, "cacheAssetData - Caching asset %s for message id %s.", key, messageId);
+        Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "cacheAssetData - Caching asset %s for message id %s.", key, messageId);
         final Map<String, String> metadata = new HashMap<>();
-        metadata.put(METADATA_PATH, assetCacheLocation);
+        metadata.put(CampaignConstants.METADATA_PATH, assetCacheLocation);
         final CacheEntry cacheEntry = new CacheEntry(assetData, CacheExpiry.never(), null);
         cacheService.set(assetCacheLocation, key, cacheEntry);
     }
@@ -147,8 +141,8 @@ class CampaignMessageAssetsDownloader {
      */
     private void createMessageAssetCacheDirectory() {
         try {
-            assetDir = new File(deviceInfoService.getApplicationCacheDir() + File.separator + CACHE_BASE_DIR + File.separator
-                    + MESSAGE_CACHE_DIR);
+            assetDir = new File(deviceInfoService.getApplicationCacheDir() + File.separator + CampaignConstants.CACHE_BASE_DIR + File.separator
+                    + CampaignConstants.MESSAGE_CACHE_DIR);
 
             if (!assetDir.exists() && !assetDir.mkdirs()) {
                 Log.warning(CampaignConstants.LOG_TAG, SELF_TAG,

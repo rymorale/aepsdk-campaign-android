@@ -11,24 +11,6 @@
 
 package com.adobe.marketing.mobile.campaign;
 
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.CACHE_BASE_DIR;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.CAMPAIGN_INTERACTION_TYPE;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_HTML;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_REMOTE_ASSETS;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_ID;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.LOG_TAG;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.MESSAGE_CACHE_DIR;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.MESSAGE_DATA_ID_TOKENS_LEN;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.MESSAGE_DATA_TAG_ID;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.MESSAGE_DATA_TAG_ID_BUTTON_1;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.MESSAGE_DATA_TAG_ID_BUTTON_2;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.MESSAGE_DATA_TAG_ID_BUTTON_X;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.MESSAGE_DATA_TAG_ID_DELIMITER;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.MESSAGE_SCHEME;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.MESSAGE_SCHEME_PATH_CANCEL;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.MESSAGE_SCHEME_PATH_CONFIRM;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.METADATA_PATH;
-
 import com.adobe.marketing.mobile.launch.rulesengine.RuleConsequence;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.ServiceProvider;
@@ -59,13 +41,15 @@ import java.util.Map;
  */
 class FullScreenMessage extends CampaignMessage {
     private final String SELF_TAG = "FullScreenMessage";
-    private final String MESSAGES_CACHE = CACHE_BASE_DIR + File.separator + MESSAGE_CACHE_DIR + File.separator;
+    private final static int FILL_DEVICE_DISPLAY = 100;
+    private final String MESSAGES_CACHE = CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.MESSAGE_CACHE_DIR + File.separator;
     private final CacheService cacheService;
     private final UIService uiService;
-    private final List<List<String>> assets = new ArrayList<>();
+
     private String html;
     private String htmlContent;
     private String messageId;
+    private final List<List<String>> assets = new ArrayList<>();
 
     /**
      * Constructor.
@@ -110,23 +94,23 @@ class FullScreenMessage extends CampaignMessage {
         }
 
         // html is required
-        html = DataReader.optString(detailDictionary, MESSAGE_CONSEQUENCE_DETAIL_KEY_HTML, "");
+        html = DataReader.optString(detailDictionary, CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_HTML, "");
 
         if (StringUtils.isNullOrEmpty(html)) {
-            Log.debug(LOG_TAG, SELF_TAG,
-                    "parseFullScreenMessagePayload - Unable to create fullscreen message, html is missing/empty.");
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
+                    "parseFullScreenMessagePayload -  Unable to create fullscreen message, html is missing/empty.");
             throw new CampaignMessageRequiredFieldMissingException("Messages - Unable to create fullscreen message, html is missing/empty.");
         }
 
         // remote assets are optional
-        final List<List<String>> assetsList = (List<List<String>>) detailDictionary.get(MESSAGE_CONSEQUENCE_DETAIL_KEY_REMOTE_ASSETS);
+        final List<List<String>> assetsList = (List<List<String>>) detailDictionary.get(CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_REMOTE_ASSETS);
         if (assetsList != null && !assetsList.isEmpty()) {
             for (final List<String> assets : assetsList) {
                 extractAssets(assets);
             }
         } else {
-            Log.trace(LOG_TAG, SELF_TAG,
-                    "parseFullScreenMessagePayload - Tried to read \"assets\" for fullscreen message but none found.  This is not a required field.");
+            Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
+                    "parseFullScreenMessagePayload -  Tried to read \"assets\" for fullscreen message but none found.  This is not a required field.");
         }
 
         // store message id for retrieving cached assets
@@ -140,14 +124,14 @@ class FullScreenMessage extends CampaignMessage {
      */
     private void extractAssets(final List<String> assets) {
         if (assets == null || assets.isEmpty()) {
-            Log.trace(LOG_TAG, SELF_TAG, "extractAssets - There are no assets to extract.");
+            Log.trace(CampaignConstants.LOG_TAG, SELF_TAG, "extractAssets - There are no assets to extract.");
             return;
         }
         final List<String> foundAssets = new ArrayList<>();
         for (final String asset : assets) {
             foundAssets.add(asset);
         }
-        Log.trace(LOG_TAG, SELF_TAG, "extractAssets - Adding %s to extracted assets.", foundAssets);
+        Log.trace(CampaignConstants.LOG_TAG, SELF_TAG, "extractAssets - Adding %s to extracted assets.", foundAssets);
         this.assets.add(foundAssets);
     }
 
@@ -163,31 +147,31 @@ class FullScreenMessage extends CampaignMessage {
      */
     @Override
     void showMessage() {
-        Log.debug(LOG_TAG, SELF_TAG, "showMessage - Attempting to show fullscreen message with ID %s", messageId);
+        Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "showMessage - Attempting to show fullscreen message with ID %s", messageId);
         if (uiService == null) {
-            Log.warning(LOG_TAG, SELF_TAG,
+            Log.warning(CampaignConstants.LOG_TAG, SELF_TAG,
                     "showMessage - UI Service is unavailable. Unable to show fullscreen message with ID (%s)",
                     messageId);
             return;
         }
 
         if (cacheService == null) {
-            Log.debug(LOG_TAG, SELF_TAG,
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
                     "showMessage - No cache service found, to show fullscreen message with ID %s", messageId);
             return;
         }
 
-        final CacheResult cacheResult = cacheService.get(CACHE_BASE_DIR, html);
+        final CacheResult cacheResult = cacheService.get(CampaignConstants.CACHE_BASE_DIR, html);
         if (cacheResult == null) {
-            Log.debug(LOG_TAG, SELF_TAG,
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
                     "showMessage - Unable to find cached html content for fullscreen message with ID %s", messageId);
             return;
         }
         htmlContent = StreamUtils.readAsString(cacheResult.getData());
 
         if (StringUtils.isNullOrEmpty(htmlContent)) {
-            Log.debug(LOG_TAG, SELF_TAG,
-                    "showMessage - No html content in file (%s). File is missing or invalid!", html);
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
+                    "showMessage -  No html content in file (%s). File is missing or invalid!", html);
             return;
         }
 
@@ -195,15 +179,15 @@ class FullScreenMessage extends CampaignMessage {
 
         final FullScreenMessageUiListener fullScreenMessageUiListener = new FullScreenMessageUiListener();
         final MessageSettings messageSettings = new MessageSettings();
-        // Creating default Message Settings as ACS fullscreen IAM do not create their own
-        messageSettings.setHeight(100);
-        messageSettings.setWidth(100);
+        // ACS fullscreen messages are displayed at 100% scale
+        messageSettings.setHeight(FILL_DEVICE_DISPLAY);
+        messageSettings.setWidth(FILL_DEVICE_DISPLAY);
         messageSettings.setParent(this);
         messageSettings.setVerticalAlign(MessageSettings.MessageAlignment.TOP);
         messageSettings.setHorizontalAlign(MessageSettings.MessageAlignment.CENTER);
         messageSettings.setDisplayAnimation(MessageSettings.MessageAnimation.NONE);
         messageSettings.setDismissAnimation(MessageSettings.MessageAnimation.NONE);
-        messageSettings.setBackdropColor("#FFFFFF"); // html color code for "white"
+        messageSettings.setBackdropColor("#FFFFFF"); // html code for white
         messageSettings.setBackdropOpacity(1);
         final FullscreenMessage fullscreenMessage = uiService.createFullscreenMessage(htmlContent,
                 fullScreenMessageUiListener, !cachedResourcesMap.isEmpty(), messageSettings);
@@ -241,13 +225,13 @@ class FullScreenMessage extends CampaignMessage {
     private Map<String, String> getCachedResourcesMapAndUpdateHtml() {
         // early bail if we don't have assets or if cache service is unavailable
         if (assets == null || assets.isEmpty()) {
-            Log.debug(LOG_TAG, SELF_TAG, "generateExpandedHtml - No cached assets found, cannot expand URLs in the HTML.");
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "generateExpandedHtml -  No cached assets found, cannot expand URLs in the HTML.");
             return Collections.emptyMap();
         }
 
         if (cacheService == null) {
-            Log.debug(LOG_TAG, SELF_TAG,
-                    "getLocalResourcesMapping - No cache service found, cannot generate local resource mapping.");
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
+                    "getLocalResourcesMapping -  No cache service found, cannot generate local resource mapping.");
             return Collections.emptyMap();
         }
 
@@ -270,7 +254,7 @@ class FullScreenMessage extends CampaignMessage {
                 final CacheResult assetValueFile = cacheService.get(MESSAGES_CACHE + messageId, currentAsset);
 
                 if (assetValueFile != null) {
-                    assetValue = assetValueFile.getMetadata().get(METADATA_PATH);
+                    assetValue = assetValueFile.getMetadata().get(CampaignConstants.METADATA_PATH);
                     break;
                 }
 
@@ -309,18 +293,18 @@ class FullScreenMessage extends CampaignMessage {
      */
     private void processMessageInteraction(final Map<String, String> query) {
         if (query == null || query.isEmpty()) {
-            Log.debug(LOG_TAG, SELF_TAG,
-                    "processMessageInteraction - Cannot process message interaction, input query is null or empty.");
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
+                    "processMessageInteraction -  Cannot process message interaction, input query is null or empty.");
             return;
         }
 
-        if (query.containsKey(MESSAGE_DATA_TAG_ID)) {
-            final String id = query.get(MESSAGE_DATA_TAG_ID);
-            final String[] strTokens = id.split(MESSAGE_DATA_TAG_ID_DELIMITER);
+        if (query.containsKey(CampaignConstants.MESSAGE_DATA_TAG_ID)) {
+            final String id = query.get(CampaignConstants.MESSAGE_DATA_TAG_ID);
+            final String[] strTokens = id.split(CampaignConstants.MESSAGE_DATA_TAG_ID_DELIMITER);
 
-            if (strTokens.length != MESSAGE_DATA_ID_TOKENS_LEN) {
-                Log.debug(LOG_TAG, MESSAGE_CONSEQUENCE_ID,
-                        "processMessageInteraction - Cannot process message interaction, input query contains insufficient id tokens.");
+            if (strTokens.length != CampaignConstants.MESSAGE_DATA_ID_TOKENS_LEN) {
+                Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
+                        "processMessageInteraction -  Cannot process message interaction, input query contains insufficient id tokens.");
                 return;
             }
 
@@ -329,21 +313,21 @@ class FullScreenMessage extends CampaignMessage {
             try {
                 tagId = Integer.parseInt(strTokens[2]);
             } catch (NumberFormatException e) {
-                Log.debug(LOG_TAG, SELF_TAG,
-                        "processMessageInteraction - Cannot parse tag Id from the id field in given query (%s).", e);
+                Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
+                        "processMessageInteraction -  Cannot parse tag Id from the id field in given query (%s).", e);
             }
 
             switch (tagId) {
-                case MESSAGE_DATA_TAG_ID_BUTTON_1: // adbinapp://confirm/?id=h11901a,86f10d,3
-                case MESSAGE_DATA_TAG_ID_BUTTON_2: // adbinapp://confirm/?id=h11901a,86f10d,4
-                case MESSAGE_DATA_TAG_ID_BUTTON_X: // adbinapp://cancel?id=h11901a,86f10d,5
+                case CampaignConstants.MESSAGE_DATA_TAG_ID_BUTTON_1: // adbinapp://confirm/?id=h11901a,86f10d,3
+                case CampaignConstants.MESSAGE_DATA_TAG_ID_BUTTON_2: // adbinapp://confirm/?id=h11901a,86f10d,4
+                case CampaignConstants.MESSAGE_DATA_TAG_ID_BUTTON_X: // adbinapp://cancel?id=h11901a,86f10d,5
                     clickedWithData(query);
                     viewed(); // Temporary fix for AMSDK-7633. No viewed event should be dispatched on confirm.
                     break;
 
                 default:
-                    Log.debug(LOG_TAG, SELF_TAG,
-                            "processMessageInteraction - Unsupported tag Id found in the id field in the given query (%s).", tagId);
+                    Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
+                            "processMessageInteraction -  Unsupported tag Id found in the id field in the given query (%s).", tagId);
                     break;
 
             }
@@ -395,7 +379,7 @@ class FullScreenMessage extends CampaignMessage {
          */
         @Override
         public void onShow(final FullscreenMessage message) {
-            Log.debug(LOG_TAG, SELF_TAG, "Fullscreen on show callback received.");
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "Fullscreen on show callback received.");
             triggered();
         }
 
@@ -408,7 +392,7 @@ class FullScreenMessage extends CampaignMessage {
          */
         @Override
         public void onDismiss(final FullscreenMessage message) {
-            Log.debug(LOG_TAG, SELF_TAG, "Fullscreen on dismiss callback received.");
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "Fullscreen on dismiss callback received.");
             viewed();
         }
 
@@ -436,10 +420,10 @@ class FullScreenMessage extends CampaignMessage {
         @Override
         public boolean overrideUrlLoad(final FullscreenMessage message, final String urlString) {
 
-            Log.trace(LOG_TAG, "Fullscreen overrideUrlLoad callback received with url (%s)", urlString);
+            Log.trace(CampaignConstants.LOG_TAG, "Fullscreen overrideUrlLoad callback received with url (%s)", urlString);
 
             if (StringUtils.isNullOrEmpty(urlString)) {
-                Log.debug(LOG_TAG, SELF_TAG, "Cannot process provided URL string, it is null or empty.");
+                Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "Cannot process provided URL string, it is null or empty.");
                 return true;
             }
 
@@ -449,25 +433,25 @@ class FullScreenMessage extends CampaignMessage {
                 uri = new URI(urlString);
 
             } catch (URISyntaxException ex) {
-                Log.debug(LOG_TAG, "overrideUrlLoad - Invalid message URI found (%s).", urlString);
+                Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "overrideUrlLoad -  Invalid message URI found (%s).", urlString);
                 return true;
             }
 
             // check adbinapp scheme
             final String messageScheme = uri.getScheme();
 
-            if (!messageScheme.equals(MESSAGE_SCHEME)) {
-                Log.debug(LOG_TAG, "overrideUrlLoad - Invalid message scheme found in URI. (%s)", urlString);
+            if (!messageScheme.equals(CampaignConstants.MESSAGE_SCHEME)) {
+                Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "overrideUrlLoad -  Invalid message scheme found in URI. (%s)", urlString);
                 return false;
             }
 
             // cancel or confirm
             final String host = uri.getHost();
 
-            if (!host.equals(MESSAGE_SCHEME_PATH_CONFIRM) &&
-                    !host.equals(MESSAGE_SCHEME_PATH_CANCEL)) {
-                Log.debug(LOG_TAG,
-                        "overrideUrlLoad - Unsupported URI host found, neither \"confirm\" nor \"cancel\". (%s)", urlString);
+            if (!host.equals(CampaignConstants.MESSAGE_SCHEME_PATH_CONFIRM) &&
+                    !host.equals(CampaignConstants.MESSAGE_SCHEME_PATH_CANCEL)) {
+                Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
+                        "overrideUrlLoad -  Unsupported URI host found, neither \"confirm\" nor \"cancel\". (%s)", urlString);
                 return false;
             }
 
@@ -478,7 +462,7 @@ class FullScreenMessage extends CampaignMessage {
             final Map<String, String> messageData = extractQueryParameters(query);
 
             if (messageData != null && !messageData.isEmpty()) {
-                messageData.put(CAMPAIGN_INTERACTION_TYPE, host);
+                messageData.put(CampaignConstants.CAMPAIGN_INTERACTION_TYPE, host);
 
                 // handle message interaction
                 processMessageInteraction(messageData);
@@ -498,7 +482,7 @@ class FullScreenMessage extends CampaignMessage {
 
         @Override
         public void onShowFailure() {
-            Log.debug(LOG_TAG, SELF_TAG, "onShowFailure - Fullscreen message failed to show.");
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "onShowFailure -  Fullscreen message failed to show.");
         }
     }
 }

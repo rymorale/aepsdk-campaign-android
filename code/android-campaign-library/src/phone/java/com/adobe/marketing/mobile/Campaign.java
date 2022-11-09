@@ -11,9 +11,7 @@
 
 package com.adobe.marketing.mobile;
 
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.Campaign.LINKAGE_FIELDS;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.LOG_TAG;
-
+import com.adobe.marketing.mobile.campaign.CampaignConstants;
 import com.adobe.marketing.mobile.services.Log;
 
 import java.util.HashMap;
@@ -52,13 +50,13 @@ public class Campaign {
 	 */
 	public static void setLinkageFields(final Map<String, String> linkageFields) {
 		if (linkageFields == null || linkageFields.isEmpty()) {
-			Log.debug(LOG_TAG, "setLinkageFields",
+			Log.debug(CampaignConstants.LOG_TAG, "setLinkageFields",
 					"setLinkageFields -  Cannot set Linkage Fields, provided linkage fields map is empty. \n For more information: https://aep-sdks.gitbook.io/docs/using-mobile-extensions/adobe-campaign-standard/adobe-campaign-standard-api-reference#set-linkage-fields");
 			return;
 		}
 
 		final Map<String, Object> eventData = new HashMap<>();
-		eventData.put(LINKAGE_FIELDS, linkageFields);
+		eventData.put(CampaignConstants.EventDataKeys.Campaign.LINKAGE_FIELDS, linkageFields);
 
 		final Event event = new Event.Builder("SetLinkageFields Event",
 				EventType.CAMPAIGN, EventSource.REQUEST_IDENTITY).setEventData(eventData).build();

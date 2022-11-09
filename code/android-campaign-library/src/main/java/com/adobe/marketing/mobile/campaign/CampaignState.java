@@ -11,8 +11,6 @@
 
 package com.adobe.marketing.mobile.campaign;
 
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.LOG_TAG;
-
 import com.adobe.marketing.mobile.MobilePrivacyStatus;
 import com.adobe.marketing.mobile.SharedStateResult;
 import com.adobe.marketing.mobile.services.Log;
@@ -160,7 +158,7 @@ final class CampaignState {
      */
     boolean canDownloadRulesWithCurrentState() {
         if (this.privacyStatus != MobilePrivacyStatus.OPT_IN) {
-            Log.trace(LOG_TAG, SELF_TAG,
+            Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
                     "canDownloadRulesWithCurrentState -  Cannot download rules, since privacy status is not opted in.");
             return false;
         }
@@ -176,7 +174,7 @@ final class CampaignState {
      */
     boolean canRegisterWithCurrentState() {
         if (this.privacyStatus != MobilePrivacyStatus.OPT_IN) {
-            Log.trace(LOG_TAG, SELF_TAG,
+            Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
                     "canRegisterWithCurrentState -  Cannot register with Campaign, since privacy status is not opted in.");
             return false;
         }
@@ -192,7 +190,7 @@ final class CampaignState {
      */
     boolean canSendTrackInfoWithCurrentState() {
         if (this.privacyStatus != MobilePrivacyStatus.OPT_IN) {
-            Log.trace(LOG_TAG, SELF_TAG,
+            Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
                     "canSendTrackInfoWithCurrentState -  Cannot send message track request to Campaign, since privacy status is not opted in.");
             return false;
         }
@@ -211,7 +209,7 @@ final class CampaignState {
      */
     private void setConfiguration(final Map<String, Object> configState) {
         if (configState == null || configState.isEmpty()) {
-            Log.debug(LOG_TAG, SELF_TAG,
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
                     "setConfiguration -  Cannot set Configuration properties, provided config data is null.");
             return;
         }
@@ -234,7 +232,7 @@ final class CampaignState {
      */
     private void setIdentity(final Map<String, Object> identityState) {
 //		if (identityState == null || identityState.isEmpty()) {
-//			Log.debug(LOG_TAG, SELF_TAG, "setIdentity - Cannot set Identity properties, provided identity data is null.");
+//			Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "setIdentity - Cannot set Identity properties, provided identity data is null.");
 //			return;
 //		}
 //

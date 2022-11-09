@@ -11,11 +11,6 @@
 
 package com.adobe.marketing.mobile.campaign;
 
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.CAMPAIGN_INTERACTION_URL;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.CHARSET_UTF_8;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_TEMPLATE;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.LOG_TAG;
-
 import com.adobe.marketing.mobile.launch.rulesengine.RuleConsequence;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.ServiceProvider;
@@ -129,7 +124,7 @@ abstract class CampaignMessage {
         }
 
         // template is required
-        final String template = DataReader.optString(detailObject, MESSAGE_CONSEQUENCE_DETAIL_KEY_TEMPLATE, "");
+        final String template = DataReader.optString(detailObject, CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_TEMPLATE, "");
 
         if (StringUtils.isNullOrEmpty(template)) {
             Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "createMessageObject -  No message template found. Unable to proceed.");
@@ -230,13 +225,13 @@ abstract class CampaignMessage {
             final String key = entry.getKey();
             final String value = entry.getValue();
 
-            if (key.equals(CAMPAIGN_INTERACTION_URL)) {
+            if (key.equals(CampaignConstants.CAMPAIGN_INTERACTION_URL)) {
                 String url = null;
 
                 try {
-                    url = URLDecoder.decode(value, CHARSET_UTF_8);
+                    url = URLDecoder.decode(value, CampaignConstants.CHARSET_UTF_8);
                 } catch (final UnsupportedEncodingException e) {
-                    Log.warning(LOG_TAG, SELF_TAG, "Failed to decode message interaction url (%s)", e.getMessage());
+                    Log.warning(CampaignConstants.LOG_TAG, SELF_TAG, "Failed to decode message interaction url (%s)", e.getMessage());
                 }
 
                 final Map<String, String> urlTokens = new HashMap<String, String>();

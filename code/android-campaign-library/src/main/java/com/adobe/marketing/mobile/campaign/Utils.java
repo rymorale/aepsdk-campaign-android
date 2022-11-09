@@ -11,11 +11,6 @@
 
 package com.adobe.marketing.mobile.campaign;
 
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.CampaignHit.PAYLOAD;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.CampaignHit.TIMEOUT;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.CampaignHit.URL;
-import static com.adobe.marketing.mobile.campaign.CampaignConstants.LOG_TAG;
-
 import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.Log;
 
@@ -40,7 +35,7 @@ class Utils {
      */
     static CampaignHit campaignHitFromDataEntity(final DataEntity dataEntity) throws JSONException {
         final JSONObject jsonData = new JSONObject(dataEntity.getData());
-        return new CampaignHit(jsonData.getString(URL), jsonData.getString(PAYLOAD), jsonData.getInt(TIMEOUT));
+        return new CampaignHit(jsonData.getString(CampaignConstants.CampaignHit.URL), jsonData.getString(CampaignConstants.CampaignHit.PAYLOAD), jsonData.getInt(CampaignConstants.CampaignHit.TIMEOUT));
     }
 
     /**
