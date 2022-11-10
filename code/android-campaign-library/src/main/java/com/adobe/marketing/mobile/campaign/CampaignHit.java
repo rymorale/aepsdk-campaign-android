@@ -9,7 +9,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class CampaignHit {
-    private final String SELF_TAG = "CampaignHit";
 
     String url;
     String payload;
@@ -29,9 +28,9 @@ public class CampaignHit {
     public String toString() {
         final Map<String, Object> dataMap = new HashMap<String, Object>() {
             {
-                put(URL, url);
-                put(PAYLOAD, payload);
-                put(TIMEOUT, timeout);
+                put(CampaignConstants.CampaignHit.URL, url);
+                put(CampaignConstants.CampaignHit.PAYLOAD, payload);
+                put(CampaignConstants.CampaignHit.TIMEOUT, timeout);
             }
         };
         final JSONObject jsonData = new JSONObject(dataMap);
