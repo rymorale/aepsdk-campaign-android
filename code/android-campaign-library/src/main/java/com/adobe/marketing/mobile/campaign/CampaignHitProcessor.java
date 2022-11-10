@@ -34,6 +34,8 @@ import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -111,13 +113,14 @@ class CampaignHitProcessor implements HitProcessing {
                 campaignHit.timeout);
 
         final AtomicBoolean retryHit = new AtomicBoolean(false);
+        final CountDownLatch latch = new CountDownLatch(1);
         networkService.connectAsync(networkRequest, connection -> {
             if (connection == null || (connection.getResponseCode() == CampaignConstants.INVALID_CONNECTION_RESPONSE_CODE)) {
                 Log.debug(LOG_TAG, SELF_TAG,
                         "network process - Could not process a Campaign network request because the connection was null or response code was invalid. Retrying the request.");
                 retryHit.set(true);
             } else if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-                Log.debug(LOG_TAG, SELF_TAG, "network process - Request (%s) was sent", campaignHit.url);
+                Log.debug(LOG_TAG, SELF_TAG, "network process - Request was sent to (%s)", campaignHit.url);
                 updateTimestampInNamedCollection(System.currentTimeMillis());
                 retryHit.set(false);
             } else if (!recoverableNetworkErrorCodes.contains(connection.getResponseCode())) {
@@ -129,7 +132,13 @@ class CampaignHitProcessor implements HitProcessing {
                         "network process - Recoverable network error while processing requests, will retry.");
                 retryHit.set(true);
             }
+            latch.countDown();
         });
+        try {
+            latch.await((CampaignConstants.CAMPAIGN_TIMEOUT_DEFAULT + 1), TimeUnit.SECONDS);
+        } catch (final InterruptedException e) {
+            Log.warning(LOG_TAG, SELF_TAG, "process hit - exception occurred while waiting for connectAsync latch: %s", e.getMessage());
+        }
         return retryHit.get();
     }
 
