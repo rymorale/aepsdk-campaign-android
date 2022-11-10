@@ -123,10 +123,12 @@ class CampaignHitProcessor implements HitProcessing {
                 Log.debug(LOG_TAG, SELF_TAG, "network process - Request was sent to (%s)", campaignHit.url);
                 updateTimestampInNamedCollection(System.currentTimeMillis());
                 retryHit.set(false);
+                connection.close();
             } else if (!recoverableNetworkErrorCodes.contains(connection.getResponseCode())) {
                 Log.debug(LOG_TAG, SELF_TAG,
                         "network process - Unrecoverable network error while processing requests. Discarding request.");
                 retryHit.set(false);
+                connection.close();
             } else {
                 Log.debug(LOG_TAG, SELF_TAG,
                         "network process - Recoverable network error while processing requests, will retry.");

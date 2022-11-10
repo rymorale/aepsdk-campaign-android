@@ -207,6 +207,7 @@ public final class CampaignConstants {
         public static final class Lifecycle {
             static final String EXTENSION_NAME = "com.adobe.module.lifecycle";
             static final String LAUNCH_EVENT = "launchevent";
+            static final String INSTALL_EVENT = "installevent";
             static final String LIFECYCLE_CONTEXT_DATA = "lifecyclecontextdata";
 
             private Lifecycle() {

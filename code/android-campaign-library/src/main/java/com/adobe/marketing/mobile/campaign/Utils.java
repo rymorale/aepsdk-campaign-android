@@ -12,16 +12,22 @@
 package com.adobe.marketing.mobile.campaign;
 
 import com.adobe.marketing.mobile.services.DataEntity;
+import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.Log;
+import com.adobe.marketing.mobile.services.caching.CacheResult;
+import com.adobe.marketing.mobile.util.TimeUtils;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 
 class Utils {
     private Utils() {
@@ -56,5 +62,62 @@ class Utils {
                 }
             }
         }
+    }
+
+    /**
+     * Extracts the response properties (like {@code HTTP_HEADER_ETAG} , {@code HTTP_HEADER_LAST_MODIFIED}
+     * that are useful as cache metadata.
+     *
+     * @param response the {@code HttpConnecting} from where the response properties should be extracted from
+     * @return a map of metadata keys and their values as obrained from the {@code response}
+     */
+    static HashMap<String, String> extractMetadataFromResponse(final HttpConnecting response) {
+        final HashMap<String, String> metadata = new HashMap<>();
+
+        final String lastModifiedProp = response.getResponsePropertyValue(CampaignConstants.HTTP_HEADER_LAST_MODIFIED);
+        final Date lastModifiedDate = TimeUtils.parseRFC2822Date(
+                lastModifiedProp, TimeZone.getTimeZone("GMT"), Locale.US);
+        final String lastModifiedMetadata = lastModifiedDate == null
+                ? String.valueOf(new Date(0L).getTime())
+                : String.valueOf(lastModifiedDate.getTime());
+        metadata.put(CampaignConstants.HTTP_HEADER_LAST_MODIFIED, lastModifiedMetadata);
+
+        final String eTagProp = response.getResponsePropertyValue(CampaignConstants.HTTP_HEADER_ETAG);
+        metadata.put(CampaignConstants.HTTP_HEADER_ETAG, eTagProp == null ? "" : eTagProp);
+
+        return metadata;
+    }
+
+    /**
+     * Creates http headers for conditional fetching, based on the metadata of the
+     * {@code CacheResult} provided.
+     *
+     * @param cacheResult the cache result whose metadata should be used for finding headers
+     * @return a map of headers (HTTP_HEADER_IF_MODIFIED_SINCE, HTTP_HEADER_IF_NONE_MATCH)
+     * that can be used while fetching any modified content.
+     */
+    static Map<String, String> extractHeadersFromCache(final CacheResult cacheResult) {
+        final Map<String, String> headers = new HashMap<>();
+        if (cacheResult == null) {
+            return headers;
+        }
+
+        final Map<String, String> metadata = cacheResult.getMetadata();
+        final String eTag = metadata == null ? "" : metadata.get(CampaignConstants.HTTP_HEADER_ETAG);
+        headers.put(CampaignConstants.HTTP_HEADER_IF_NONE_MATCH, eTag != null ? eTag : "");
+
+        // Last modified in cache metadata is stored in epoch string. So Convert it to RFC-2822 date format.
+        final String lastModified = metadata == null ? null : metadata.get(CampaignConstants.HTTP_HEADER_LAST_MODIFIED);
+        long lastModifiedEpoch;
+        try {
+            lastModifiedEpoch = lastModified != null ? Long.parseLong(lastModified) : 0L;
+        } catch (final NumberFormatException e) {
+            lastModifiedEpoch = 0L;
+        }
+
+        final String ifModifiedSince = TimeUtils.getRFC2822Date(lastModifiedEpoch,
+                TimeZone.getTimeZone("GMT"), Locale.US);
+        headers.put(CampaignConstants.HTTP_HEADER_IF_MODIFIED_SINCE, ifModifiedSince);
+        return headers;
     }
 }
