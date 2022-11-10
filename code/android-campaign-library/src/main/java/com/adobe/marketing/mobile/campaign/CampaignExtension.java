@@ -12,7 +12,6 @@
 package com.adobe.marketing.mobile.campaign;
 
 import android.util.Base64;
-import android.util.JsonReader;
 
 import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.EventSource;
@@ -32,7 +31,6 @@ import com.adobe.marketing.mobile.services.DataQueuing;
 import com.adobe.marketing.mobile.services.DataStoring;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
-import com.adobe.marketing.mobile.services.Networking;
 import com.adobe.marketing.mobile.services.PersistentHitQueue;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.caching.CacheService;
@@ -101,8 +99,8 @@ public class CampaignExtension extends Extension {
         campaignRulesDownloader = new CampaignRulesDownloader(extensionApi, campaignRulesEngine, getNamedCollection(), cacheService);
 
         // setup persistent hit queue
-        final DataQueuing campaignDataQueue = ServiceProvider.getInstance().getDataQueueService();
-        final DataQueue campaignDataQueue = dataQueuing.getDataQueue(FRIENDLY_NAME);
+        final DataQueuing campaignDataQueueService = ServiceProvider.getInstance().getDataQueueService();
+        final DataQueue campaignDataQueue = campaignDataQueueService.getDataQueue(CampaignConstants.FRIENDLY_NAME);
         campaignPersistentHitQueue = new PersistentHitQueue(campaignDataQueue, new CampaignHitProcessor());
 
         // initialize the campaign state
