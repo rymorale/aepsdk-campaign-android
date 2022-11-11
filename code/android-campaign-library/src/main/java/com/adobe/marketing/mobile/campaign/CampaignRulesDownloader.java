@@ -144,7 +144,8 @@ class CampaignRulesDownloader {
                 break;
             case HttpURLConnection.HTTP_NOT_FOUND:
             default:
-                Log.trace(CampaignConstants.LOG_TAG, SELF_TAG, "Received download response: %s", connection.getResponseCode());
+                Log.error(CampaignConstants.LOG_TAG, SELF_TAG, "Received download response: %s", connection.getResponseCode());
+                connection.close();
                 return;
         }
         connection.close();
