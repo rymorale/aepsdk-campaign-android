@@ -23,180 +23,181 @@ import java.util.concurrent.TimeUnit;
  */
 class CampaignHitsDatabase implements HitQueue.IHitProcessor<CampaignHit> {
 
-	private final NetworkService networkService;
-	private final SystemInfoService systemInfoService;
-	private final HitQueue<CampaignHit, CampaignHitSchema> hitQueue;
-	private LocalStorageService.DataStore dataStore;
-	/**
-	 * Default Constructor
-	 *
-	 * @param services {@link PlatformServices} instance
-	 * @throws MissingPlatformServicesException if {@code services} is null
-	 */
-	CampaignHitsDatabase(final PlatformServices services) throws MissingPlatformServicesException {
-		this(services, null);
-		this.dataStore = services.getLocalStorageService().getDataStore(CampaignConstants.CAMPAIGN_DATA_STORE_NAME);
-	}
+    private final NetworkService networkService;
+    private final SystemInfoService systemInfoService;
+    private final HitQueue<CampaignHit, CampaignHitSchema> hitQueue;
+    private LocalStorageService.DataStore dataStore;
 
-	/**
-	 * Constructor for test
-	 *
-	 * @param services {@link PlatformServices} instance
-	 * @param hitQueue {@link HitQueue} for unit testing purposes
-	 * @throws MissingPlatformServicesException if {@code services} is null
-	 */
-	CampaignHitsDatabase(final PlatformServices services,
-						 final HitQueue<CampaignHit, CampaignHitSchema> hitQueue)
-	throws MissingPlatformServicesException {
+    /**
+     * Default Constructor
+     *
+     * @param services {@link PlatformServices} instance
+     * @throws MissingPlatformServicesException if {@code services} is null
+     */
+    CampaignHitsDatabase(final PlatformServices services) throws MissingPlatformServicesException {
+        this(services, null);
+        this.dataStore = services.getLocalStorageService().getDataStore(CampaignConstants.CAMPAIGN_DATA_STORE_NAME);
+    }
 
-		if (services == null) {
-			throw new MissingPlatformServicesException("Platform services are not available.");
-		}
+    /**
+     * Constructor for test
+     *
+     * @param services {@link PlatformServices} instance
+     * @param hitQueue {@link HitQueue} for unit testing purposes
+     * @throws MissingPlatformServicesException if {@code services} is null
+     */
+    CampaignHitsDatabase(final PlatformServices services,
+                         final HitQueue<CampaignHit, CampaignHitSchema> hitQueue)
+            throws MissingPlatformServicesException {
 
-		this.networkService = services.getNetworkService();
-		this.systemInfoService = services.getSystemInfoService();
-		this.dataStore = services.getLocalStorageService().getDataStore(CampaignConstants.CAMPAIGN_DATA_STORE_NAME);
+        if (services == null) {
+            throw new MissingPlatformServicesException("Platform services are not available.");
+        }
 
-		if (hitQueue != null) { // for unit test
-			this.hitQueue = hitQueue;
-		} else {
-			final File directory = systemInfoService != null ? systemInfoService.getApplicationCacheDir() : null;
-			final File dbFilePath = new File(directory, CampaignConstants.CAMPAIGN_DATABASE_FILENAME);
-			this.hitQueue = new HitQueue<CampaignHit, CampaignHitSchema>(services, dbFilePath,
-					CampaignConstants.CAMPAIGN_TABLE_NAME, new CampaignHitSchema(), this);
-		}
-	}
+        this.networkService = services.getNetworkService();
+        this.systemInfoService = services.getSystemInfoService();
+        this.dataStore = services.getLocalStorageService().getDataStore(CampaignConstants.CAMPAIGN_DATA_STORE_NAME);
 
-	/**
-	 * Processes and attempts to send the provided {@code hit}.
-	 *<p>
-	 *
-	 * This method will call {@link NetworkService#connectUrl(String, NetworkService.HttpCommand, byte[], Map, int, int)}
-	 * to send the {@link CampaignExtension} network request represented by the {@link CampaignHit}.
-	 * A {@link NetworkService.HttpConnection} instance is returned from the {@code NetworkService#connectUrl()} method call
-	 * which is used to determine if the {@code CampaignExtension} network request should be retried.
-	 *
-	 * If the {@code NetworkService.HttpConnection} is null (which occurs when the android device has no network connection),
-	 * this method will return {@link HitQueue.RetryType#YES} and the {@code hit} will be retried later.
-	 *
-	 * If the {@code NetworkService.HttpConnection} contains a response code that is recoverable ({@link HttpURLConnection#HTTP_CLIENT_TIMEOUT},
-	 * {@link HttpURLConnection#HTTP_UNAVAILABLE}, or {@link HttpURLConnection#HTTP_GATEWAY_TIMEOUT}) this method will return
-	 * {@code HitQueue.RetryType.YES} and the {@code hit} will be retried later.
-	 *
-	 * If the {@code NetworkService.HttpConnection} contains a {@link HttpURLConnection#HTTP_OK} response code, or any additional response code
-	 * not considered to be a recoverable network error, then this method will return {@code HitQueue.RetryType.NO}.
-	 * The {@code hit} will be considered processed and will not be retried.
-	 *
-	 * @param hit {@code CampaignHit} instance to be processed
-	 * @return {@code HitQueue.RetryType} indicating whether the hit should be processed again
-	 */
-	@Override
-	public HitQueue.RetryType process(final CampaignHit hit) {
-		try {
-			byte[] outputBytes = null;
+        if (hitQueue != null) { // for unit test
+            this.hitQueue = hitQueue;
+        } else {
+            final File directory = systemInfoService != null ? systemInfoService.getApplicationCacheDir() : null;
+            final File dbFilePath = new File(directory, CampaignConstants.CAMPAIGN_DATABASE_FILENAME);
+            this.hitQueue = new HitQueue<CampaignHit, CampaignHitSchema>(services, dbFilePath,
+                    CampaignConstants.CAMPAIGN_TABLE_NAME, new CampaignHitSchema(), this);
+        }
+    }
 
-			if (hit.body != null) {
-				outputBytes = hit.body.getBytes(StringUtils.CHARSET_UTF_8);
-			}
+    /**
+     * Processes and attempts to send the provided {@code hit}.
+     * <p>
+     * <p>
+     * This method will call {@link NetworkService#connectUrl(String, NetworkService.HttpCommand, byte[], Map, int, int)}
+     * to send the {@link CampaignExtension} network request represented by the {@link CampaignHit}.
+     * A {@link NetworkService.HttpConnection} instance is returned from the {@code NetworkService#connectUrl()} method call
+     * which is used to determine if the {@code CampaignExtension} network request should be retried.
+     * <p>
+     * If the {@code NetworkService.HttpConnection} is null (which occurs when the android device has no network connection),
+     * this method will return {@link HitQueue.RetryType#YES} and the {@code hit} will be retried later.
+     * <p>
+     * If the {@code NetworkService.HttpConnection} contains a response code that is recoverable ({@link HttpURLConnection#HTTP_CLIENT_TIMEOUT},
+     * {@link HttpURLConnection#HTTP_UNAVAILABLE}, or {@link HttpURLConnection#HTTP_GATEWAY_TIMEOUT}) this method will return
+     * {@code HitQueue.RetryType.YES} and the {@code hit} will be retried later.
+     * <p>
+     * If the {@code NetworkService.HttpConnection} contains a {@link HttpURLConnection#HTTP_OK} response code, or any additional response code
+     * not considered to be a recoverable network error, then this method will return {@code HitQueue.RetryType.NO}.
+     * The {@code hit} will be considered processed and will not be retried.
+     *
+     * @param hit {@code CampaignHit} instance to be processed
+     * @return {@code HitQueue.RetryType} indicating whether the hit should be processed again
+     */
+    @Override
+    public HitQueue.RetryType process(final CampaignHit hit) {
+        try {
+            byte[] outputBytes = null;
 
-			Map<String, String> headers = NetworkConnectionUtil.getHeaders(true,
-										  NetworkConnectionUtil.HTTP_HEADER_CONTENT_TYPE_JSON_APPLICATION);
-			headers.put(NetworkConnectionUtil.HTTP_HEADER_KEY_ACCEPT, "*/*");
-			NetworkService.HttpConnection connection = networkService.connectUrl(hit.url, hit.getHttpCommand(), outputBytes,
-					headers, hit.timeout, hit.timeout);
+            if (hit.body != null) {
+                outputBytes = hit.body.getBytes(StringUtils.CHARSET_UTF_8);
+            }
 
-			if (connection == null || (connection.getResponseCode() == CampaignConstants.INVALID_CONNECTION_RESPONSE_CODE)) {
-				Log.debug(CampaignConstants.LOG_TAG,
-						  "network process - Could not process a Campaign network request because the connection was null or response code was invalid. Retrying the request.");
-				return HitQueue.RetryType.YES;
-			} else if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-				Log.debug(CampaignConstants.LOG_TAG, "network process -  Request (%s) was sent", hit.url);
-				updateTimestampInDataStore(TimeUnit.SECONDS.toMillis(hit.timestamp));
-				return HitQueue.RetryType.NO;
-			} else if (!NetworkConnectionUtil.recoverableNetworkErrorCodes.contains(connection.getResponseCode())) {
-				Log.debug(CampaignConstants.LOG_TAG,
-						  "network process -  Un-recoverable network error while processing requests. Discarding request.");
-				return HitQueue.RetryType.NO;
-			} else {
-				Log.debug(CampaignConstants.LOG_TAG,
-						  "network process -  Recoverable network error while processing requests, will retry.");
-				return HitQueue.RetryType.YES;
-			}
-		} catch (UnsupportedEncodingException e) {
-			Log.warning(CampaignConstants.LOG_TAG,
-						"Unable to encode the post body (%s) for the Campaign request, %s", hit.body, e);
-			return HitQueue.RetryType.NO;
-		}
-	}
+            Map<String, String> headers = NetworkConnectionUtil.getHeaders(true,
+                    NetworkConnectionUtil.HTTP_HEADER_CONTENT_TYPE_JSON_APPLICATION);
+            headers.put(NetworkConnectionUtil.HTTP_HEADER_KEY_ACCEPT, "*/*");
+            NetworkService.HttpConnection connection = networkService.connectUrl(hit.url, hit.getHttpCommand(), outputBytes,
+                    headers, hit.timeout, hit.timeout);
 
-	/**
-	 * Updates the mobile privacy status and does one of the following based on the privacy setting.
-	 * <ul>
-	 * <li>If {@link MobilePrivacyStatus#OPT_IN}, resumes processing the queued hits.</li>
-	 * <li>If {@code MobilePrivacyStatus.OPT_OUT}, suspends the queue and deletes all hits.</li>
-	 * <li>If {@code MobilePrivacyStatus.UNKNOWN}, suspends the queue.</li>
-	 * </ul>
-	 *
-	 * @param privacyStatus the new {@code MobilePrivacyStatus}
-	 */
-	void updatePrivacyStatus(final MobilePrivacyStatus privacyStatus) {
-		switch (privacyStatus) {
-			case OPT_IN:
-				this.hitQueue.bringOnline();
-				break;
+            if (connection == null || (connection.getResponseCode() == CampaignConstants.INVALID_CONNECTION_RESPONSE_CODE)) {
+                Log.debug(CampaignConstants.LOG_TAG,
+                        "network process - Could not process a Campaign network request because the connection was null or response code was invalid. Retrying the request.");
+                return HitQueue.RetryType.YES;
+            } else if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                Log.debug(CampaignConstants.LOG_TAG, "network process -  Request (%s) was sent", hit.url);
+                updateTimestampInDataStore(TimeUnit.SECONDS.toMillis(hit.timestamp));
+                return HitQueue.RetryType.NO;
+            } else if (!NetworkConnectionUtil.recoverableNetworkErrorCodes.contains(connection.getResponseCode())) {
+                Log.debug(CampaignConstants.LOG_TAG,
+                        "network process -  Un-recoverable network error while processing requests. Discarding request.");
+                return HitQueue.RetryType.NO;
+            } else {
+                Log.debug(CampaignConstants.LOG_TAG,
+                        "network process -  Recoverable network error while processing requests, will retry.");
+                return HitQueue.RetryType.YES;
+            }
+        } catch (UnsupportedEncodingException e) {
+            Log.warning(CampaignConstants.LOG_TAG,
+                    "Unable to encode the post body (%s) for the Campaign request, %s", hit.body, e);
+            return HitQueue.RetryType.NO;
+        }
+    }
 
-			case OPT_OUT:
-				this.hitQueue.suspend();
-				this.hitQueue.deleteAllHits();
-				break;
+    /**
+     * Updates the mobile privacy status and does one of the following based on the privacy setting.
+     * <ul>
+     * <li>If {@link MobilePrivacyStatus#OPT_IN}, resumes processing the queued hits.</li>
+     * <li>If {@code MobilePrivacyStatus.OPT_OUT}, suspends the queue and deletes all hits.</li>
+     * <li>If {@code MobilePrivacyStatus.UNKNOWN}, suspends the queue.</li>
+     * </ul>
+     *
+     * @param privacyStatus the new {@code MobilePrivacyStatus}
+     */
+    void updatePrivacyStatus(final MobilePrivacyStatus privacyStatus) {
+        switch (privacyStatus) {
+            case OPT_IN:
+                this.hitQueue.bringOnline();
+                break;
 
-			case UNKNOWN:
-				this.hitQueue.suspend();
-				break;
-		}
-	}
+            case OPT_OUT:
+                this.hitQueue.suspend();
+                this.hitQueue.deleteAllHits();
+                break;
 
-	/**
-	 * Creates a new record in the {@code CampaignHitsDatabase} table from the information in the provided {@code CampaignHit} instance.
-	 * <p>
-	 * If the current {@link MobilePrivacyStatus} is {@link MobilePrivacyStatus#OPT_IN} then the {@link HitQueue} is brought online.
-	 * The {@code HitQueue} object then queries the Campaign database table and starts processing any queued hits.
-	 *
-	 * @param campaignHit the {@code CampaignHit} instance
-	 * @param timestampMillis {@code long} value containing the event timestamp to be associated with the campaign hit
-	 * @param privacyStatus {@code MobilePrivacyStatus} the current privacy status
-	 */
-	void queue(final CampaignHit campaignHit, final long timestampMillis, final MobilePrivacyStatus privacyStatus) {
-		if (campaignHit == null) {
-			Log.debug(CampaignConstants.LOG_TAG, "Unable to queue the provided Campaign hit, the hit is null");
-			return;
-		}
+            case UNKNOWN:
+                this.hitQueue.suspend();
+                break;
+        }
+    }
 
-		campaignHit.timestamp = TimeUnit.MILLISECONDS.toSeconds(timestampMillis);
+    /**
+     * Creates a new record in the {@code CampaignHitsDatabase} table from the information in the provided {@code CampaignHit} instance.
+     * <p>
+     * If the current {@link MobilePrivacyStatus} is {@link MobilePrivacyStatus#OPT_IN} then the {@link HitQueue} is brought online.
+     * The {@code HitQueue} object then queries the Campaign database table and starts processing any queued hits.
+     *
+     * @param campaignHit     the {@code CampaignHit} instance
+     * @param timestampMillis {@code long} value containing the event timestamp to be associated with the campaign hit
+     * @param privacyStatus   {@code MobilePrivacyStatus} the current privacy status
+     */
+    void queue(final CampaignHit campaignHit, final long timestampMillis, final MobilePrivacyStatus privacyStatus) {
+        if (campaignHit == null) {
+            Log.debug(CampaignConstants.LOG_TAG, "Unable to queue the provided Campaign hit, the hit is null");
+            return;
+        }
 
-		this.hitQueue.queue(campaignHit);
+        campaignHit.timestamp = TimeUnit.MILLISECONDS.toSeconds(timestampMillis);
 
-		if (privacyStatus == MobilePrivacyStatus.OPT_IN) {
-			this.hitQueue.bringOnline();
-		}
-	}
+        this.hitQueue.queue(campaignHit);
 
-	/**
-	 * Updates {@value CampaignConstants#CAMPAIGN_DATA_STORE_REGISTRATION_TIMESTAMP_KEY} in {@code CampaignExtension}'s {@code DataStore}.
-	 * <p>
-	 *
-	 * @param timestamp {@code long} containing the time of the last successful registration.
-	 */
-	protected void updateTimestampInDataStore(final long timestamp) {
-		if (dataStore == null) {
-			Log.debug(CampaignConstants.LOG_TAG,
-					  "updateTimestampInDataStore -  Campaign Data store is not available to update.");
-			return;
-		}
+        if (privacyStatus == MobilePrivacyStatus.OPT_IN) {
+            this.hitQueue.bringOnline();
+        }
+    }
 
-		Log.trace(CampaignConstants.LOG_TAG,
-				  "updateTimestampInDataStore -  Persisting timestamp (%d) in Campaign Data Store.", timestamp);
-		dataStore.setLong(CampaignConstants.CAMPAIGN_DATA_STORE_REGISTRATION_TIMESTAMP_KEY, timestamp);
-	}
+    /**
+     * Updates {@value CampaignConstants#CAMPAIGN_DATA_STORE_REGISTRATION_TIMESTAMP_KEY} in {@code CampaignExtension}'s {@code DataStore}.
+     * <p>
+     *
+     * @param timestamp {@code long} containing the time of the last successful registration.
+     */
+    protected void updateTimestampInDataStore(final long timestamp) {
+        if (dataStore == null) {
+            Log.debug(CampaignConstants.LOG_TAG,
+                    "updateTimestampInDataStore -  Campaign Data store is not available to update.");
+            return;
+        }
+
+        Log.trace(CampaignConstants.LOG_TAG,
+                "updateTimestampInDataStore -  Persisting timestamp (%d) in Campaign Data Store.", timestamp);
+        dataStore.setLong(CampaignConstants.CAMPAIGN_DATA_STORE_REGISTRATION_TIMESTAMP_KEY, timestamp);
+    }
 
 }
