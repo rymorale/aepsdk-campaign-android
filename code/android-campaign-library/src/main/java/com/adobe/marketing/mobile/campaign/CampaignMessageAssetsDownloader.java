@@ -85,11 +85,8 @@ class CampaignMessageAssetsDownloader {
         // download assets within the assets to retain list
         for (final String url : assetsToRetain) {
             // 304 - Not Modified support
-            Map<String, String> requestProperties = new HashMap<>();
             final CacheResult cachedAsset = cacheService.get(assetCacheLocation, url);
-            if (cachedAsset != null) {
-                requestProperties = Utils.extractHeadersFromCache(cachedAsset);
-            }
+            final Map<String, String> requestProperties = Utils.extractHeadersFromCache(cachedAsset);
             final NetworkRequest networkRequest = new NetworkRequest(url, HttpMethod.GET, null, requestProperties, CampaignConstants.CAMPAIGN_TIMEOUT_DEFAULT, CampaignConstants.CAMPAIGN_TIMEOUT_DEFAULT);
             networkService.connectAsync(networkRequest, connection -> {
                 if (connection.getResponseCode() == HttpURLConnection.HTTP_NOT_MODIFIED) {

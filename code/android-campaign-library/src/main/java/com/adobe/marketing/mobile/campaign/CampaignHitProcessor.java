@@ -109,21 +109,21 @@ class CampaignHitProcessor implements HitProcessing {
         networkService.connectAsync(networkRequest, connection -> {
             if (connection == null || (connection.getResponseCode() == CampaignConstants.INVALID_CONNECTION_RESPONSE_CODE)) {
                 Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
-                        "network process - Could not process a Campaign network request because the connection was null or response code was invalid. Retrying the request.");
+                        "processHit - Could not process a Campaign network request because the connection was null or response code was invalid. Retrying the request.");
                 retryHit.set(true);
             } else if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-                Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "network process - Request was sent to (%s)", campaignHit.url);
+                Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "processHit - Request was sent to (%s)", campaignHit.url);
                 updateTimestampInNamedCollection(System.currentTimeMillis());
                 retryHit.set(false);
                 connection.close();
             } else if (!CampaignConstants.recoverableNetworkErrorCodes.contains(connection.getResponseCode())) {
                 Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
-                        "network process - Unrecoverable network error while processing requests. Discarding request.");
+                        "processHit - Unrecoverable network error while processing requests. Discarding request.");
                 retryHit.set(false);
                 connection.close();
             } else {
                 Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
-                        "network process - Recoverable network error while processing requests, will retry.");
+                        "processHit - Recoverable network error while processing requests, will retry.");
                 retryHit.set(true);
             }
             latch.countDown();
@@ -131,7 +131,7 @@ class CampaignHitProcessor implements HitProcessing {
         try {
             latch.await((CampaignConstants.CAMPAIGN_TIMEOUT_DEFAULT + 1), TimeUnit.SECONDS);
         } catch (final InterruptedException e) {
-            Log.warning(CampaignConstants.LOG_TAG, SELF_TAG, "process hit - exception occurred while waiting for connectAsync latch: %s", e.getMessage());
+            Log.warning(CampaignConstants.LOG_TAG, SELF_TAG, "processHit - exception occurred while waiting for connectAsync latch: %s", e.getMessage());
         }
         return retryHit.get();
     }
