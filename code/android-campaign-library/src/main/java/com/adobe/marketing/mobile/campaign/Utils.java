@@ -13,7 +13,6 @@ package com.adobe.marketing.mobile.campaign;
 
 import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.HttpConnecting;
-import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.caching.CacheResult;
 import com.adobe.marketing.mobile.util.TimeUtils;
 
@@ -23,7 +22,6 @@ import org.json.JSONObject;
 import java.io.File;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
