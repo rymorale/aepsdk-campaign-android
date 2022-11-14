@@ -211,7 +211,7 @@ class FullScreenMessage extends CampaignMessage {
     }
 
     /**
-     * Returns a {@code Map<String,String>} containing the remote resource URL as key and cached resource path as value for all remote resources that were cached.
+     * Returns a {@code Map<String,String>} containing the remote resource URL as key and cached resource path as value for a cached remote resource.
      * <p>
      * This function uses the {@link CacheService} to find a cached remote file. if a cached file is found, its added to the {@code Map<String, String>} that will be returned.
      * </p>
