@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Implements {@code HItProcessing} and aids in the necessary tasks to
+ * Implements {@code HitProcessing} and aids in the necessary tasks to
  * send network requests for the Campaign Extension.
  */
 class CampaignHitProcessor implements HitProcessing {
