@@ -11,6 +11,8 @@
 
 package com.adobe.marketing.mobile.campaign;
 
+import androidx.annotation.VisibleForTesting;
+
 import com.adobe.marketing.mobile.launch.rulesengine.RuleConsequence;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.ServiceProvider;
@@ -323,7 +325,7 @@ class FullScreenMessage extends CampaignMessage {
                 case CampaignConstants.MESSAGE_DATA_TAG_ID_BUTTON_2: // adbinapp://confirm/?id=h11901a,86f10d,4
                 case CampaignConstants.MESSAGE_DATA_TAG_ID_BUTTON_X: // adbinapp://cancel?id=h11901a,86f10d,5
                     clickedWithData(query);
-                    viewed(); // Temporary fix for AMSDK-7633. No viewed event should be dispatched on confirm.
+                    viewed();
                     break;
 
                 default:
@@ -336,38 +338,13 @@ class FullScreenMessage extends CampaignMessage {
     }
 
     /**
-     * Extracts query parameters from a given {@code String} into a {@code Map<String, String>}.
+     * Added for unit testing.
      *
-     * @param queryString {@link String} containing query parameters
-     * @return the extracted {@code Map<String, String>} query parameters
+     * @return the {@code List<List<String>>} of assets.
      */
-    private Map<String, String> extractQueryParameters(final String queryString) {
-        if (StringUtils.isNullOrEmpty(queryString)) {
-            return null;
-        }
-
-        final Map<String, String> parameters = new HashMap<>();
-        final String[] paramArray = queryString.split("&");
-
-        for (String currentParam : paramArray) {
-            // quick out in case this entry is null or empty string
-            if (StringUtils.isNullOrEmpty(currentParam)) {
-                continue;
-            }
-
-            final String[] currentParamArray = currentParam.split("=", 2);
-
-            if (currentParamArray.length != 2 ||
-                    (currentParamArray[0].isEmpty() || currentParamArray[1].isEmpty())) {
-                continue;
-            }
-
-            final String key = currentParamArray[0];
-            final String value = currentParamArray[1];
-            parameters.put(key, value);
-        }
-
-        return parameters;
+    @VisibleForTesting
+    List<List<String>> getAssetsList() {
+        return assets;
     }
 
     class FullScreenMessageUiListener implements FullscreenMessageDelegate {
@@ -460,7 +437,7 @@ class FullScreenMessage extends CampaignMessage {
             final String query = uri.getQuery();
 
             // Populate message data
-            final Map<String, String> messageData = extractQueryParameters(query);
+            final Map<String, String> messageData = Utils.extractQueryParameters(query);
 
             if (messageData != null && !messageData.isEmpty()) {
                 messageData.put(CampaignConstants.CAMPAIGN_INTERACTION_TYPE, host);

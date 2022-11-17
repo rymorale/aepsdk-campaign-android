@@ -20,6 +20,7 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.*;
@@ -29,12 +30,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.powermock.api.mockito.PowerMockito.mockStatic;
 
-import com.adobe.marketing.mobile.launch.rulesengine.RuleConsequence;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.ui.AlertListener;
 import com.adobe.marketing.mobile.services.ui.AlertSetting;
 import com.adobe.marketing.mobile.services.ui.UIService;
-import com.adobe.marketing.mobile.util.DataReader;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({ServiceProvider.class, AlertMessage.class})
@@ -70,13 +69,6 @@ public class AlertMessageTests {
 		when(mockServiceProvider.getUIService()).thenReturn(mockUIService);
 	}
 
-	RuleConsequence createRuleConsequence(Map<String, Object> consequenceMap) {
-		String id = DataReader.optString(consequenceMap, "id", "");
-		String type = DataReader.optString(consequenceMap, "type", "");
-		Map details = DataReader.optTypedMap(Object.class, consequenceMap, "detail", null);
-		return new RuleConsequence(id, type, details);
-	}
-
 	@Test(expected = CampaignMessageRequiredFieldMissingException.class)
 	public void init_ExceptionThrown_When_ConsequenceIsNull() throws Exception {
 		//test
@@ -86,7 +78,7 @@ public class AlertMessageTests {
 	@Test(expected = CampaignMessageRequiredFieldMissingException.class)
 	public void init_ExceptionThrown_When_ConsequenceMapIsEmpty() throws Exception {
 		//test
-		new AlertMessage(mockCampaignExtension, createRuleConsequence(new HashMap<>()));
+		new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(new HashMap<>()));
 	}
 
 	@Test(expected = CampaignMessageRequiredFieldMissingException.class)
@@ -95,7 +87,7 @@ public class AlertMessageTests {
 		happyMessageMap.remove("id");
 
 		// test
-		new AlertMessage(mockCampaignExtension, createRuleConsequence(happyMessageMap));
+		new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 	}
 
 	@Test(expected = CampaignMessageRequiredFieldMissingException.class)
@@ -104,7 +96,7 @@ public class AlertMessageTests {
 		happyMessageMap.put("id", "");
 
 		// test
-		new AlertMessage(mockCampaignExtension, createRuleConsequence(happyMessageMap));
+		new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 	}
 
 	@Test(expected = CampaignMessageRequiredFieldMissingException.class)
@@ -113,7 +105,7 @@ public class AlertMessageTests {
 		happyMessageMap.remove("type");
 
 		// test
-		new AlertMessage(mockCampaignExtension, createRuleConsequence(happyMessageMap));
+		new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 	}
 
 	@Test(expected = CampaignMessageRequiredFieldMissingException.class)
@@ -122,7 +114,7 @@ public class AlertMessageTests {
 		happyMessageMap.put("type", "");
 
 		// test
-		new AlertMessage(mockCampaignExtension, createRuleConsequence(happyMessageMap));
+		new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 	}
 
 	@Test(expected = CampaignMessageRequiredFieldMissingException.class)
@@ -131,7 +123,7 @@ public class AlertMessageTests {
 		happyMessageMap.put("type", "invalid");
 
 		// test
-		new AlertMessage(mockCampaignExtension, createRuleConsequence(happyMessageMap));
+		new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 	}
 
 	@Test(expected = CampaignMessageRequiredFieldMissingException.class)
@@ -142,7 +134,7 @@ public class AlertMessageTests {
 		happyMessageMap.put("detail", happyDetailMap);
 
 		//test
-		new AlertMessage(mockCampaignExtension, createRuleConsequence(happyMessageMap));
+		new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 	}
 
 	@Test(expected = CampaignMessageRequiredFieldMissingException.class)
@@ -151,7 +143,7 @@ public class AlertMessageTests {
 		happyMessageMap.remove("detail");
 
 		//test
-		new AlertMessage(mockCampaignExtension, createRuleConsequence(happyMessageMap));
+		new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 	}
 
 	@Test(expected = CampaignMessageRequiredFieldMissingException.class)
@@ -160,7 +152,7 @@ public class AlertMessageTests {
 		happyMessageMap.put("detail", new HashMap<String, Object>());
 
 		//test
-		new AlertMessage(mockCampaignExtension, createRuleConsequence(happyMessageMap));
+		new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 	}
 
 	@Test(expected = CampaignMessageRequiredFieldMissingException.class)
@@ -170,7 +162,7 @@ public class AlertMessageTests {
 		happyMessageMap.put("detail", happyDetailMap);
 
 		// test
-		new AlertMessage(mockCampaignExtension, createRuleConsequence(happyMessageMap));
+		new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 	}
 
 	@Test(expected = CampaignMessageRequiredFieldMissingException.class)
@@ -180,7 +172,7 @@ public class AlertMessageTests {
 		happyMessageMap.put("detail", happyDetailMap);
 
 		// test
-		new AlertMessage(mockCampaignExtension, createRuleConsequence(happyMessageMap));
+		new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 	}
 
 	@Test(expected = CampaignMessageRequiredFieldMissingException.class)
@@ -190,7 +182,7 @@ public class AlertMessageTests {
 		happyMessageMap.put("detail", happyDetailMap);
 
 		// test
-		new AlertMessage(mockCampaignExtension, createRuleConsequence(happyMessageMap));
+		new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 	}
 
 	@Test(expected = CampaignMessageRequiredFieldMissingException.class)
@@ -200,7 +192,7 @@ public class AlertMessageTests {
 		happyMessageMap.put("detail", happyDetailMap);
 
 		// test
-		new AlertMessage(mockCampaignExtension, createRuleConsequence(happyMessageMap));
+		new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 	}
 
 	@Test(expected = CampaignMessageRequiredFieldMissingException.class)
@@ -210,7 +202,7 @@ public class AlertMessageTests {
 		happyMessageMap.put("detail", happyDetailMap);
 
 		// test
-		new AlertMessage(mockCampaignExtension, createRuleConsequence(happyMessageMap));
+		new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 	}
 
 	@Test(expected = CampaignMessageRequiredFieldMissingException.class)
@@ -220,7 +212,7 @@ public class AlertMessageTests {
 		happyMessageMap.put("detail", happyDetailMap);
 
 		// test
-		new AlertMessage(mockCampaignExtension, createRuleConsequence(happyMessageMap));
+		new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 	}
 
 	@Test
@@ -230,7 +222,7 @@ public class AlertMessageTests {
 		happyMessageMap.put("detail", happyDetailMap);
 
 		// test
-		final AlertMessage message = new AlertMessage(mockCampaignExtension, createRuleConsequence(happyMessageMap));
+		final AlertMessage message = new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 
 		// verify
 		assertNotNull(message);
@@ -243,7 +235,7 @@ public class AlertMessageTests {
 		happyMessageMap.put("detail", happyDetailMap);
 
 		// test
-		final AlertMessage message = new AlertMessage(mockCampaignExtension, createRuleConsequence(happyMessageMap));
+		final AlertMessage message = new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 
 		// verify
 		assertNotNull(message);
@@ -256,7 +248,7 @@ public class AlertMessageTests {
 		happyMessageMap.put("detail", happyDetailMap);
 
 		// test
-		final AlertMessage message = new AlertMessage(mockCampaignExtension, createRuleConsequence(happyMessageMap));
+		final AlertMessage message = new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 
 		// verify
 		assertNotNull(message);
@@ -269,7 +261,7 @@ public class AlertMessageTests {
 		happyMessageMap.put("detail", happyDetailMap);
 
 		// test
-		final AlertMessage message = new AlertMessage(mockCampaignExtension, createRuleConsequence(happyMessageMap));
+		final AlertMessage message = new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 
 		// verify
 		assertNotNull(message);
@@ -278,7 +270,7 @@ public class AlertMessageTests {
 	@Test
 	public void init_Success_When_MessagePayloadIsValid() throws Exception {
 		// test
-		AlertMessage alertMessage = new AlertMessage(mockCampaignExtension, createRuleConsequence(happyMessageMap));
+		AlertMessage alertMessage = new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 
 		// Verify
 		assertNotNull(alertMessage);
@@ -296,7 +288,7 @@ public class AlertMessageTests {
 		ArgumentCaptor<AlertSetting> alertSettingArgumentCaptor = ArgumentCaptor.forClass(AlertSetting.class);
 		ArgumentCaptor<AlertListener> alertListenerArgumentCaptor = ArgumentCaptor.forClass(AlertListener.class);
 		// test
-		AlertMessage alertMessage = new AlertMessage(mockCampaignExtension, createRuleConsequence(happyMessageMap));
+		AlertMessage alertMessage = new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 		alertMessage.showMessage();
 
 		// verify
@@ -315,7 +307,7 @@ public class AlertMessageTests {
 		// setup
 		ArgumentCaptor<String> stringArgumentCaptor = ArgumentCaptor.forClass(String.class);
 		// test
-		AlertMessage alertMessage = new AlertMessage(mockCampaignExtension, createRuleConsequence(happyMessageMap));
+		AlertMessage alertMessage = new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 		alertMessage.showUrl();
 
 		// verify
@@ -330,7 +322,7 @@ public class AlertMessageTests {
 		happyMessageMap.put("detail", happyDetailMap);
 
 		// test
-		AlertMessage alertMessage = new AlertMessage(mockCampaignExtension, createRuleConsequence(happyMessageMap));
+		AlertMessage alertMessage = new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 		alertMessage.showUrl();
 
 		// verify
@@ -341,7 +333,7 @@ public class AlertMessageTests {
 	public void alertListener_TriggeredHitDispatched_When_onShowCalled() throws Exception {
 		// setup
 		ArgumentCaptor<Map<String, Object>> mapArgumentCaptor = ArgumentCaptor.forClass(Map.class);
-		AlertMessage.UIAlertMessageUIListener uiAlertMessageUIListener = new AlertMessage(mockCampaignExtension, createRuleConsequence(happyMessageMap)).new UIAlertMessageUIListener();
+		AlertMessage.UIAlertMessageUIListener uiAlertMessageUIListener = new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap)).new UIAlertMessageUIListener();
 
 		// test
 		uiAlertMessageUIListener.onShow();
@@ -358,7 +350,7 @@ public class AlertMessageTests {
 	public void alertListener_ViewedHitDispatched_When_onDismissCalled() throws Exception {
 		// setup
 		ArgumentCaptor<Map<String, Object>> mapArgumentCaptor = ArgumentCaptor.forClass(Map.class);
-		AlertMessage.UIAlertMessageUIListener uiAlertMessageUIListener = new AlertMessage(mockCampaignExtension, createRuleConsequence(happyMessageMap)).new UIAlertMessageUIListener();
+		AlertMessage.UIAlertMessageUIListener uiAlertMessageUIListener = new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap)).new UIAlertMessageUIListener();
 
 		// test
 		uiAlertMessageUIListener.onDismiss();
@@ -375,7 +367,7 @@ public class AlertMessageTests {
 	public void alertListener_ViewedHitDispatched_When_onNegativeResponseCalled() throws Exception {
 		// setup
 		ArgumentCaptor<Map<String, Object>> mapArgumentCaptor = ArgumentCaptor.forClass(Map.class);
-		AlertMessage.UIAlertMessageUIListener uiAlertMessageUIListener = new AlertMessage(mockCampaignExtension, createRuleConsequence(happyMessageMap)).new UIAlertMessageUIListener();
+		AlertMessage.UIAlertMessageUIListener uiAlertMessageUIListener = new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap)).new UIAlertMessageUIListener();
 
 		// test
 		uiAlertMessageUIListener.onNegativeResponse();
@@ -392,18 +384,24 @@ public class AlertMessageTests {
 	public void alertListener_ClickedHitDispatched_When_onPositiveResponseCalled() throws Exception {
 		// setup
 		ArgumentCaptor<Map<String, Object>> mapArgumentCaptor = ArgumentCaptor.forClass(Map.class);
-		AlertMessage.UIAlertMessageUIListener uiAlertMessageUIListener = new AlertMessage(mockCampaignExtension, createRuleConsequence(happyMessageMap)).new UIAlertMessageUIListener();
+		AlertMessage.UIAlertMessageUIListener uiAlertMessageUIListener = new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap)).new UIAlertMessageUIListener();
 
 		// test
 		uiAlertMessageUIListener.onPositiveResponse();
 
 		// verify
-		verify(mockCampaignExtension, times(1)).dispatchMessageInteraction(mapArgumentCaptor.capture());
-		Map<String, Object> messageInteractionMap = mapArgumentCaptor.getValue();
-		assertEquals(3, messageInteractionMap.size());
-		assertEquals("http://www.adobe.com", messageInteractionMap.get("url"));
-		assertEquals("1", messageInteractionMap.get("a.message.clicked"));
-		assertEquals("123", messageInteractionMap.get("a.message.id"));
+		verify(mockCampaignExtension, times(2)).dispatchMessageInteraction(mapArgumentCaptor.capture());
+		assertEquals(2, mapArgumentCaptor.getAllValues().size());
+		List<Map<String, Object>> messageInteractions = mapArgumentCaptor.getAllValues();
+		Map<String, Object> viewedInteractionMap = messageInteractions.get(0);
+		assertEquals(2, viewedInteractionMap.size());
+		assertEquals("1", viewedInteractionMap.get("a.message.viewed"));
+		assertEquals("123", viewedInteractionMap.get("a.message.id"));
+		Map<String, Object> clickedInteractionMap = messageInteractions.get(1);
+		assertEquals(3, clickedInteractionMap.size());
+		assertEquals("http://www.adobe.com", clickedInteractionMap.get("url"));
+		assertEquals("1", clickedInteractionMap.get("a.message.clicked"));
+		assertEquals("123", clickedInteractionMap.get("a.message.id"));
 	}
 
 	@Test
@@ -412,18 +410,25 @@ public class AlertMessageTests {
 		happyDetailMap.remove("url");
 		happyMessageMap.put("detail", happyDetailMap);
 		ArgumentCaptor<Map<String, Object>> mapArgumentCaptor = ArgumentCaptor.forClass(Map.class);
-		AlertMessage.UIAlertMessageUIListener uiAlertMessageUIListener = new AlertMessage(mockCampaignExtension, createRuleConsequence(happyMessageMap)).new UIAlertMessageUIListener();
+		AlertMessage.UIAlertMessageUIListener uiAlertMessageUIListener = new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap)).new UIAlertMessageUIListener();
 
 		// test
 		uiAlertMessageUIListener.onPositiveResponse();
 
 		// verify
-		verify(mockCampaignExtension, times(1)).dispatchMessageInteraction(mapArgumentCaptor.capture());
-		Map<String, Object> messageInteractionMap = mapArgumentCaptor.getValue();
-		assertEquals(2, messageInteractionMap.size());
-		assertNull(messageInteractionMap.get("url"));
-		assertEquals("1", messageInteractionMap.get("a.message.clicked"));
-		assertEquals("123", messageInteractionMap.get("a.message.id"));
+		verify(mockCampaignExtension, times(2)).dispatchMessageInteraction(mapArgumentCaptor.capture());
+		assertEquals(2, mapArgumentCaptor.getAllValues().size());
+		List<Map<String, Object>> messageInteractions = mapArgumentCaptor.getAllValues();
+		Map<String, Object> viewedInteractionMap = messageInteractions.get(0);
+		assertEquals(2, viewedInteractionMap.size());
+		assertNull(viewedInteractionMap.get("url"));
+		assertEquals("1", viewedInteractionMap.get("a.message.viewed"));
+		assertEquals("123", viewedInteractionMap.get("a.message.id"));
+		Map<String, Object> clickedInteractionMap = messageInteractions.get(1);
+		assertEquals(2, clickedInteractionMap.size());
+		assertNull(clickedInteractionMap.get("url"));
+		assertEquals("1", clickedInteractionMap.get("a.message.clicked"));
+		assertEquals("123", clickedInteractionMap.get("a.message.id"));
 	}
 
 	@Test
@@ -432,18 +437,25 @@ public class AlertMessageTests {
 		happyDetailMap.put("url", "");
 		happyMessageMap.put("detail", happyDetailMap);
 		ArgumentCaptor<Map<String, Object>> mapArgumentCaptor = ArgumentCaptor.forClass(Map.class);
-		AlertMessage.UIAlertMessageUIListener uiAlertMessageUIListener = new AlertMessage(mockCampaignExtension, createRuleConsequence(happyMessageMap)).new UIAlertMessageUIListener();
+		AlertMessage.UIAlertMessageUIListener uiAlertMessageUIListener = new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap)).new UIAlertMessageUIListener();
 
 		// test
 		uiAlertMessageUIListener.onPositiveResponse();
 
 		// verify
-		verify(mockCampaignExtension, times(1)).dispatchMessageInteraction(mapArgumentCaptor.capture());
-		Map<String, Object> messageInteractionMap = mapArgumentCaptor.getValue();
-		assertEquals(2, messageInteractionMap.size());
-		assertNull(messageInteractionMap.get("url"));
-		assertEquals("1", messageInteractionMap.get("a.message.clicked"));
-		assertEquals("123", messageInteractionMap.get("a.message.id"));
+		verify(mockCampaignExtension, times(2)).dispatchMessageInteraction(mapArgumentCaptor.capture());
+		assertEquals(2, mapArgumentCaptor.getAllValues().size());
+		List<Map<String, Object>> messageInteractions = mapArgumentCaptor.getAllValues();
+		Map<String, Object> viewedInteractionMap = messageInteractions.get(0);
+		assertEquals(2, viewedInteractionMap.size());
+		assertNull(viewedInteractionMap.get("url"));
+		assertEquals("1", viewedInteractionMap.get("a.message.viewed"));
+		assertEquals("123", viewedInteractionMap.get("a.message.id"));
+		Map<String, Object> clickedInteractionMap = messageInteractions.get(1);
+		assertEquals(2, clickedInteractionMap.size());
+		assertNull(clickedInteractionMap.get("url"));
+		assertEquals("1", clickedInteractionMap.get("a.message.clicked"));
+		assertEquals("123", clickedInteractionMap.get("a.message.id"));
 	}
 
 	@Test
@@ -451,26 +463,20 @@ public class AlertMessageTests {
 		// setup
 		ArgumentCaptor<Map<String, Object>> mapArgumentCaptor = ArgumentCaptor.forClass(Map.class);
 		ArgumentCaptor<String> stringArgumentCaptor = ArgumentCaptor.forClass(String.class);
-		AlertMessage.UIAlertMessageUIListener uiAlertMessageUIListener = new AlertMessage(mockCampaignExtension, createRuleConsequence(happyMessageMap)).new UIAlertMessageUIListener();
+		AlertMessage.UIAlertMessageUIListener uiAlertMessageUIListener = new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap)).new UIAlertMessageUIListener();
 
 		// test
 		uiAlertMessageUIListener.onPositiveResponse();
 
 		// verify
-		verify(mockCampaignExtension, times(1)).dispatchMessageInteraction(mapArgumentCaptor.capture());
 		verify(mockUIService, times(1)).showUrl(stringArgumentCaptor.capture());
-		Map<String, Object> messageInteractionMap = mapArgumentCaptor.getValue();
-		assertEquals(3, messageInteractionMap.size());
-		assertEquals("http://www.adobe.com", messageInteractionMap.get("url"));
-		assertEquals("1", messageInteractionMap.get("a.message.clicked"));
-		assertEquals("123", messageInteractionMap.get("a.message.id"));
-		assertEquals("http://www.adobe.com", stringArgumentCaptor.getValue());
+		assertEquals("http://www.adobe.com",stringArgumentCaptor.getValue());
 	}
 
 	@Test
 	public void shouldDownloadAssets_ReturnsFalse_happy() throws Exception {
 		// setup
-		AlertMessage alertMessage = new AlertMessage(mockCampaignExtension, createRuleConsequence(happyMessageMap));
+		AlertMessage alertMessage = new AlertMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 
 		// test
 		boolean shouldDownloadAssets = alertMessage.shouldDownloadAssets();

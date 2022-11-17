@@ -55,6 +55,8 @@ class AlertMessage extends CampaignMessage {
          */
         @Override
         public void onPositiveResponse() {
+            viewed();
+
             if (!StringUtils.isNullOrEmpty(url)) {
                 final Map<String, String> contextData = new HashMap<>();
                 contextData.put(CampaignConstants.CAMPAIGN_INTERACTION_URL, url);
