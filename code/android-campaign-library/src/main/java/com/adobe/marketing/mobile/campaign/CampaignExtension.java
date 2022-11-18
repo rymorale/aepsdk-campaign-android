@@ -162,10 +162,11 @@ public class CampaignExtension extends Extension {
             setCampaignState(event);
         }
 
-        return getApi().getSharedState(CampaignConstants.EventDataKeys.Configuration.EXTENSION_NAME,
-                event, false, SharedStateResolution.ANY).getStatus() == SharedStateStatus.SET && getApi().getSharedState(CampaignConstants.EventDataKeys.Identity.EXTENSION_NAME,
-                event, false, SharedStateResolution.ANY).getStatus() == SharedStateStatus.SET &&
-                campaignState.isStateSet();
+//        return getApi().getSharedState(CampaignConstants.EventDataKeys.Configuration.EXTENSION_NAME,
+//                event, false, SharedStateResolution.ANY).getStatus() == SharedStateStatus.SET && getApi().getSharedState(CampaignConstants.EventDataKeys.Identity.EXTENSION_NAME,
+//                event, false, SharedStateResolution.ANY).getStatus() == SharedStateStatus.SET &&
+//                campaignState.isStateSet();
+        return true;
     }
 
     // ========================================================================
@@ -379,11 +380,11 @@ public class CampaignExtension extends Extension {
             return;
         }
 
-        // trigger rules download on non initial lifecycle launch events
+        // trigger rules download on non lifecycle first launch events
         final Map<String, Object> lifecycleContextData = DataReader.optTypedMap(Object.class, eventData, CampaignConstants.EventDataKeys.Lifecycle.LIFECYCLE_CONTEXT_DATA, null);
         if (lifecycleContextData != null
                 && !lifecycleContextData.isEmpty()
-                && (DataReader.optString(lifecycleContextData, CampaignConstants.EventDataKeys.Lifecycle.LAUNCH_EVENT, null)).equals(CampaignConstants.EventDataKeys.Lifecycle.LAUNCH_EVENT)
+                && !(DataReader.optString(lifecycleContextData, CampaignConstants.EventDataKeys.Lifecycle.INSTALL_EVENT, null)).equals(CampaignConstants.EventDataKeys.Lifecycle.INSTALL_EVENT)
                 && initialCampaignRuleFetchCompleted) {
             triggerRulesDownload();
         }
