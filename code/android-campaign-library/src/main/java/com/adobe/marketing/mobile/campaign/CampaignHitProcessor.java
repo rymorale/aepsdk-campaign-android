@@ -13,6 +13,7 @@ package com.adobe.marketing.mobile.campaign;
 
 import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.HitProcessing;
+import com.adobe.marketing.mobile.services.HitProcessingResult;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.services.NetworkRequest;
@@ -20,15 +21,12 @@ import com.adobe.marketing.mobile.services.Networking;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.util.StringUtils;
 
-import org.json.JSONException;
-
 import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Implements {@code HitProcessing} and aids in the necessary tasks to
@@ -64,24 +62,22 @@ class CampaignHitProcessor implements HitProcessing {
      * The {@code hit} will be considered processed and will not be retried.
      *
      * @param dataEntity {@link DataEntity} instance to be processed
-     * @return {@code boolean} which if true, the hit should be processed again
+     * @param hitProcessingResult {@link HitProcessingResult} containing the status of the hit processing
      */
     @Override
-    public boolean processHit(final DataEntity dataEntity) {
+    public void processHit(final DataEntity dataEntity, final HitProcessingResult hitProcessingResult) {
         if (StringUtils.isNullOrEmpty(dataEntity.getData())) {
             Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
                     "processHit - Data entity contained an empty payload. Hit will not be processed.");
-            return false;
+            hitProcessingResult.complete(true);
         }
 
         // convert the data entity to a campaign hit
-        CampaignHit campaignHit;
-        try {
-            campaignHit = Utils.campaignHitFromDataEntity(dataEntity);
-        } catch (final JSONException jsonException) {
+        final CampaignHit campaignHit = Utils.campaignHitFromDataEntity(dataEntity);
+        if (campaignHit == null) {
             Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
-                    "processHit - Exception occurred when creating a Campaign Hit from the given data entity: %s.", jsonException.getMessage());
-            return false;
+                    "processHit - error occurred when creating a Campaign Hit from the given data entity");
+            hitProcessingResult.complete(true);
         }
 
         final Map<String, String> headers = new HashMap<String, String>() {
@@ -95,7 +91,7 @@ class CampaignHitProcessor implements HitProcessing {
         if (networkService == null) {
             Log.warning(CampaignConstants.LOG_TAG, SELF_TAG,
                     "processHit -The network service is unavailable, the hit will be retried later.");
-            return true;
+            hitProcessingResult.complete(false);
         }
         final NetworkRequest networkRequest = new NetworkRequest(campaignHit.url,
                 campaignHit.getHttpCommand(),
@@ -104,27 +100,26 @@ class CampaignHitProcessor implements HitProcessing {
                 campaignHit.timeout,
                 campaignHit.timeout);
 
-        final AtomicBoolean hitProcessed = new AtomicBoolean(false);
         final CountDownLatch latch = new CountDownLatch(1);
         networkService.connectAsync(networkRequest, connection -> {
             if (connection == null || (connection.getResponseCode() == CampaignConstants.INVALID_CONNECTION_RESPONSE_CODE)) {
                 Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
                         "processHit - Could not process a Campaign network request because the connection was null or response code was invalid. Retrying the request.");
-                hitProcessed.set(false);
+                hitProcessingResult.complete(false);
             } else if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
                 Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "processHit - Request was sent to (%s)", campaignHit.url);
                 updateTimestampInNamedCollection(System.currentTimeMillis());
-                hitProcessed.set(true);
+                hitProcessingResult.complete(true);
                 connection.close();
             } else if (!CampaignConstants.recoverableNetworkErrorCodes.contains(connection.getResponseCode())) {
                 Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
                         "processHit - Unrecoverable network error while processing requests. Discarding request.");
-                hitProcessed.set(true);
+                hitProcessingResult.complete(true);
                 connection.close();
             } else {
                 Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
                         "processHit - Recoverable network error while processing requests, will retry.");
-                hitProcessed.set(false);
+                hitProcessingResult.complete(false);
             }
             latch.countDown();
         });
@@ -133,7 +128,6 @@ class CampaignHitProcessor implements HitProcessing {
         } catch (final InterruptedException e) {
             Log.warning(CampaignConstants.LOG_TAG, SELF_TAG, "processHit - exception occurred while waiting for connectAsync latch: %s", e.getMessage());
         }
-        return hitProcessed.get();
     }
 
     /**

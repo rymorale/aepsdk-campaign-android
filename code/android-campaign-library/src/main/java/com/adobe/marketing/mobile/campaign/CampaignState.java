@@ -143,15 +143,6 @@ final class CampaignState {
     }
 
     /**
-     * Determines if the necessary configuration and identity shared state data has been received.
-     *
-     * @return {@code boolean} indicating whether the configuration and identity shared state are present
-     */
-    boolean isStateSet() {
-        return configStateSet && identityStateSet;
-    }
-
-    /**
      * Determines if this contains valid {@code CampaignState} for downloading rules from Campaign.
      *
      * @return {@code boolean} indicating whether this contains valid {@code CampaignState} for rules download

@@ -13,7 +13,9 @@ package com.adobe.marketing.mobile.campaign;
 
 import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.HttpConnecting;
+import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.caching.CacheResult;
+import com.adobe.marketing.mobile.util.StringUtils;
 import com.adobe.marketing.mobile.util.TimeUtils;
 
 import org.json.JSONException;
@@ -37,9 +39,15 @@ class Utils {
      * @param dataEntity {@link DataEntity} containing a Campaign network request
      * @return {@link CampaignHit} created from the {@code DataEntity}
      */
-    static CampaignHit campaignHitFromDataEntity(final DataEntity dataEntity) throws JSONException {
-        final JSONObject jsonData = new JSONObject(dataEntity.getData());
-        return new CampaignHit(jsonData.getString(CampaignConstants.CampaignHit.URL), jsonData.getString(CampaignConstants.CampaignHit.PAYLOAD), jsonData.getInt(CampaignConstants.CampaignHit.TIMEOUT));
+    static CampaignHit campaignHitFromDataEntity(final DataEntity dataEntity) {
+        try {
+            final JSONObject jsonData = new JSONObject(dataEntity.getData());
+            return new CampaignHit(jsonData.getString(CampaignConstants.CampaignHit.URL), jsonData.getString(CampaignConstants.CampaignHit.PAYLOAD), jsonData.getInt(CampaignConstants.CampaignHit.TIMEOUT));
+        } catch (final JSONException jsonException) {
+            Log.warning(CampaignConstants.LOG_TAG, "campaignHitFromDataEntity",
+                    "JSON exception occurred converting data entity to campaign hit: %s", jsonException.getMessage());
+        }
+        return null;
     }
 
     /**
@@ -117,5 +125,40 @@ class Utils {
                 TimeZone.getTimeZone("GMT"), Locale.US);
         headers.put(CampaignConstants.HTTP_HEADER_IF_MODIFIED_SINCE, ifModifiedSince);
         return headers;
+    }
+
+    /**
+     * Extracts query parameters from a given {@code String} into a {@code Map<String, String>}.
+     *
+     * @param queryString {@link String} containing query parameters
+     * @return the extracted {@code Map<String, String>} query parameters
+     */
+    static Map<String, String> extractQueryParameters(final String queryString) {
+        if (StringUtils.isNullOrEmpty(queryString)) {
+            return null;
+        }
+
+        final Map<String, String> parameters = new HashMap<>();
+        final String[] paramArray = queryString.split("&");
+
+        for (String currentParam : paramArray) {
+            // quick out in case this entry is null or empty string
+            if (StringUtils.isNullOrEmpty(currentParam)) {
+                continue;
+            }
+
+            final String[] currentParamArray = currentParam.split("=", 2);
+
+            if (currentParamArray.length != 2 ||
+                    (currentParamArray[0].isEmpty() || currentParamArray[1].isEmpty())) {
+                continue;
+            }
+
+            final String key = currentParamArray[0];
+            final String value = currentParamArray[1];
+            parameters.put(key, value);
+        }
+
+        return parameters;
     }
 }

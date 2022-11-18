@@ -335,41 +335,6 @@ class FullScreenMessage extends CampaignMessage {
         }
     }
 
-    /**
-     * Extracts query parameters from a given {@code String} into a {@code Map<String, String>}.
-     *
-     * @param queryString {@link String} containing query parameters
-     * @return the extracted {@code Map<String, String>} query parameters
-     */
-    private Map<String, String> extractQueryParameters(final String queryString) {
-        if (StringUtils.isNullOrEmpty(queryString)) {
-            return null;
-        }
-
-        final Map<String, String> parameters = new HashMap<>();
-        final String[] paramArray = queryString.split("&");
-
-        for (String currentParam : paramArray) {
-            // quick out in case this entry is null or empty string
-            if (StringUtils.isNullOrEmpty(currentParam)) {
-                continue;
-            }
-
-            final String[] currentParamArray = currentParam.split("=", 2);
-
-            if (currentParamArray.length != 2 ||
-                    (currentParamArray[0].isEmpty() || currentParamArray[1].isEmpty())) {
-                continue;
-            }
-
-            final String key = currentParamArray[0];
-            final String value = currentParamArray[1];
-            parameters.put(key, value);
-        }
-
-        return parameters;
-    }
-
     class FullScreenMessageUiListener implements FullscreenMessageDelegate {
         /**
          * Invoked when a {@code UIFullScreenMessage} is displayed.
@@ -460,7 +425,7 @@ class FullScreenMessage extends CampaignMessage {
             final String query = uri.getQuery();
 
             // Populate message data
-            final Map<String, String> messageData = extractQueryParameters(query);
+            final Map<String, String> messageData = Utils.extractQueryParameters(query);
 
             if (messageData != null && !messageData.isEmpty()) {
                 messageData.put(CampaignConstants.CAMPAIGN_INTERACTION_TYPE, host);

@@ -73,11 +73,11 @@ class MainActivity : AppCompatActivity() {
             }
         }.start()
 
-        AndroidGriffonBridge.startSession("com.campaign://?adb_validation_sessionid=53103065-ce8c-470e-a514-95d68808a0a6")
+        //AndroidGriffonBridge.startSession("com.campaign://?adb_validation_sessionid=53103065-ce8c-470e-a514-95d68808a0a6")
         var linkageField = mapOf("cusEmail" to PreferenceManager.getUserName(this), "triggerKey" to "collectPIIIOS")
         Campaign.setLinkageFields(linkageField)
 
-        PlacesMonitor.start()
+        //PlacesMonitor.start()
 
     }
 
@@ -136,7 +136,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        AndroidGriffonBridge.endSession()
+        //AndroidGriffonBridge.endSession()
         super.onDestroy()
     }
 
