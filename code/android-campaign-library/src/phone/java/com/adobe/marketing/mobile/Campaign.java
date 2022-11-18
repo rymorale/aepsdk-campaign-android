@@ -22,6 +22,7 @@ import java.util.Map;
 
 public class Campaign {
 	private final static String EXTENSION_VERSION = "2.0.0";
+	public static final Class<? extends Extension> EXTENSION = CampaignExtension.class;
 
 	private Campaign() {
 	}

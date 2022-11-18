@@ -1,0 +1,104 @@
+/*
+  Copyright 2022 Adobe. All rights reserved.
+  This file is licensed to you under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License. You may obtain a copy
+  of the License at http://www.apache.org/licenses/LICENSE-2.0
+  Unless required by applicable law or agreed to in writing, software distributed under
+  the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
+  OF ANY KIND, either express or implied. See the License for the specific language
+  governing permissions and limitations under the License.
+*/
+
+package com.adobe.marketing.mobile;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.powermock.api.mockito.PowerMockito.mockStatic;
+import static org.powermock.api.mockito.PowerMockito.verifyStatic;
+
+import com.adobe.marketing.mobile.campaign.CampaignExtension;
+import com.adobe.marketing.mobile.services.Log;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({MobileCore.class, Log.class})
+public class CampaignPublicAPITests {
+
+    @SuppressWarnings("ConstantConditions")
+    @Before
+    public void setup() {
+        mockStatic(MobileCore.class);
+        mockStatic(Log.class);
+    }
+
+    @Test
+    public void test_extensionVersion() {
+        assertEquals("2.0.0", Campaign.extensionVersion());
+    }
+
+
+    @SuppressWarnings("rawtypes")
+    @Test
+    public void test_registerExtension() {
+        // setup
+        ArgumentCaptor<Class> extensionClassCaptor = ArgumentCaptor.forClass(Class.class);
+        ArgumentCaptor<ExtensionErrorCallback> callbackCaptor = ArgumentCaptor.forClass(
+                ExtensionErrorCallback.class
+        );
+        // test
+        Campaign.registerExtension();
+        // verify registerExtension called
+        verifyStatic(MobileCore.class, Mockito.times(1));
+        MobileCore.registerExtension(extensionClassCaptor.capture(), callbackCaptor.capture());
+        // verify error callback was not called
+        callbackCaptor.getValue().error(null);
+        assertNotNull(callbackCaptor.getValue());
+        // verify campaign extension registered
+        assertEquals(CampaignExtension.class, extensionClassCaptor.getValue());
+
+    }
+
+    @Test
+    public void test_publicExtensionConstants() {
+        assertEquals(CampaignExtension.class, Campaign.EXTENSION);
+        List<Class<? extends Extension>> extensions = new ArrayList<>();
+        extensions.add(Campaign.EXTENSION);
+        // should not throw exceptions
+        MobileCore.registerExtensions(extensions, null);
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Test
+    public void test_registerExtension_withoutError() {
+        // setup
+        ArgumentCaptor<Class> extensionClassCaptor = ArgumentCaptor.forClass(Class.class);
+        ArgumentCaptor<ExtensionErrorCallback> callbackCaptor = ArgumentCaptor.forClass(
+                ExtensionErrorCallback.class
+        );
+        // test
+        Campaign.registerExtension();
+        // verify registerExtension called
+        verifyStatic(MobileCore.class, Mockito.times(1));
+        MobileCore.registerExtension(extensionClassCaptor.capture(), callbackCaptor.capture());
+        // verify: no exception when error callback is called and log.error was called
+        callbackCaptor.getValue().error(ExtensionError.UNEXPECTED_ERROR);
+        verifyStatic(Log.class, Mockito.times(1));
+        Log.error(anyString(), anyString(), anyString(), any());
+        assertNotNull(callbackCaptor.getValue());
+        // verify campaign extension registered
+        assertEquals(CampaignExtension.class, extensionClassCaptor.getValue());
+    }
+}
