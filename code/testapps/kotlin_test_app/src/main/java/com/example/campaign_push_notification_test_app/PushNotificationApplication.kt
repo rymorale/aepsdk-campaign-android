@@ -34,22 +34,22 @@ class PushNotificationApplication : Application() {
         MobileCore.setApplication(this)
         MobileCore.setLogLevel(LoggingMode.VERBOSE)
 
-        try {
-            AndroidGriffonBridge.registerExtension()
-            AndroidGriffonBridge.setup(this)
-            Places.registerExtension()
-            PlacesMonitor.registerExtension()
-            Campaign.registerExtension()
-            Identity.registerExtension()
-            Lifecycle.registerExtension()
-            Signal.registerExtension()
-            UserProfile.registerExtension()
-            MobileCore.setSmallIconResourceID(R.mipmap.ic_launcher)
-            MobileCore.setLargeIconResourceID(R.drawable.push_notification_large)
-            MobileCore.start { MobileCore.configureWithAppID("launch-EN9d31cdedca2249ea86cd78ca1b6edb6d-development") }
-        } catch (e: InvalidInitException) {
-            e.printStackTrace()
-        }
+//        try {
+//            AndroidGriffonBridge.registerExtension()
+//            AndroidGriffonBridge.setup(this)
+//            Places.registerExtension()
+//            PlacesMonitor.registerExtension()
+//            Campaign.registerExtension()
+//            Identity.registerExtension()
+//            Lifecycle.registerExtension()
+//            Signal.registerExtension()
+//            UserProfile.registerExtension()
+//            MobileCore.setSmallIconResourceID(R.mipmap.ic_launcher)
+//            MobileCore.setLargeIconResourceID(R.drawable.push_notification_large)
+//            MobileCore.start { MobileCore.configureWithAppID("launch-EN9d31cdedca2249ea86cd78ca1b6edb6d-development") }
+//        } catch (e: InvalidInitException) {
+//            e.printStackTrace()
+//        }
 
 
         FirebaseInstanceId.getInstance().instanceId
@@ -73,10 +73,10 @@ class PushNotificationApplication : Application() {
         // compare to latest versions at https://bintray.com/eaps/mobileservicesdk
         Log.d("Core version ", MobileCore.extensionVersion())
         Log.d("Campaign version ", Campaign.extensionVersion())
-        Log.d("UserProfile version ", UserProfile.extensionVersion())
-        Log.d("Identity version ", Identity.extensionVersion())
-        Log.d("Lifecycle version ", Lifecycle.extensionVersion())
-        Log.d("Signal version ", Signal.extensionVersion())
+//        Log.d("UserProfile version ", UserProfile.extensionVersion())
+//        Log.d("Identity version ", Identity.extensionVersion())
+//        Log.d("Lifecycle version ", Lifecycle.extensionVersion())
+//        Log.d("Signal version ", Signal.extensionVersion())
     }
 
 }

@@ -13,6 +13,7 @@ package com.adobe.marketing.mobile.campaign;
 
 import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.HttpConnecting;
+import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.caching.CacheResult;
 import com.adobe.marketing.mobile.util.StringUtils;
 import com.adobe.marketing.mobile.util.TimeUtils;
@@ -38,9 +39,15 @@ class Utils {
      * @param dataEntity {@link DataEntity} containing a Campaign network request
      * @return {@link CampaignHit} created from the {@code DataEntity}
      */
-    static CampaignHit campaignHitFromDataEntity(final DataEntity dataEntity) throws JSONException {
-        final JSONObject jsonData = new JSONObject(dataEntity.getData());
-        return new CampaignHit(jsonData.getString(CampaignConstants.CampaignHit.URL), jsonData.getString(CampaignConstants.CampaignHit.PAYLOAD), jsonData.getInt(CampaignConstants.CampaignHit.TIMEOUT));
+    static CampaignHit campaignHitFromDataEntity(final DataEntity dataEntity) {
+        try {
+            final JSONObject jsonData = new JSONObject(dataEntity.getData());
+            return new CampaignHit(jsonData.getString(CampaignConstants.CampaignHit.URL), jsonData.getString(CampaignConstants.CampaignHit.PAYLOAD), jsonData.getInt(CampaignConstants.CampaignHit.TIMEOUT));
+        } catch (final JSONException jsonException) {
+            Log.warning(CampaignConstants.LOG_TAG, "campaignHitFromDataEntity",
+                    "JSON exception occurred converting data entity to campaign hit: %s", jsonException.getMessage());
+        }
+        return null;
     }
 
     /**
