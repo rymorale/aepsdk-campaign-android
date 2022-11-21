@@ -11,6 +11,7 @@
 
 package com.adobe.marketing.mobile.campaign;
 
+import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -88,8 +89,7 @@ public final class CampaignConstants {
     static final String HTTP_HEADER_IF_NONE_MATCH = "If-None-Match";
     static final String HTTP_HEADER_IF_RANGE = "If-Range";
     static final String HTTP_HEADER_ETAG = "Etag";
-    static final ArrayList<Integer> recoverableNetworkErrorCodes = new ArrayList(Arrays.asList(408, 504, 503));
-
+    static final ArrayList<Integer> recoverableNetworkErrorCodes = new ArrayList(Arrays.asList(HttpURLConnection.HTTP_CLIENT_TIMEOUT, HttpURLConnection.HTTP_GATEWAY_TIMEOUT, HttpURLConnection.HTTP_UNAVAILABLE));
 
     // cache service metadata
     static final String METADATA_PATH = "pathToFile";
@@ -117,6 +117,21 @@ public final class CampaignConstants {
         static final String TIMEOUT = "timeout";
 
         private CampaignHit() {
+        }
+    }
+
+    public static final class Notification {
+        public static final String CONTENT_KEY = "NOTIFICATION_CONTENT";
+        public static final String USER_INFO_KEY = "NOTIFICATION_USER_INFO";
+        public static final String IDENTIFIER_KEY = "NOTIFICATION_IDENTIFIER";
+        public static final String DEEPLINK_KEY = "NOTIFICATION_DEEPLINK";
+        public static final String SOUND_KEY = "NOTIFICATION_SOUND";
+        public static final String SENDER_CODE_KEY = "NOTIFICATION_SENDER_CODE";
+        public static final int SENDER_CODE = 750183;
+        public static final String REQUEST_CODE_KEY = "NOTIFICATION_REQUEST_CODE";
+        public static final String TITLE = "NOTIFICATION_TITLE";
+
+        private Notification() {
         }
     }
 
