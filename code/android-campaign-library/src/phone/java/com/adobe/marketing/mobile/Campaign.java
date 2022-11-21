@@ -76,7 +76,7 @@ public class Campaign {
 		final Map<String, Object> eventData = new HashMap<>();
 		eventData.put(CampaignConstants.EventDataKeys.Campaign.LINKAGE_FIELDS, linkageFields);
 
-		final Event event = new Event.Builder("SetLinkageFields Event",
+		final Event event = new Event.Builder("setLinkageFields Event",
 				EventType.CAMPAIGN, EventSource.REQUEST_IDENTITY).setEventData(eventData).build();
 
 		// dispatch event
