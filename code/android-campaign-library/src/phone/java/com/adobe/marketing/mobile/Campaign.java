@@ -12,7 +12,10 @@
 package com.adobe.marketing.mobile;
 
 import com.adobe.marketing.mobile.campaign.CampaignConstants;
+import com.adobe.marketing.mobile.campaign.CampaignExtension;
 import com.adobe.marketing.mobile.services.Log;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,6 +36,20 @@ public class Campaign {
 	}
 
 	/**
+	 * Registers the extension with the Mobile SDK. This method should be called only once in your application class.
+	 */
+	@Deprecated
+	public static void registerExtension() {
+		MobileCore.registerExtension(CampaignExtension.class, extensionError -> {
+			if (extensionError == null) {
+				return;
+			}
+			Log.error(CampaignConstants.LOG_TAG, "registerExtension", "There was an error when registering the Campaign extension: %s",
+					extensionError.getErrorName());
+		});
+	}
+
+	/**
 	 * Sets the Campaign linkage fields (CRM IDs) in the mobile SDK to be used for downloading personalized messages from Campaign.
 	 * <p>
 	 * The set linkage fields are stored as base64 encoded JSON string in memory and they are sent in a custom HTTP header 'X-InApp-Auth'
@@ -48,7 +65,7 @@ public class Campaign {
 	 *
 	 * @param linkageFields {@code Map<String, String>} containing the linkage fields key-value pairs
 	 */
-	public static void setLinkageFields(final Map<String, String> linkageFields) {
+	public static void setLinkageFields(@NotNull final Map<String, String> linkageFields) {
 		if (linkageFields == null || linkageFields.isEmpty()) {
 			Log.debug(CampaignConstants.LOG_TAG, "setLinkageFields",
 					"setLinkageFields -  Cannot set Linkage Fields, provided linkage fields map is empty. \n For more information: https://aep-sdks.gitbook.io/docs/using-mobile-extensions/adobe-campaign-standard/adobe-campaign-standard-api-reference#set-linkage-fields");

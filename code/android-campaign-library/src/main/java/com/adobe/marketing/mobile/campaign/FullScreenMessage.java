@@ -139,10 +139,11 @@ class FullScreenMessage extends CampaignMessage {
      * Creates and shows a new {@link FullscreenMessage} object and registers a {@link FullScreenMessageUiListener}
      * instance with the {@code UIService} to receive message interaction events.
      * <p>
-     * This method reads the {@link #htmlContent} from the cached html at {@link #assets} and generates the expanded html by
-     * replacing assets URLs with cached references, before calling the method on the {@code UIService} to display the message.
+     * This method reads the {@link #htmlContent} from the cached html at {@link #assets} and generates a map containing the asset url and
+     * it's cached file location. The asset map is set in the created {@code FullscreenMessage} before invoking the method {@link FullscreenMessage#show()} to display
+     * the fullscreen in-app message.
      *
-     * @see #getCachedResourcesMapAndUpdateHtml()
+     * @see #createCachedResourcesMap()
      * @see UIService#createFullscreenMessage(String, FullscreenMessageDelegate, boolean, MessageSettings)
      */
     @Override
@@ -175,7 +176,7 @@ class FullScreenMessage extends CampaignMessage {
             return;
         }
 
-        final Map<String, String> cachedResourcesMap = getCachedResourcesMapAndUpdateHtml();
+        final Map<String, String> cachedResourcesMap = createCachedResourcesMap();
 
         final FullScreenMessageUiListener fullScreenMessageUiListener = new FullScreenMessageUiListener();
         final MessageSettings messageSettings = new MessageSettings();
@@ -210,28 +211,28 @@ class FullScreenMessage extends CampaignMessage {
     }
 
     /**
-     * Returns a {@code Map<String,String>} containing remote resource URL as key and cached resource path as value for all remote resource that are cached.
+     * Returns a {@code Map<String,String>} containing the remote resource URL as key and cached resource path as value for a cached remote resource.
      * <p>
-     * This function uses the {@link CacheService} to find a cached remote file. if a cached file is present then add it to the {@code Map<String, String>} that will be returned.
+     * This function uses the {@link CacheService} to find a cached remote file. if a cached file is found, its added to the {@code Map<String, String>} that will be returned.
      * </p>
-     * This functions returns empty map in following cases.
+     * This functions returns an empty map in the following cases:
      * <ul>
-     * <li>Asset List is empty.</li>
-     * <li>{@link CacheService} in null.</li>
+     * <li>The Asset List is empty.</li>
+     * <li>The {@link CacheService} is null.</li>
      * </ul>
      *
-     * @return {@code Map<String,String>}
+     * @return {@code Map<String, String>}
      */
-    private Map<String, String> getCachedResourcesMapAndUpdateHtml() {
+    private Map<String, String> createCachedResourcesMap() {
         // early bail if we don't have assets or if cache service is unavailable
         if (assets == null || assets.isEmpty()) {
-            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "generateExpandedHtml -  No cached assets found, cannot expand URLs in the HTML.");
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "createCachedResourcesMap - No cached assets found, cannot expand URLs in the HTML.");
             return Collections.emptyMap();
         }
 
         if (cacheService == null) {
             Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
-                    "getLocalResourcesMapping -  No cache service found, cannot generate local resource mapping.");
+                    "createCachedResourcesMap - No cache service found, cannot generate local resource mapping.");
             return Collections.emptyMap();
         }
 
@@ -334,41 +335,6 @@ class FullScreenMessage extends CampaignMessage {
         }
     }
 
-    /**
-     * Extracts query parameters from a given {@code String} into a {@code Map<String, String>}.
-     *
-     * @param queryString {@link String} containing query parameters
-     * @return the extracted {@code Map<String, String>} query parameters
-     */
-    private Map<String, String> extractQueryParameters(final String queryString) {
-        if (StringUtils.isNullOrEmpty(queryString)) {
-            return null;
-        }
-
-        final Map<String, String> parameters = new HashMap<>();
-        final String[] paramArray = queryString.split("&");
-
-        for (String currentParam : paramArray) {
-            // quick out in case this entry is null or empty string
-            if (StringUtils.isNullOrEmpty(currentParam)) {
-                continue;
-            }
-
-            final String[] currentParamArray = currentParam.split("=", 2);
-
-            if (currentParamArray.length != 2 ||
-                    (currentParamArray[0].isEmpty() || currentParamArray[1].isEmpty())) {
-                continue;
-            }
-
-            final String key = currentParamArray[0];
-            final String value = currentParamArray[1];
-            parameters.put(key, value);
-        }
-
-        return parameters;
-    }
-
     class FullScreenMessageUiListener implements FullscreenMessageDelegate {
         /**
          * Invoked when a {@code UIFullScreenMessage} is displayed.
@@ -459,7 +425,7 @@ class FullScreenMessage extends CampaignMessage {
             final String query = uri.getQuery();
 
             // Populate message data
-            final Map<String, String> messageData = extractQueryParameters(query);
+            final Map<String, String> messageData = Utils.extractQueryParameters(query);
 
             if (messageData != null && !messageData.isEmpty()) {
                 messageData.put(CampaignConstants.CAMPAIGN_INTERACTION_TYPE, host);

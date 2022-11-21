@@ -60,11 +60,7 @@ public final class CampaignConstants {
     static final String MESSAGE_TEMPLATE_LOCAL_NOTIFICATION = "local";
 
     static final String RULES_CACHE_FOLDER = "campaignRules";
-    static final String RULES_CACHE_KEY = "rules";
-    static final String RULES_JSON_KEY = "rules";
     static final String RULES_JSON_FILE_NAME = "rules.json";
-    static final String RULES_JSON_CONDITION_KEY = "condition";
-    static final String RULES_JSON_CONSEQUENCES_KEY = "consequences";
 
     static final String CAMPAIGN_REGISTRATION_URL = "https://%s/rest/head/mobileAppV5/%s/subscriptions/%s";
     static final String CAMPAIGN_RULES_DOWNLOAD_URL = "https://%s/%s/%s/%s/rules.zip";
@@ -87,12 +83,13 @@ public final class CampaignConstants {
     static final String HTTP_HEADER_KEY_CONNECTION = "connection";
     static final String HTTP_HEADER_KEY_CONTENT_TYPE = "Content-Type";
     static final String HTTP_HEADER_CONTENT_TYPE_JSON_APPLICATION = "application/json";
-    static final ArrayList<Integer> recoverableNetworkErrorCodes = new ArrayList(Arrays.asList(408, 504, 503));
     static final String HTTP_HEADER_IF_MODIFIED_SINCE = "If-Modified-Since";
     static final String HTTP_HEADER_LAST_MODIFIED = "Last-Modified";
     static final String HTTP_HEADER_IF_NONE_MATCH = "If-None-Match";
     static final String HTTP_HEADER_IF_RANGE = "If-Range";
     static final String HTTP_HEADER_ETAG = "Etag";
+    static final ArrayList<Integer> recoverableNetworkErrorCodes = new ArrayList(Arrays.asList(408, 504, 503));
+
 
     // cache service metadata
     static final String METADATA_PATH = "pathToFile";
@@ -206,6 +203,7 @@ public final class CampaignConstants {
         public static final class Lifecycle {
             static final String EXTENSION_NAME = "com.adobe.module.lifecycle";
             static final String LAUNCH_EVENT = "launchevent";
+            static final String INSTALL_EVENT = "installevent";
             static final String LIFECYCLE_CONTEXT_DATA = "lifecyclecontextdata";
 
             private Lifecycle() {

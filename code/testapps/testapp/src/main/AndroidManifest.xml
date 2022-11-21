@@ -40,7 +40,6 @@
             </intent-filter>
         </activity>
 
-        <activity android:name="com.adobe.marketing.mobile.FullscreenMessageActivity" />
         <activity android:name=".TriggerIAMActivity"></activity>
         <activity android:name=".SignUpActivity"></activity>
         <activity android:name=".SettingsActivity"></activity>

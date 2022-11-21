@@ -2,6 +2,7 @@ apply plugin: 'com.android.library'
 apply plugin: "jacoco"
 apply plugin: 'maven-publish'
 apply plugin: 'signing'
+apply plugin: 'kotlin-android'
 
 ext {
     srcFolders = file("./").listFiles().findAll {
@@ -212,9 +213,12 @@ task platformFunctionalTestJacocoReport(type: JacocoReport, dependsOn: "createPh
 apply from: 'checkstyle.gradle'
 
 dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     //implementation "com.adobe.marketing.mobile:core:${mavenCoreVersion}"
     //implementation 'com.github.adobe.aepsdk-core-android:core:v2.0.0-experimental.2'
-    implementation 'com.github.adobe.aepsdk-core-android:core:v2.0.0-alpha.3'
+    implementation ('com.github.adobe.aepsdk-core-android:core:dev-v2.0.0-SNAPSHOT') {
+        transitive(true)
+    }
 
     // Firebase sdk compile only
     compileOnly "com.google.firebase:firebase-messaging:21.1.0"

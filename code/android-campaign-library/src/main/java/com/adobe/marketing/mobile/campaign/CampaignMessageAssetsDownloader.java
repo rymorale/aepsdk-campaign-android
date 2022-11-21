@@ -12,6 +12,7 @@
 package com.adobe.marketing.mobile.campaign;
 
 import com.adobe.marketing.mobile.services.DeviceInforming;
+import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.HttpMethod;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NetworkRequest;
@@ -19,12 +20,12 @@ import com.adobe.marketing.mobile.services.Networking;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.caching.CacheEntry;
 import com.adobe.marketing.mobile.services.caching.CacheExpiry;
+import com.adobe.marketing.mobile.services.caching.CacheResult;
 import com.adobe.marketing.mobile.services.caching.CacheService;
 import com.adobe.marketing.mobile.services.internal.caching.FileCacheService;
 import com.adobe.marketing.mobile.util.UrlUtils;
 
 import java.io.File;
-import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -42,6 +43,7 @@ class CampaignMessageAssetsDownloader {
     private final CacheService cacheService;
     private final String messageId;
     private File assetDir;
+    private final String assetCacheLocation;
 
     /**
      * Constructor.
@@ -55,6 +57,7 @@ class CampaignMessageAssetsDownloader {
         this.deviceInfoService = ServiceProvider.getInstance().getDeviceInfoService();
         this.cacheService = new FileCacheService();
         this.messageId = parentMessageId;
+        this.assetCacheLocation =  CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.MESSAGE_CACHE_DIR + File.separator + messageId;
         createMessageAssetCacheDirectory();
     }
 
@@ -81,44 +84,45 @@ class CampaignMessageAssetsDownloader {
 
         // download assets within the assets to retain list
         for (final String url : assetsToRetain) {
-            final NetworkRequest networkRequest = new NetworkRequest(url, HttpMethod.GET, null, null, CampaignConstants.CAMPAIGN_TIMEOUT_DEFAULT, CampaignConstants.CAMPAIGN_TIMEOUT_DEFAULT);
+            // 304 - Not Modified support
+            final CacheResult cachedAsset = cacheService.get(assetCacheLocation, url);
+            final Map<String, String> requestProperties = Utils.extractHeadersFromCache(cachedAsset);
+            final NetworkRequest networkRequest = new NetworkRequest(url, HttpMethod.GET, null, requestProperties, CampaignConstants.CAMPAIGN_TIMEOUT_DEFAULT, CampaignConstants.CAMPAIGN_TIMEOUT_DEFAULT);
             networkService.connectAsync(networkRequest, connection -> {
-                if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                if (connection.getResponseCode() == HttpURLConnection.HTTP_NOT_MODIFIED) {
+                    Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "downloadAssetCollection - Asset was cached previously: %s", url);
+                    connection.close();
+                    return;
+                } else if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
                     Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "downloadAssetCollection - Failed to download asset from URL: %s", url);
+                    connection.close();
                     return;
                 }
+                cacheAssetData(connection, url, messageId);
                 connection.close();
-                cacheAssetData(connection.getInputStream(), url, messageId);
             });
         }
     }
 
     /**
-     * Caches the provided {@link InputStream} containing the data downloaded from the given URL for the given message Id.
+     * Caches the provided {@code InputStream} contained in the {@code HttpConnecting} from the given asset URL.
      *
-     * @param assetData {@link InputStream} containing the download remote asset data.
-     * @param key       {@code String} The asset download URL. Used to name the cache folder.
-     * @param messageId {@code String} The id of the message
+     * @param connection {@link HttpConnecting} containing the downloaded remote asset data.
+     * @param key        {@code String} The asset download URL. Used to name the cache folder.
+     * @param messageId  {@code String} The id of the message
      */
-    private void cacheAssetData(final InputStream assetData, final String key, final String messageId) {
+    private void cacheAssetData(final HttpConnecting connection, final String key, final String messageId) {
         // create message asset cache directory if needed
         if (!createDirectoryIfNeeded(messageId)) {
             Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "cacheAssetData - Cannot cache asset for message id %s, failed to create cache directory.", messageId);
             return;
         }
 
-        final String assetCacheLocation = CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.MESSAGE_CACHE_DIR + File.separator + messageId;
-
-        // check if asset already cached
-        if (cacheService.get(assetCacheLocation, key) != null) {
-            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "cacheAssetData - Found cached asset for message id %s.", key, messageId);
-            return;
-        }
-
         Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "cacheAssetData - Caching asset %s for message id %s.", key, messageId);
-        final Map<String, String> metadata = new HashMap<>();
-        metadata.put(CampaignConstants.METADATA_PATH, assetCacheLocation);
-        final CacheEntry cacheEntry = new CacheEntry(assetData, CacheExpiry.never(), null);
+        final Map<String, String> metadata = Utils.extractMetadataFromResponse(connection);
+        final String cachePath = ServiceProvider.getInstance().getDeviceInfoService().getApplicationCacheDir().getAbsolutePath();
+        metadata.put(CampaignConstants.METADATA_PATH, cachePath + File.separator + assetCacheLocation);
+        final CacheEntry cacheEntry = new CacheEntry(connection.getInputStream(), CacheExpiry.never(), metadata);
         cacheService.set(assetCacheLocation, key, cacheEntry);
     }
 

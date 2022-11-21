@@ -31,6 +31,7 @@ import com.adobe.marketing.mobile.services.DataQueuing;
 import com.adobe.marketing.mobile.services.DataStoring;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
+import com.adobe.marketing.mobile.services.PersistentHitQueue;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.caching.CacheService;
 import com.adobe.marketing.mobile.util.DataReader;
@@ -69,7 +70,7 @@ public class CampaignExtension extends Extension {
     private static final String VIEWED_STRING_VALUE = "1";
     private final String SELF_TAG = "CampaignExtension";
     private final ExtensionApi extensionApi;
-    //private final PersistentHitQueue campaignPersistentHitQueue;
+    private final PersistentHitQueue campaignPersistentHitQueue;
     private final LaunchRulesEngine campaignRulesEngine;
     private final CacheService cacheService;
     private final CampaignRulesDownloader campaignRulesDownloader;
@@ -98,9 +99,9 @@ public class CampaignExtension extends Extension {
         campaignRulesDownloader = new CampaignRulesDownloader(extensionApi, campaignRulesEngine, getNamedCollection(), cacheService);
 
         // setup persistent hit queue
-        final DataQueuing dataQueuing = ServiceProvider.getInstance().getDataQueueService();
-        final DataQueue campaignDataQueue = dataQueuing.getDataQueue(getFriendlyName());
-        //campaignPersistentHitQueue = new PersistentHitQueue(campaignDataQueue, new CampaignHitProcessor());
+        final DataQueuing campaignDataQueueService = ServiceProvider.getInstance().getDataQueueService();
+        final DataQueue campaignDataQueue = campaignDataQueueService.getDataQueue(CampaignConstants.FRIENDLY_NAME);
+        campaignPersistentHitQueue = new PersistentHitQueue(campaignDataQueue, new CampaignHitProcessor());
 
         // initialize the campaign state
         campaignState = new CampaignState();
@@ -239,7 +240,7 @@ public class CampaignExtension extends Extension {
 
         final MobilePrivacyStatus privacyStatus = campaignState.getMobilePrivacyStatus();
         // notify campaign persistent hit queue of any privacy status changes
-        //campaignPersistentHitQueue.handlePrivacyChange(privacyStatus);
+        campaignPersistentHitQueue.handlePrivacyChange(privacyStatus);
         if (privacyStatus.equals(MobilePrivacyStatus.OPT_OUT)) {
             processPrivacyOptOut();
             return;
@@ -452,7 +453,6 @@ public class CampaignExtension extends Extension {
         }
 
         final String linkageFieldsJsonString = new JSONObject(linkageFields).toString();
-
         if (StringUtils.isNullOrEmpty(linkageFieldsJsonString)) {
             Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
                     "handleLinkageFieldsEvent -  Cannot set linkage fields, linkageFields JSON string is null or empty.");
@@ -617,7 +617,7 @@ public class CampaignExtension extends Extension {
         final CampaignHit campaignHit = new CampaignHit(url, payload, campaignState.getCampaignTimeout());
         final DataEntity dataEntity = new DataEntity(campaignHit.toString());
         Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "processRequest - Campaign Request Queued with url (%s) and body (%s)", url, payload);
-        //campaignPersistentHitQueue.queue(dataEntity);
+        campaignPersistentHitQueue.queue(dataEntity);
     }
 
     /**
