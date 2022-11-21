@@ -61,7 +61,7 @@ public class FullScreenMessageTests {
 	private ArrayList<String> remoteAssetTwo;
 	private String assetPath;
 	private final String messageId = "07a1c997-2450-46f0-a454-537906404124";
-	private final String MESSAGES_CACHE = CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.MESSAGE_CACHE_DIR + File.separator;
+	private final String MESSAGES_CACHE = CampaignTestConstants.CACHE_BASE_DIR + File.separator + CampaignTestConstants.MESSAGE_CACHE_DIR + File.separator;
 
 	@Mock
 	UIService mockUIService;
@@ -113,7 +113,7 @@ public class FullScreenMessageTests {
 		final String sha256HashForRemoteUrl = "fb0d3704b73d5fa012a521ea31013a61020e79610a3c27e8dd1007f3ec278195";
 		final String cachedFileName = sha256HashForRemoteUrl + ".12345"; //12345 is just a random extension.
 		metadataMap = new HashMap<>();
-		metadataMap.put(CampaignConstants.METADATA_PATH, MESSAGES_CACHE + messageId + File.separator + cachedFileName);
+		metadataMap.put(CampaignTestConstants.METADATA_PATH, MESSAGES_CACHE + messageId + File.separator + cachedFileName);
 
 		// setup mocks
 		mockStatic(ServiceProvider.class);

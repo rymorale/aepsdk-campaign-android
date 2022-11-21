@@ -66,10 +66,11 @@ class CampaignHitProcessor implements HitProcessing {
      */
     @Override
     public void processHit(final DataEntity dataEntity, final HitProcessingResult hitProcessingResult) {
-        if (StringUtils.isNullOrEmpty(dataEntity.getData())) {
+        if (dataEntity == null || StringUtils.isNullOrEmpty(dataEntity.getData())) {
             Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
                     "processHit - Data entity contained an empty payload. Hit will not be processed.");
             hitProcessingResult.complete(true);
+            return;
         }
 
         // convert the data entity to a campaign hit
@@ -78,6 +79,7 @@ class CampaignHitProcessor implements HitProcessing {
             Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
                     "processHit - error occurred when creating a Campaign Hit from the given data entity");
             hitProcessingResult.complete(true);
+            return;
         }
 
         final Map<String, String> headers = new HashMap<String, String>() {
@@ -92,6 +94,7 @@ class CampaignHitProcessor implements HitProcessing {
             Log.warning(CampaignConstants.LOG_TAG, SELF_TAG,
                     "processHit -The network service is unavailable, the hit will be retried later.");
             hitProcessingResult.complete(false);
+            return;
         }
         final NetworkRequest networkRequest = new NetworkRequest(campaignHit.url,
                 campaignHit.getHttpCommand(),
