@@ -12,37 +12,25 @@
 package com.adobe.marketing.mobile;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.powermock.api.mockito.PowerMockito.mockStatic;
-import static org.powermock.api.mockito.PowerMockito.verifyStatic;
 
 import com.adobe.marketing.mobile.campaign.CampaignExtension;
 import com.adobe.marketing.mobile.services.Log;
 
-import org.junit.Before;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({MobileCore.class, Log.class})
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class CampaignPublicAPITests {
-
-    @Before
-    public void setup() {
-        mockStatic(MobileCore.class);
-        mockStatic(Log.class);
-    }
 
     @Test
     public void test_extensionVersion() {
@@ -61,102 +49,109 @@ public class CampaignPublicAPITests {
     @SuppressWarnings("rawtypes")
     @Test
     public void test_registerExtension() {
-        // setup
-        ArgumentCaptor<Class> extensionClassCaptor = ArgumentCaptor.forClass(Class.class);
-        ArgumentCaptor<ExtensionErrorCallback> callbackCaptor = ArgumentCaptor.forClass(
-                ExtensionErrorCallback.class
-        );
-        // test
-        Campaign.registerExtension();
-        // verify registerExtension called
-        verifyStatic(MobileCore.class, Mockito.times(1));
-        MobileCore.registerExtension(extensionClassCaptor.capture(), callbackCaptor.capture());
-        // verify error callback was not called when extension error is null
-        callbackCaptor.getValue().error(null);
-        assertNotNull(callbackCaptor.getValue());
-        verifyStatic(Log.class, Mockito.times(0));
-        Log.error(anyString(), anyString(), anyString(), any());
-        // verify campaign extension registered
-        assertEquals(CampaignExtension.class, extensionClassCaptor.getValue());
+        try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class)) {
+            // setup
+            final ArgumentCaptor<Class> extensionClassCaptor = ArgumentCaptor.forClass(Class.class);
+            final ArgumentCaptor<ExtensionErrorCallback> callbackCaptor = ArgumentCaptor.forClass(
+                    ExtensionErrorCallback.class
+            );
+            mobileCoreMockedStatic
+                    .when(() -> MobileCore.registerExtension(extensionClassCaptor.capture(), callbackCaptor.capture()))
+                    .thenReturn(true);
+            // test
+            Campaign.registerExtension();
 
+            // verify: happy
+            Assert.assertNotNull(callbackCaptor.getValue());
+            Assert.assertEquals(CampaignExtension.class, extensionClassCaptor.getValue());
+            // verify: error callback was called
+            callbackCaptor.getValue().error(null);
+        }
     }
 
     @SuppressWarnings("rawtypes")
     @Test
-    public void test_registerExtension_withoutError() {
-        // setup
-        ArgumentCaptor<Class> extensionClassCaptor = ArgumentCaptor.forClass(Class.class);
-        ArgumentCaptor<ExtensionErrorCallback> callbackCaptor = ArgumentCaptor.forClass(
-                ExtensionErrorCallback.class
-        );
-        // test
-        Campaign.registerExtension();
-        // verify registerExtension called
-        verifyStatic(MobileCore.class, Mockito.times(1));
-        MobileCore.registerExtension(extensionClassCaptor.capture(), callbackCaptor.capture());
-        // verify no exception when error callback is called and that log.error was called
-        callbackCaptor.getValue().error(ExtensionError.UNEXPECTED_ERROR);
-        assertNotNull(callbackCaptor.getValue());
-        verifyStatic(Log.class, Mockito.times(1));
-        Log.error(anyString(), anyString(), anyString(), any());
-        // verify campaign extension registered
-        assertEquals(CampaignExtension.class, extensionClassCaptor.getValue());
+    public void test_registerExtension_extensionError() {
+        try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class);
+             MockedStatic<Log> logMockedStatic = Mockito.mockStatic(Log.class)) {
+            // setup
+            final ArgumentCaptor<Class> extensionClassCaptor = ArgumentCaptor.forClass(Class.class);
+            final ArgumentCaptor<ExtensionErrorCallback> callbackCaptor = ArgumentCaptor.forClass(
+                    ExtensionErrorCallback.class
+            );
+            mobileCoreMockedStatic
+                    .when(() -> MobileCore.registerExtension(extensionClassCaptor.capture(), callbackCaptor.capture()))
+                    .thenReturn(true);
+            // test
+            Campaign.registerExtension();
+
+            // verify: happy
+            Assert.assertNotNull(callbackCaptor.getValue());
+            Assert.assertEquals(CampaignExtension.class, extensionClassCaptor.getValue());
+
+            callbackCaptor.getValue().error(ExtensionError.UNEXPECTED_ERROR);
+            logMockedStatic.verify(() -> Log.error(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.any()));
+        }
     }
 
     @Test
     public void test_setLinkageFields() {
-        // setup
-        ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
-        Map<String, String> linkageFields = new HashMap<>();
-        linkageFields.put("cusFirstName", "firstName");
-        linkageFields.put("cusLastName", "lastName");
-        linkageFields.put("cusEmail", "firstNameLastName@email.com");
-        // test
-        Campaign.setLinkageFields(linkageFields);
-        // verify campaign request identity event dispatched
-        verifyStatic(MobileCore.class, Mockito.times(1));
-        MobileCore.dispatchEvent(eventCaptor.capture());
-        Event capturedEvent = eventCaptor.getValue();
-        assertEquals(EventType.CAMPAIGN, capturedEvent.getType());
-        assertEquals(EventSource.REQUEST_IDENTITY, capturedEvent.getSource());
-        assertEquals("setLinkageFields Event", capturedEvent.getName());
-        Map<String, Object> capturedEventData = capturedEvent.getEventData();
-        Map<String, String> capturedLinkageFields = (Map<String, String>) capturedEventData.get("linkagefields");
-        assertEquals("firstName", capturedLinkageFields.get("cusFirstName"));
-        assertEquals("lastName", capturedLinkageFields.get("cusLastName"));
-        assertEquals("firstNameLastName@email.com", capturedLinkageFields.get("cusEmail"));
+        try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class)) {
+            // setup
+            ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+            Map<String, String> linkageFields = new HashMap<>();
+            linkageFields.put("cusFirstName", "firstName");
+            linkageFields.put("cusLastName", "lastName");
+            linkageFields.put("cusEmail", "firstNameLastName@email.com");
+            // test
+            Campaign.setLinkageFields(linkageFields);
+            // verify campaign request identity event dispatched
+            mobileCoreMockedStatic.verify(() -> MobileCore.dispatchEvent(eventCaptor.capture()));
+            Event capturedEvent = eventCaptor.getValue();
+            assertEquals(EventType.CAMPAIGN, capturedEvent.getType());
+            assertEquals(EventSource.REQUEST_IDENTITY, capturedEvent.getSource());
+            assertEquals("setLinkageFields Event", capturedEvent.getName());
+            Map<String, Object> capturedEventData = capturedEvent.getEventData();
+            Map<String, String> capturedLinkageFields = (Map<String, String>) capturedEventData.get("linkagefields");
+            assertEquals("firstName", capturedLinkageFields.get("cusFirstName"));
+            assertEquals("lastName", capturedLinkageFields.get("cusLastName"));
+            assertEquals("firstNameLastName@email.com", capturedLinkageFields.get("cusEmail"));
+        }
     }
 
     @Test
     public void test_setLinkageFields_NullMap() {
         // test
-        Campaign.setLinkageFields(null);
-        // verify campaign request identity event not dispatched
-        verifyStatic(MobileCore.class, Mockito.times(0));
-        MobileCore.dispatchEvent(any(Event.class));
+        try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class)) {
+            Campaign.setLinkageFields(null);
+            // verify campaign request identity event not dispatched
+            mobileCoreMockedStatic.verifyNoInteractions();
+        }
     }
 
     @Test
     public void test_setLinkageFields_EmptyMap() {
         // test
-        Campaign.setLinkageFields(new HashMap<>());
-        // verify campaign request identity event not dispatched
-        verifyStatic(MobileCore.class, Mockito.times(0));
-        MobileCore.dispatchEvent(any(Event.class));
+        try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class)) {
+            Campaign.setLinkageFields(new HashMap<>());
+            // verify campaign request identity event not dispatched
+            mobileCoreMockedStatic.verifyNoInteractions();
+        }
     }
 
     @Test
     public void test_resetLinkageFields() {
-        // setup
-        ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
-        // test
-        Campaign.resetLinkageFields();
-        // verify campaign request reset event dispatched
-        verifyStatic(MobileCore.class, Mockito.times(1));
-        MobileCore.dispatchEvent(eventCaptor.capture());
-        Event capturedEvent = eventCaptor.getValue();
-        assertEquals(EventType.CAMPAIGN, capturedEvent.getType());
-        assertEquals(EventSource.REQUEST_RESET, capturedEvent.getSource());
-        assertEquals("resetLinkageFields Event", capturedEvent.getName());
+        try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class)) {
+            // setup
+            ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+            // test
+            Campaign.resetLinkageFields();
+            // verify campaign request reset event dispatched
+            mobileCoreMockedStatic.verify(() -> MobileCore.dispatchEvent(eventCaptor.capture()));
+            Event capturedEvent = eventCaptor.getValue();
+            assertEquals(EventType.CAMPAIGN, capturedEvent.getType());
+            assertEquals(EventSource.REQUEST_RESET, capturedEvent.getSource());
+            assertEquals("resetLinkageFields Event", capturedEvent.getName());
+        }
     }
 }
