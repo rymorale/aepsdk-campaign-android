@@ -30,9 +30,8 @@ public class TestUtils {
     /**
      * Get an instance of {@link File} for resource from the resource directory, that matches the name supplied.
      * <p>
-     *	The resource directory for the unit tests is <b>{projectroot}/unitTests/resource</b>
+     * The resource directory for the unit tests is <b>{projectroot}/unitTests/resource</b>
      * </p>
-     *
      *
      * @param resourceName The name of the resource.
      * @return A File instance, if the resource was found in the resource directory. null otherwise.

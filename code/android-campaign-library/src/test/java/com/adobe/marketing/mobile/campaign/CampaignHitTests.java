@@ -11,30 +11,32 @@
 
 package com.adobe.marketing.mobile.campaign;
 
-import org.junit.Test;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import com.adobe.marketing.mobile.services.HttpMethod;
 
+import org.junit.Test;
+
 public class CampaignHitTests {
 
-	@Test
-	public void testCreateCampaignHit_PayloadPresent() {
-		// test
-		CampaignHit campaignHit = new CampaignHit("url", "payload", 5);
-		// verify
-		assertNotNull(campaignHit);
-		assertEquals("{\"payload\":\"payload\",\"url\":\"url\",\"timeout\":5}", campaignHit.toString());
-		assertEquals(HttpMethod.POST, campaignHit.getHttpCommand());
-	}
+    @Test
+    public void testCreateCampaignHit_PayloadPresent() {
+        // test
+        CampaignHit campaignHit = new CampaignHit("url", "payload", 5);
+        // verify
+        assertNotNull(campaignHit);
+        assertEquals("{\"payload\":\"payload\",\"url\":\"url\",\"timeout\":5}", campaignHit.toString());
+        assertEquals(HttpMethod.POST, campaignHit.getHttpCommand());
+    }
 
-	@Test
-	public void testCreateCampaignHit_PayloadEmpty() {
-		// test
-		CampaignHit campaignHit = new CampaignHit("url", null, 5);
-		// verify
-		assertNotNull(campaignHit);
-		assertEquals("{\"url\":\"url\",\"timeout\":5}", campaignHit.toString());
-		assertEquals(HttpMethod.GET, campaignHit.getHttpCommand());
-	}
+    @Test
+    public void testCreateCampaignHit_PayloadEmpty() {
+        // test
+        CampaignHit campaignHit = new CampaignHit("url", null, 5);
+        // verify
+        assertNotNull(campaignHit);
+        assertEquals("{\"url\":\"url\",\"timeout\":5}", campaignHit.toString());
+        assertEquals(HttpMethod.GET, campaignHit.getHttpCommand());
+    }
 }
