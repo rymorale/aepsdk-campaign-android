@@ -223,9 +223,9 @@ dependencies {
 
     // Firebase sdk test implementation
     testImplementation 'com.google.firebase:firebase-messaging:21.1.0'
-    testImplementation "androidx.test.ext:junit:${junitVersion}"
-    testImplementation 'org.powermock:powermock-api-mockito2:2.0.0'
-    testImplementation 'org.powermock:powermock-module-junit4:2.0.0'
+    testImplementation "androidx.test.ext:junit:${rootProject.ext.junitVersion}"
+    testImplementation "org.mockito:mockito-core:${rootProject.ext.mockitoCoreVersion}"
+    testImplementation "org.mockito:mockito-inline:${rootProject.ext.mockitoCoreVersion}"
     testImplementation 'org.json:json:20180813'
 
     androidTestImplementation "androidx.test.ext:junit:${junitVersion}"
