@@ -43,6 +43,70 @@ class AlertMessage extends CampaignMessage {
     String cancelButtonText;
 
     /**
+     * Serves as the delegate for handling {@code AlertMessage} events triggered by the {@code UIService}.
+     */
+    class UIAlertMessageUIListener implements AlertListener {
+        /**
+         * Invoked on positive button clicks.
+         * <p>
+         * Checks to see if the alert message's url is populated and if so adds the url to the context data map
+         * then calls {@link #clickedWithData(Map)}.
+         * If a url is not present then call the {@link #clickedThrough()} method implemented in the parent class {@link CampaignMessage}.
+         */
+        @Override
+        public void onPositiveResponse() {
+            viewed();
+
+            if (!StringUtils.isNullOrEmpty(url)) {
+                final Map<String, String> contextData = new HashMap<>();
+                contextData.put(CampaignConstants.CAMPAIGN_INTERACTION_URL, url);
+                clickedWithData(contextData);
+            } else {
+                clickedThrough();
+            }
+        }
+
+        /**
+         * Invoked on negative button clicks.
+         * <p>
+         * Calls the {@link #viewed()} method implemented in the parent class {@link CampaignMessage}.
+         */
+        @Override
+        public void onNegativeResponse() {
+            viewed();
+        }
+
+        /**
+         * Invoked when the alert is displayed.
+         * <p>
+         * Calls the {@link #triggered()} method implemented in the parent class {@link CampaignMessage}.
+         */
+        @Override
+        public void onShow() {
+            triggered();
+        }
+
+        /**
+         * Invoked when the alert is dismissed.
+         * <p>
+         * Calls the {@link #viewed()} method implemented in the parent class {@link CampaignMessage}.
+         */
+        @Override
+        public void onDismiss() {
+            viewed();
+        }
+
+        /**
+         * Invoked when an error occurs when showing the alert.
+         * <p>
+         */
+        @Override
+        public void onError(final UIError uiError) {
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "Error occurred when attempting to display the alert message: %s.", uiError.toString());
+        }
+    }
+
+    /**
      * Constructor.
      *
      * @param extension   parent {@link CampaignExtension} instance
@@ -81,16 +145,7 @@ class AlertMessage extends CampaignMessage {
         Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
                 "parseAlertMessagePayload - Parsing rule consequence to show alert message with messageid %s", messageId);
 
-        if (consequence == null) {
-            throw new CampaignMessageRequiredFieldMissingException("Message consequence is null.");
-        }
-
         final Map<String, Object> detailDictionary = consequence.getDetail();
-
-        if (detailDictionary == null || detailDictionary.isEmpty()) {
-            throw new CampaignMessageRequiredFieldMissingException("Message detail is missing.");
-        }
-
         // title is required
         title = DataReader.optString(detailDictionary, CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL_KEY_TITLE, "");
 
@@ -166,69 +221,5 @@ class AlertMessage extends CampaignMessage {
      */
     void showUrl() {
         super.openUrl(url);
-    }
-
-    /**
-     * Serves as the delegate for handling {@code AlertMessage} events triggered by the {@code UIService}.
-     */
-    class UIAlertMessageUIListener implements AlertListener {
-        /**
-         * Invoked on positive button clicks.
-         * <p>
-         * Checks to see if the alert message's url is populated and if so adds the url to the context data map
-         * then calls {@link #clickedWithData(Map)}.
-         * If a url is not present then call the {@link #clickedThrough()} method implemented in the parent class {@link CampaignMessage}.
-         */
-        @Override
-        public void onPositiveResponse() {
-            viewed();
-
-            if (url != null && !url.isEmpty()) {
-                final Map<String, String> contextData = new HashMap<>();
-                contextData.put(CampaignConstants.CAMPAIGN_INTERACTION_URL, url);
-                clickedWithData(contextData);
-            } else {
-                clickedThrough();
-            }
-        }
-
-        /**
-         * Invoked on negative button clicks.
-         * <p>
-         * Calls the {@link #viewed()} method implemented in the parent class {@link CampaignMessage}.
-         */
-        @Override
-        public void onNegativeResponse() {
-            viewed();
-        }
-
-        /**
-         * Invoked when the alert is displayed.
-         * <p>
-         * Calls the {@link #triggered()} method implemented in the parent class {@link CampaignMessage}.
-         */
-        @Override
-        public void onShow() {
-            triggered();
-        }
-
-        /**
-         * Invoked when the alert is dismissed.
-         * <p>
-         * Calls the {@link #viewed()} method implemented in the parent class {@link CampaignMessage}.
-         */
-        @Override
-        public void onDismiss() {
-            viewed();
-        }
-
-        /**
-         * Invoked when an error occurs when showing the alert.
-         * <p>
-         */
-        @Override
-        public void onError(final UIError uiError) {
-            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "Error occurred when attempting to display the alert message: %s.", uiError.toString());
-        }
     }
 }

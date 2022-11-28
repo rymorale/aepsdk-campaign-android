@@ -11,6 +11,8 @@
 
 package com.adobe.marketing.mobile.campaign;
 
+import androidx.annotation.VisibleForTesting;
+
 import com.adobe.marketing.mobile.launch.rulesengine.RuleConsequence;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.ServiceProvider;
@@ -323,7 +325,7 @@ class FullScreenMessage extends CampaignMessage {
                 case CampaignConstants.MESSAGE_DATA_TAG_ID_BUTTON_2: // adbinapp://confirm/?id=h11901a,86f10d,4
                 case CampaignConstants.MESSAGE_DATA_TAG_ID_BUTTON_X: // adbinapp://cancel?id=h11901a,86f10d,5
                     clickedWithData(query);
-                    viewed(); // Temporary fix for AMSDK-7633. No viewed event should be dispatched on confirm.
+                    viewed();
                     break;
 
                 default:
@@ -333,6 +335,16 @@ class FullScreenMessage extends CampaignMessage {
 
             }
         }
+    }
+
+    /**
+     * Added for unit testing.
+     *
+     * @return the {@code List<List<String>>} of assets.
+     */
+    @VisibleForTesting
+    List<List<String>> getAssetsList() {
+        return assets;
     }
 
     class FullScreenMessageUiListener implements FullscreenMessageDelegate {
