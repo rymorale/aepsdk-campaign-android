@@ -13,6 +13,8 @@ package com.adobe.marketing.mobile.campaign;
 
 import android.util.Base64;
 
+import androidx.annotation.VisibleForTesting;
+
 import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.EventSource;
 import com.adobe.marketing.mobile.EventType;
@@ -107,6 +109,36 @@ public class CampaignExtension extends Extension {
         campaignState = new CampaignState();
     }
 
+    /**
+     * Testing Constructor.
+     *
+     * @param extensionApi {@link ExtensionApi} instance
+     * @param persistentHitQueue {@link PersistentHitQueue} instance to use for testing
+     * @param launchRulesEngine {@link LaunchRulesEngine} instance to use for testing
+     * @param campaignState {@link CampaignState} instance to use for testing
+     */
+    @VisibleForTesting
+    CampaignExtension(final ExtensionApi extensionApi, final PersistentHitQueue persistentHitQueue, final LaunchRulesEngine launchRulesEngine, final CampaignState campaignState) {
+        super(extensionApi);
+        this.extensionApi = extensionApi;
+
+        // retrieve service dependencies
+        dataStoreService = ServiceProvider.getInstance().getDataStoreService();
+
+        // use passed in rules engine
+        campaignRulesEngine = launchRulesEngine;
+
+        // initialize campaign rules downloader
+        cacheService = ServiceProvider.getInstance().getCacheService();
+        campaignRulesDownloader = new CampaignRulesDownloader(extensionApi, campaignRulesEngine, getNamedCollection(), cacheService);
+
+        // use passed in persistent hit queue
+        campaignPersistentHitQueue = persistentHitQueue;
+
+        // initialize the campaign state
+        this.campaignState = campaignState;
+    }
+
     @Override
     protected String getName() {
         return CampaignConstants.EXTENSION_NAME;
@@ -180,9 +212,13 @@ public class CampaignExtension extends Extension {
      *
      * @param event incoming {@link Event} object to be processed
      */
-    private void handleWildcardEvents(final Event event) {
+    void handleWildcardEvents(final Event event) {
         List<LaunchRule> triggeredRules = campaignRulesEngine.process(event);
         final List<RuleConsequence> consequences = new ArrayList<>();
+
+        if (triggeredRules == null || triggeredRules.isEmpty()) {
+            return;
+        }
 
         for (final LaunchRule rule : triggeredRules) {
             consequences.addAll(rule.getConsequenceList());
@@ -208,7 +244,7 @@ public class CampaignExtension extends Extension {
      *
      * @param event incoming {@link Event} object to be processed
      */
-    private void setCampaignState(final Event event) {
+    void setCampaignState(final Event event) {
         final SharedStateResult configSharedStateResult = getApi().getSharedState(CampaignConstants.EventDataKeys.Configuration.EXTENSION_NAME,
                 event, false, SharedStateResolution.LAST_SET);
         final SharedStateResult identitySharedStateResult = getApi().getSharedState(CampaignConstants.EventDataKeys.Identity.EXTENSION_NAME,

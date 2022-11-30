@@ -61,8 +61,8 @@ public class FullScreenMessageTests {
     private ArrayList<String> remoteAssetOne;
     private ArrayList<String> remoteAssetTwo;
     private String assetPath;
-    private final String messageId = "07a1c997-2450-46f0-a454-537906404124";
-    private final String MESSAGES_CACHE = CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.MESSAGE_CACHE_DIR + File.separator;
+    private static final String messageId = "07a1c997-2450-46f0-a454-537906404124";
+    private static final String MESSAGES_CACHE = CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.MESSAGE_CACHE_DIR + File.separator;
 
     @Mock
     UIService mockUIService;
@@ -78,8 +78,6 @@ public class FullScreenMessageTests {
     FullscreenMessage mockFullscreenMessage;
     @Mock
     FullScreenMessage mockCampaignFullScreenMessage;
-    @Mock
-    RuleConsequence mockRuleConsequence;
 
     @Before
     public void setup() {
