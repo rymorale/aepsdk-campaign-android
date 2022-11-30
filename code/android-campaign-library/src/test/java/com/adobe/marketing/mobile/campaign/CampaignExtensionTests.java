@@ -42,10 +42,10 @@ import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.EventSource;
 import com.adobe.marketing.mobile.EventType;
 import com.adobe.marketing.mobile.ExtensionApi;
+import com.adobe.marketing.mobile.MobilePrivacyStatus;
 import com.adobe.marketing.mobile.SharedStateResolution;
 import com.adobe.marketing.mobile.SharedStateResult;
 import com.adobe.marketing.mobile.SharedStateStatus;
-import com.adobe.marketing.mobile.internal.eventhub.EventHub;
 import com.adobe.marketing.mobile.launch.rulesengine.LaunchRule;
 import com.adobe.marketing.mobile.launch.rulesengine.LaunchRulesEngine;
 import com.adobe.marketing.mobile.launch.rulesengine.RuleConsequence;
@@ -54,6 +54,7 @@ import com.adobe.marketing.mobile.services.DataQueue;
 import com.adobe.marketing.mobile.services.DataQueuing;
 import com.adobe.marketing.mobile.services.DataStoring;
 import com.adobe.marketing.mobile.services.DeviceInforming;
+import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.services.Networking;
 import com.adobe.marketing.mobile.services.PersistentHitQueue;
@@ -110,6 +111,8 @@ public class CampaignExtensionTests {
 	@Mock
 	LaunchRulesEngine mockRulesEngine;
 	@Mock
+	CampaignRulesDownloader mockCampaignRulesDownloader;
+	@Mock
 	Evaluable mockEvaluable;
 	@Mock
 	CampaignState mockCampaignState;
@@ -129,7 +132,7 @@ public class CampaignExtensionTests {
 		messageCacheDirString2 = CampaignConstants.MESSAGE_CACHE_DIR + File.separator + fakeMessageId2;
 		rulesCacheDirString = CampaignConstants.RULES_CACHE_FOLDER;
 		
-		campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockRulesEngine, mockCampaignState);
+		campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, mockCampaignState, mockCacheService, mockCampaignRulesDownloader);
 	}
 
 	private void setupServiceProviderMockAndRunTest(Runnable testRunnable) {
@@ -524,311 +527,245 @@ public class CampaignExtensionTests {
 	// void handleLinkageFieldsEvent(final Event event)
 	// =================================================================================================================
 	@Test
-	public void test_handleSetLinkageFields_When_NullJsonUtilityService() throws Exception {
+	public void test_handleLinkageFieldsEvent_when_eventIsNull() {
+		try (MockedStatic<Log> logMockedStatic = Mockito.mockStatic(Log.class)) {
+			// test
+			campaignExtension.handleLinkageFieldsEvent(null);
 
-		//setup
-		platformServices.fakeJsonUtilityService = null;
-		EventData eventData = new EventData();
-		final Map<String, String> linkageFields = new HashMap<String, String>();
-		linkageFields.put("key1", "value1");
-		eventData.putStringMap(CampaignConstants.EventDataKeys.Campaign.LINKAGE_FIELDS, linkageFields);
-
-		Event testEvent = new Event.Builder("Test event", EventType.CAMPAIGN, EventSource.REQUEST_IDENTITY)
-		.setData(eventData)
-		.build();
-
-		// test
-		campaignExtension.handleSetLinkageFields(testEvent, linkageFields);
-
-		waitForExecutor(campaignExtension.getExecutor(), 1);
-
-		// verify
-		assertEquals("The handler should not have queued the event", 0, campaignExtension.waitingEvents.size());
-		assertEquals("The handler should not have queued the correct event", null, campaignExtension.waitingEvents.peek());
-		assertFalse("Process Queued Events should not be called", campaignExtension.processQueuedEventsWasCalled);
-		assertEquals("The handler should not have changed the linkage fields", null, campaignExtension.getLinkageFields());
+			// verify
+			logMockedStatic.verify(() -> Log.debug(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.any()));
+			verify(mockCacheService, times(0)).remove(eq(CampaignConstants.RULES_CACHE_FOLDER), eq(""));
+			verify(mockCampaignRulesDownloader, times(0)).loadRulesFromUrl(anyString(), anyString());
+		}
 	}
 
 	@Test
-	public void test_handleSetLinkageFields_When_NullEncodingService() throws Exception {
+	public void test_handleLinkageFieldsEvent_when_eventDataIsEmpty() {
+		try (MockedStatic<Log> logMockedStatic = Mockito.mockStatic(Log.class)) {
+			// setup
+			Event testEvent = new Event.Builder("Test event", EventType.CAMPAIGN, EventSource.REQUEST_IDENTITY)
+					.build();
 
-		//setup
-		platformServices.fakeEncodingService = null;
-		EventData eventData = new EventData();
-		final Map<String, String> linkageFields = new HashMap<String, String>();
-		linkageFields.put("key1", "value1");
-		eventData.putStringMap(CampaignConstants.EventDataKeys.Campaign.LINKAGE_FIELDS, linkageFields);
+			// test
+			campaignExtension.handleLinkageFieldsEvent(testEvent);
 
-		Event testEvent = new Event.Builder("Test event", EventType.CAMPAIGN, EventSource.REQUEST_IDENTITY)
-		.setData(eventData)
-		.build();
-
-		// test
-		campaignExtension.handleSetLinkageFields(testEvent, linkageFields);
-
-		waitForExecutor(campaignExtension.getExecutor(), 1);
-
-		// verify
-		assertEquals("The handler should not have queued the event", 0, campaignExtension.waitingEvents.size());
-		assertEquals("The handler should not have queued the correct event", null, campaignExtension.waitingEvents.peek());
-		assertFalse("Process Queued Events should not be called", campaignExtension.processQueuedEventsWasCalled);
-		assertEquals("The handler should not have changed the linkage fields", null, campaignExtension.getLinkageFields());
+			// verify
+			logMockedStatic.verify(() -> Log.debug(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.any()));
+			verify(mockCacheService, times(0)).remove(eq(CampaignConstants.RULES_CACHE_FOLDER), eq(""));
+			verify(mockCampaignRulesDownloader, times(0)).loadRulesFromUrl(anyString(), anyString());
+		}
 	}
 
 	@Test
-	public void test_handleSetLinkageFields_Happy() throws Exception {
+	public void test_handleLinkageFieldsEvent_when_linkageFieldsAreEmpty() {
+		try (MockedStatic<Log> logMockedStatic = Mockito.mockStatic(Log.class)) {
+			// setup
+			HashMap<String, Object> eventData = new HashMap<>();
+			Map<String, String> linkageFields = new HashMap<>();
+			eventData.put(CampaignConstants.EventDataKeys.Campaign.LINKAGE_FIELDS, linkageFields);
 
-		EventData eventData = new EventData();
-		final Map<String, String> linkageFields = new HashMap<String, String>();
+			Event testEvent = new Event.Builder("Test event", EventType.CAMPAIGN, EventSource.REQUEST_IDENTITY)
+					.setEventData(eventData)
+					.build();
+
+			// test
+			campaignExtension.handleLinkageFieldsEvent(testEvent);
+
+			// verify
+			logMockedStatic.verify(() -> Log.debug(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.any()));
+			verify(mockCacheService, times(0)).remove(eq(CampaignConstants.RULES_CACHE_FOLDER), eq(""));
+			verify(mockCampaignRulesDownloader, times(0)).loadRulesFromUrl(anyString(), anyString());
+		}
+	}
+
+	@Test
+	public void test_handleLinkageFieldsEvent_setValidLinkageFields() {
+		// setup
+		CampaignState campaignState = new CampaignState();
+		campaignState.setState(getConfigurationEventData(new HashMap<>()), getIdentityEventData());
+		campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, campaignState, mockCacheService, mockCampaignRulesDownloader);
+		String expectedRulesDownloadUrl = "https://testMcias/testServer/testPropertyId/testExperienceCloudId/rules.zip";
+		String expectedBase64EncodedLinkageFields = "eyJrZXkxIjoidmFsdWUxIn0=";
+		HashMap<String, Object> eventData = new HashMap<>();
+		Map<String, String> linkageFields = new HashMap<>();
 		linkageFields.put("key1", "value1");
-		eventData.putStringMap(CampaignConstants.EventDataKeys.Campaign.LINKAGE_FIELDS, linkageFields);
+		eventData.put(CampaignConstants.EventDataKeys.Campaign.LINKAGE_FIELDS, linkageFields);
 
 		Event testEvent = new Event.Builder("Test event", EventType.CAMPAIGN, EventSource.REQUEST_IDENTITY)
-		.setData(eventData)
+		.setEventData(eventData)
 		.build();
 
 		// test
-		campaignExtension.handleSetLinkageFields(testEvent, linkageFields);
-
-		waitForExecutor(campaignExtension.getExecutor(), 1);
+		campaignExtension.handleLinkageFieldsEvent(testEvent);
 
 		// verify
-		assertEquals("The handler should've queued the event", 1, campaignExtension.waitingEvents.size());
-		assertEquals("The handler should've queued the correct event", testEvent, campaignExtension.waitingEvents.peek());
+		String encodedLinkageFields = campaignExtension.getLinkageFields();
+		assertEquals(expectedBase64EncodedLinkageFields, encodedLinkageFields);
+		verify(mockCacheService, times(1)).remove(eq(CampaignConstants.RULES_CACHE_FOLDER), eq(""));
+		verify(mockCampaignRulesDownloader, times(1)).loadRulesFromUrl(eq(expectedRulesDownloadUrl), eq(encodedLinkageFields));
+	}
 
-		//This assertion allows us to see how what linkage fields look like before and after going through setLinkageFields
-		assertEquals("The handler should've stored linkageFields", "eyJrZXkxIjoidmFsdWUxIn0=",
-					 campaignExtension.getLinkageFields());
+	@Test
+	public void test_handleLinkageFieldsEvent_setValidLinkageFields_when_campaignStateNotReady() {
+		// setup
+		String expectedBase64EncodedLinkageFields = "eyJrZXkxIjoidmFsdWUxIn0=";
+		HashMap<String, Object> eventData = new HashMap<>();
+		Map<String, String> linkageFields = new HashMap<>();
+		linkageFields.put("key1", "value1");
+		eventData.put(CampaignConstants.EventDataKeys.Campaign.LINKAGE_FIELDS, linkageFields);
 
-		assertTrue("Process Queued Events should be called", campaignExtension.processQueuedEventsWasCalled);
+		Event testEvent = new Event.Builder("Test event", EventType.CAMPAIGN, EventSource.REQUEST_IDENTITY)
+				.setEventData(eventData)
+				.build();
+
+		// test
+		campaignExtension.handleLinkageFieldsEvent(testEvent);
+
+		// verify
+		String encodedLinkageFields = campaignExtension.getLinkageFields();
+		assertEquals(expectedBase64EncodedLinkageFields, encodedLinkageFields);
+		verify(mockCacheService, times(1)).remove(eq(CampaignConstants.RULES_CACHE_FOLDER), eq(""));
+		verify(mockCampaignRulesDownloader, times(0)).loadRulesFromUrl(anyString(), anyString());
 	}
 
 
-//	// =================================================================================================================
-//	// void handleResetLinkageFields(final Event event)
-//	// =================================================================================================================
-//
-//	@Test
-//	public void test_handleResetLinkageFields_happy() throws Exception {
-//
-//		//setup
-//		Event testEvent = new Event.Builder("Test event", EventType.CAMPAIGN, EventSource.REQUEST_RESET)
-//		.build();
-//
-//		// test
-//		campaignExtension.handleResetLinkageFields(testEvent);
-//
-//		waitForExecutor(campaignExtension.getExecutor(), 1);
-//
-//		// verify
-//		assertEquals("The handler should've clear the stored linkageFields", "", campaignExtension.getLinkageFields());
-//		assertTrue("The handler should've called the clearRulesCacheDirectory method",
-//				   campaignExtension.clearRulesCacheDirectoryWasCalled);
-//
-//		assertEquals("The handler should've queued the event", 1, campaignExtension.waitingEvents.size());
-//		assertEquals("The handler should've queued the correct event", testEvent, campaignExtension.waitingEvents.peek());
-//		assertTrue("Process Queued Events should be called", campaignExtension.processQueuedEventsWasCalled);
-//
-//	}
-//
-//	@Test
-//	public void test_handleResetLinkageFields_when_linkageFieldsSetPreviously() throws Exception {
-//
-//		//setup
-//		EventData eventData = new EventData();
-//		final Map<String, String> linkageFields = new HashMap<String, String>();
-//		linkageFields.put("key1", "value1");
-//		eventData.putStringMap(CampaignConstants.EventDataKeys.Campaign.LINKAGE_FIELDS, linkageFields);
-//
-//		Event testEvent = new Event.Builder("Test event", EventType.CAMPAIGN, EventSource.REQUEST_IDENTITY)
-//		.setData(eventData)
-//		.build();
-//
-//		campaignExtension.handleSetLinkageFields(testEvent, linkageFields);
-//		waitForExecutor(campaignExtension.getExecutor(), 1);
-//
-//		// verify linkage fields are set
-//		assertEquals("The handler should've stored linkageFields", "eyJrZXkxIjoidmFsdWUxIn0=",
-//					 campaignExtension.getLinkageFields());
-//		campaignExtension.waitingEvents.clear();
-//
-//		testEvent = new Event.Builder("Test event", EventType.CAMPAIGN, EventSource.REQUEST_RESET)
-//		.build();
-//
-//		// test
-//		campaignExtension.handleResetLinkageFields(testEvent);
-//
-//		waitForExecutor(campaignExtension.getExecutor(), 1);
-//
-//		// verify
-//		assertEquals("The handler should've clear the stored linkageFields", "", campaignExtension.getLinkageFields());
-//		assertTrue("The handler should've called the clearRulesCacheDirectory method",
-//				   campaignExtension.clearRulesCacheDirectoryWasCalled);
-//
-//		assertEquals("The handler should've queued the event", 1, campaignExtension.waitingEvents.size());
-//		assertEquals("The handler should've queued the correct event", testEvent, campaignExtension.waitingEvents.peek());
-//		assertTrue("Process Queued Events should be called", campaignExtension.processQueuedEventsWasCalled);
-//
-//	}
-//
-//	// =================================================================================================================
-//	// void processConfigurationResponse(final Event event)
-//	// =================================================================================================================
-//
-//	@Test
-//	public void test_processConfiguration_When_PrivacyOptedIn() throws Exception {
-//		// setup
-//		EventData configuration = new EventData();
-//		configuration.putString(CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY, "optedin");
-//
-//		Event testEvent = new Event.Builder("Test event", EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT)
-//		.setData(configuration)
-//		.build();
-//
-//		// test
-//		campaignExtension.processConfigurationResponse(testEvent);
-//		waitForExecutor(campaignExtension.getExecutor(), 1);
-//
-//		// verify
-//		assertEquals("Event should be queued", campaignExtension.waitingEvents.size(), 1);
-//		assertFalse(campaignExtension.clearRulesCacheDirectoryWasCalled);
-//		assertTrue(campaignExtension.processQueuedEventsWasCalled);
-//		assertTrue(campaignHitsDatabase.updatePrivacyStatusWasCalled);
-//		assertEquals(campaignHitsDatabase.updatePrivacyStatusParameterMobilePrivacyStatus, MobilePrivacyStatus.OPT_IN);
-//	}
-//
-//	@Test
-//	public void test_processConfiguration_When_PrivacyOptOut() throws Exception {
-//		// setup
-//		EventData configuration = new EventData();
-//		configuration.putString(CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY, "optedout");
-//
-//		Event testEvent = new Event.Builder("Test event", EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT)
-//		.setData(configuration)
-//		.build();
-//
-//		// test
-//		campaignExtension.processConfigurationResponse(testEvent);
-//		waitForExecutor(campaignExtension.getExecutor(), 1);
-//
-//		// verify
-//		assertEquals("Event should not be queued", campaignExtension.waitingEvents.size(), 0);
-//		assertTrue(campaignExtension.clearRulesCacheDirectoryWasCalled);
-//		assertFalse(campaignExtension.processQueuedEventsWasCalled);
-//		assertTrue(campaignHitsDatabase.updatePrivacyStatusWasCalled);
-//		assertEquals(campaignHitsDatabase.updatePrivacyStatusParameterMobilePrivacyStatus, MobilePrivacyStatus.OPT_OUT);
-//		assertEquals(campaignDataStore.getString(CampaignConstants.CAMPAIGN_DATA_STORE_REMOTES_URL_KEY, ""), "");
-//	}
-//
-//	@Test
-//	public void test_processConfiguration_When_PrivacyUnknown() throws Exception {
-//		// setup
-//		EventData configuration = new EventData();
-//		configuration.putString(CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY, "optunknown");
-//
-//		Event testEvent = new Event.Builder("Test event", EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT)
-//		.setData(configuration)
-//		.build();
-//
-//		// test
-//		campaignExtension.processConfigurationResponse(testEvent);
-//		waitForExecutor(campaignExtension.getExecutor(), 1);
-//
-//		// verify
-//		assertEquals("Event should be queued", campaignExtension.waitingEvents.size(), 1);
-//		assertFalse(campaignExtension.clearRulesCacheDirectoryWasCalled);
-//		assertTrue(campaignExtension.processQueuedEventsWasCalled);
-//		assertTrue(campaignHitsDatabase.updatePrivacyStatusWasCalled);
-//		assertEquals(campaignHitsDatabase.updatePrivacyStatusParameterMobilePrivacyStatus, MobilePrivacyStatus.UNKNOWN);
-//	}
-//
-//	// =================================================================================================================
-//	// void queueAndProcessEvent(final Event event)
-//	// =================================================================================================================
-//
-//	@Test
-//	public void test_queueEvent_when_eventIsNull_then_shouldDoNothing() {
-//		// test
-//		campaignExtension.queueAndProcessEvent(null);
-//
-//		// verify
-//		assertEquals("Event should not be queued", 0, campaignExtension.waitingEvents.size());
-//		assertFalse("Process Queued Events should not be called", campaignExtension.processQueuedEventsWasCalled);
-//	}
-//
-//	@Test
-//	public void test_queueEvent_when_validEvent_then_shouldQueueAndProcessEvents() throws Exception {
-//		// setup
-//		final Event testEvent = new Event.Builder("Test event", EventType.LIFECYCLE,
-//				EventSource.RESPONSE_CONTENT).build();
-//
-//		// test
-//		campaignExtension.queueAndProcessEvent(testEvent);
-//
-//		waitForExecutor(campaignExtension.getExecutor(), 1);
-//
-//		// verify
-//		assertEquals("Event should be queued", 1, campaignExtension.waitingEvents.size());
-//		assertEquals("Event should be correct", testEvent, campaignExtension.waitingEvents.peek());
-//		assertTrue("Process Queued Events should be called", campaignExtension.processQueuedEventsWasCalled);
-//	}
-//
-//	// =================================================================================================================
-//	// protected void processQueuedEvents()
-//	// =================================================================================================================
-//
-//	@Test
-//	public void test_processQueuedEvents_when_happy_then_shouldLoopThroughAndSubmitSignalForAllWaitingEvents() throws
-//		Exception {
-//		// setup
-//		final Event lifecycleEvent = getLifecycleEvent(getLifecycleEventData());
-//		campaignExtension.waitingEvents.add(lifecycleEvent);
-//
-//		eventHub.setSharedState(CampaignConstants.EventDataKeys.Configuration.EXTENSION_NAME, getConfigurationEventData());
-//		eventHub.setSharedState(CampaignConstants.EventDataKeys.Identity.EXTENSION_NAME, getIdentityEventData());
-//
-//		// test
-//		campaignExtension.processQueuedEvents();
-//
-//		// verify
-//		assertEquals("waiting events queue should be empty", 0, campaignExtension.waitingEvents.size());
-//		assertTrue("process lifecycle update should be called", campaignExtension.processLifecycleUpdateWasCalled);
-//	}
-//
-//	@Test
-//	public void test_processQueuedEvents_when_noConfiguration_then_shouldNotProcessEvents() throws Exception {
-//		// setup
-//		final Event lifecycleEvent = getLifecycleEvent(getLifecycleEventData());
-//		campaignExtension.waitingEvents.add(lifecycleEvent);
-//
-//		eventHub.setSharedState(CampaignConstants.EventDataKeys.Configuration.EXTENSION_NAME, null);
-//		eventHub.setSharedState(CampaignConstants.EventDataKeys.Identity.EXTENSION_NAME, getIdentityEventData());
-//
-//		// test
-//		campaignExtension.processQueuedEvents();
-//
-//		// verify
-//		assertEquals("waiting events queue should be unchanged", 1, campaignExtension.waitingEvents.size());
-//		assertFalse("process lifecycle update should not be called", campaignExtension.processLifecycleUpdateWasCalled);
-//	}
-//
-//	@Test
-//	public void test_processQueuedEvents_when_noIdentity_then_shouldNotProcessEvents() throws Exception {
-//		// setup
-//		final Event lifecycleEvent = getLifecycleEvent(getLifecycleEventData());
-//		campaignExtension.waitingEvents.add(lifecycleEvent);
-//
-//		eventHub.setSharedState(CampaignConstants.EventDataKeys.Configuration.EXTENSION_NAME, getConfigurationEventData());
-//		eventHub.setSharedState(CampaignConstants.EventDataKeys.Identity.EXTENSION_NAME, null);
-//
-//		// test
-//		campaignExtension.processQueuedEvents();
-//
-//		// verify
-//		assertEquals("waiting events queue should be unchanged", 1, campaignExtension.waitingEvents.size());
-//		assertFalse("process lifecycle update should not be called", campaignExtension.processLifecycleUpdateWasCalled);
-//	}
-//
+	@Test
+	public void test_handleResetLinkageFields_happy() {
+		// setup
+		CampaignState campaignState = new CampaignState();
+		campaignState.setState(getConfigurationEventData(new HashMap<>()), getIdentityEventData());
+		campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, campaignState, mockCacheService, mockCampaignRulesDownloader);
+		String expectedRulesDownloadUrl = "https://testMcias/testServer/testPropertyId/testExperienceCloudId/rules.zip";
+
+		Event testEvent = new Event.Builder("Test event", EventType.CAMPAIGN, EventSource.REQUEST_RESET)
+		.build();
+
+		// test
+		campaignExtension.handleLinkageFieldsEvent(testEvent);
+
+		// verify
+		String linkageFields = campaignExtension.getLinkageFields();
+		assertEquals("", linkageFields);
+		verify(mockRulesEngine, times(1)).replaceRules(eq(null));
+		verify(mockCacheService, times(1)).remove(eq(CampaignConstants.RULES_CACHE_FOLDER), eq(""));
+		verify(mockCampaignRulesDownloader, times(1)).loadRulesFromUrl(eq(expectedRulesDownloadUrl), eq(""));
+	}
+
+	@Test
+	public void test_handleResetLinkageFields_when_linkageFieldsSetPreviously() {
+		// setup
+		CampaignState campaignState = new CampaignState();
+		campaignState.setState(getConfigurationEventData(new HashMap<>()), getIdentityEventData());
+		campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, campaignState, mockCacheService, mockCampaignRulesDownloader);
+
+		String expectedRulesDownloadUrl = "https://testMcias/testServer/testPropertyId/testExperienceCloudId/rules.zip";
+		String expectedBase64EncodedLinkageFields = "eyJrZXkxIjoidmFsdWUxIn0=";
+		HashMap<String, Object> eventData = new HashMap<>();
+		Map<String, String> linkageFields = new HashMap<>();
+		linkageFields.put("key1", "value1");
+		eventData.put(CampaignConstants.EventDataKeys.Campaign.LINKAGE_FIELDS, linkageFields);
+
+		Event testEvent = new Event.Builder("Test event", EventType.CAMPAIGN, EventSource.REQUEST_IDENTITY)
+				.setEventData(eventData)
+				.build();
+
+		// test
+		campaignExtension.handleLinkageFieldsEvent(testEvent);
+
+		// verify linkage fields are set
+		String encodedLinkageFields = campaignExtension.getLinkageFields();
+		assertEquals(expectedBase64EncodedLinkageFields, encodedLinkageFields);
+		verify(mockCacheService, times(1)).remove(eq(CampaignConstants.RULES_CACHE_FOLDER), eq(""));
+		verify(mockCampaignRulesDownloader, times(1)).loadRulesFromUrl(eq(expectedRulesDownloadUrl), eq(encodedLinkageFields));
+
+		// setup reset event
+		testEvent = new Event.Builder("Test event", EventType.CAMPAIGN, EventSource.REQUEST_RESET)
+				.build();
+
+		// test
+		campaignExtension.handleLinkageFieldsEvent(testEvent);
+
+		// verify linkage fields reset
+		String linkageFieldsString = campaignExtension.getLinkageFields();
+		assertEquals("", linkageFieldsString);
+		verify(mockRulesEngine, times(1)).replaceRules(eq(null));
+		verify(mockCacheService, times(2)).remove(eq(CampaignConstants.RULES_CACHE_FOLDER), eq(""));
+		verify(mockCampaignRulesDownloader, times(1)).loadRulesFromUrl(eq(expectedRulesDownloadUrl), eq(""));
+	}
+
+	// =================================================================================================================
+	// void processConfigurationResponse(final Event event)
+	// =================================================================================================================
+	@Test
+	public void test_processConfiguration_When_PrivacyOptedIn() {
+		// setup
+		CampaignState campaignState = new CampaignState();
+		campaignState.setState(getConfigurationEventData(new HashMap<>()), getIdentityEventData());
+		campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, campaignState, mockCacheService, mockCampaignRulesDownloader);
+		String expectedRulesDownloadUrl = "https://testMcias/testServer/testPropertyId/testExperienceCloudId/rules.zip";
+
+		HashMap<String, Object> configData = new HashMap<>();
+		configData.put(CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY, "optedin");
+
+		Event testEvent = new Event.Builder("Test event", EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT)
+		.setEventData(configData)
+		.build();
+
+		// test
+		campaignExtension.processConfigurationResponse(testEvent);
+
+		// verify
+		verify(mockPersistentHitQueue, times(1)).handlePrivacyChange(eq(MobilePrivacyStatus.OPT_IN));
+		verify(mockCampaignRulesDownloader, times(1)).loadRulesFromUrl(eq(expectedRulesDownloadUrl), eq(null));
+	}
+
+	@Test
+	public void test_processConfiguration_When_PrivacyOptOut() {
+		// setup
+		when(mockDataStoreService.getNamedCollection(anyString())).thenReturn(mockNamedCollection);
+		CampaignState campaignState = new CampaignState();
+		HashMap<String, Object> configData = new HashMap<>();
+		configData.put(CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY, "optedout");
+		campaignState.setState(getConfigurationEventData(configData), getIdentityEventData());
+		campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, campaignState, mockCacheService, mockCampaignRulesDownloader);
+
+		Event testEvent = new Event.Builder("Test event", EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT)
+				.setEventData(configData)
+				.build();
+
+		// test
+		campaignExtension.processConfigurationResponse(testEvent);
+
+		// verify
+		verify(mockPersistentHitQueue, times(1)).handlePrivacyChange(eq(MobilePrivacyStatus.OPT_OUT));
+		String linkageFields = campaignExtension.getLinkageFields();
+		assertEquals("", linkageFields);
+		verify(mockRulesEngine, times(1)).replaceRules(eq(null));
+		verify(mockCacheService, times(1)).remove(eq(CampaignConstants.RULES_CACHE_FOLDER), eq(""));
+		verify(mockNamedCollection, times(1)).removeAll();
+	}
+
+	@Test
+	public void test_processConfiguration_When_PrivacyUnknown() {
+		// setup
+		CampaignState campaignState = new CampaignState();
+		HashMap<String, Object> configData = new HashMap<>();
+		configData.put(CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY, "unknown");
+		campaignState.setState(getConfigurationEventData(configData), getIdentityEventData());
+		campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, campaignState, mockCacheService, mockCampaignRulesDownloader);
+
+		Event testEvent = new Event.Builder("Test event", EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT)
+				.setEventData(configData)
+				.build();
+
+		// test
+		campaignExtension.processConfigurationResponse(testEvent);
+
+		// verify
+		verify(mockPersistentHitQueue, times(1)).handlePrivacyChange(eq(MobilePrivacyStatus.UNKNOWN));
+		verify(mockCampaignRulesDownloader, times(0)).loadRulesFromUrl(anyString(), anyString());
+	}
+
 //	// =================================================================================================================
 //	// void processMessageInformation(final Event event, final CampaignState campaignState)
 //	// =================================================================================================================

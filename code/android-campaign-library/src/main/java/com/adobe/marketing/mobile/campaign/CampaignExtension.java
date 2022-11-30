@@ -23,7 +23,6 @@ import com.adobe.marketing.mobile.ExtensionApi;
 import com.adobe.marketing.mobile.MobilePrivacyStatus;
 import com.adobe.marketing.mobile.SharedStateResolution;
 import com.adobe.marketing.mobile.SharedStateResult;
-import com.adobe.marketing.mobile.SharedStateStatus;
 import com.adobe.marketing.mobile.launch.rulesengine.LaunchRule;
 import com.adobe.marketing.mobile.launch.rulesengine.LaunchRulesEngine;
 import com.adobe.marketing.mobile.launch.rulesengine.RuleConsequence;
@@ -114,28 +113,40 @@ public class CampaignExtension extends Extension {
      *
      * @param extensionApi {@link ExtensionApi} instance
      * @param persistentHitQueue {@link PersistentHitQueue} instance to use for testing
+     * @param dataStoreService {@link DataStoring} instance to use for testing
      * @param launchRulesEngine {@link LaunchRulesEngine} instance to use for testing
      * @param campaignState {@link CampaignState} instance to use for testing
+     * @param cacheService {@link CacheService} instance to use for testing
+     * @param campaignRulesDownloader {@link CampaignRulesDownloader} instance to use for testing
      */
     @VisibleForTesting
-    CampaignExtension(final ExtensionApi extensionApi, final PersistentHitQueue persistentHitQueue, final LaunchRulesEngine launchRulesEngine, final CampaignState campaignState) {
+    CampaignExtension(final ExtensionApi extensionApi,
+                      final PersistentHitQueue persistentHitQueue,
+                      final DataStoring dataStoreService,
+                      final LaunchRulesEngine launchRulesEngine,
+                      final CampaignState campaignState,
+                      final CacheService cacheService,
+                      final CampaignRulesDownloader campaignRulesDownloader
+    ) {
         super(extensionApi);
         this.extensionApi = extensionApi;
 
-        // retrieve service dependencies
-        dataStoreService = ServiceProvider.getInstance().getDataStoreService();
+        //  use passed in datastore service
+        this.dataStoreService = dataStoreService;
 
         // use passed in rules engine
-        campaignRulesEngine = launchRulesEngine;
+        this.campaignRulesEngine = launchRulesEngine;
 
-        // initialize campaign rules downloader
-        cacheService = ServiceProvider.getInstance().getCacheService();
-        campaignRulesDownloader = new CampaignRulesDownloader(extensionApi, campaignRulesEngine, getNamedCollection(), cacheService);
+        // use passed in cache service
+        this.cacheService = cacheService;
+
+        // use passed in campaign rules downloader
+        this.campaignRulesDownloader = campaignRulesDownloader;
 
         // use passed in persistent hit queue
-        campaignPersistentHitQueue = persistentHitQueue;
+        this.campaignPersistentHitQueue = persistentHitQueue;
 
-        // initialize the campaign state
+        // use passed in campaign state
         this.campaignState = campaignState;
     }
 
@@ -161,6 +172,11 @@ public class CampaignExtension extends Extension {
         getApi().registerEventListener(
                 EventType.CAMPAIGN,
                 EventSource.REQUEST_IDENTITY,
+                this::handleLinkageFieldsEvent
+        );
+        getApi().registerEventListener(
+                EventType.CAMPAIGN,
+                EventSource.REQUEST_RESET,
                 this::handleLinkageFieldsEvent
         );
         getApi().registerEventListener(
@@ -274,7 +290,7 @@ public class CampaignExtension extends Extension {
             Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "processConfigurationResponse - Configuration response event is null");
             return;
         }
-
+        setCampaignState(event);
         final MobilePrivacyStatus privacyStatus = campaignState.getMobilePrivacyStatus();
         // notify campaign persistent hit queue of any privacy status changes
         campaignPersistentHitQueue.handlePrivacyChange(privacyStatus);
@@ -466,13 +482,19 @@ public class CampaignExtension extends Extension {
      * Processes campaign request identity event then queues a set linkage fields or reset linkage fields event.
      * <p>
      * If the event's data contains a map of linkage fields then the map will be stored in memory and subsequently used to download personalized rules.
-     * If no linkage fields map is present in the event then any stored linkage fields are cleared from memory.
+     * If the event source is {@link EventSource#REQUEST_RESET} then any stored linkage fields are cleared from memory.
      *
      * @param event {@link Event} object to be processed.
      */
     void handleLinkageFieldsEvent(final Event event) {
         if (event == null) {
             Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "handleLinkageFieldsEvent - Unable to process event, event received is null.");
+            return;
+        }
+
+        if (event.getSource().equals(EventSource.REQUEST_RESET)) {
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "handleLinkageFieldsEvent - Resetting linkage fields.");
+            handleResetLinkageFields();
             return;
         }
 
@@ -483,9 +505,8 @@ public class CampaignExtension extends Extension {
         }
 
         final Map<String, String> linkageFields = DataReader.optStringMap(eventData, CampaignConstants.EventDataKeys.Campaign.LINKAGE_FIELDS, null);
-
         if (linkageFields == null || linkageFields.isEmpty()) {
-            handleResetLinkageFields();
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "handleLinkageFieldsEvent - Unable to set linkage fields, received linkage fields are null or empty.");
             return;
         }
 
@@ -504,23 +525,6 @@ public class CampaignExtension extends Extension {
         }
 
         clearRulesCacheDirectory();
-        triggerRulesDownload();
-    }
-
-
-    /**
-     * Processes campaign request reset event then queues the event.
-     * <p>
-     * This event has no data but is used as a signal that the SDK should clear any persisted linkage fields and personalized rules
-     * and subsequently download generic rules.
-     */
-    void handleResetLinkageFields() {
-        linkageFields = "";
-
-        campaignRulesEngine.replaceRules(null);
-
-        clearRulesCacheDirectory();
-
         triggerRulesDownload();
     }
 
@@ -590,6 +594,22 @@ public class CampaignExtension extends Extension {
     // ========================================================================
     // private methods
     // ========================================================================
+
+    /**
+     * Processes campaign request reset event then queues the event.
+     * <p>
+     * This event has no data but is used as a signal that the SDK should clear any persisted linkage fields and personalized rules
+     * and subsequently download generic rules.
+     */
+    private void handleResetLinkageFields() {
+        linkageFields = "";
+
+        campaignRulesEngine.replaceRules(null);
+
+        clearRulesCacheDirectory();
+
+        triggerRulesDownload();
+    }
 
     /**
      * Returns {@code CampaignExtension}'s {@link NamedCollection}.
