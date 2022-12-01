@@ -436,7 +436,7 @@ public class CampaignExtension extends Extension {
         final Map<String, Object> lifecycleContextData = DataReader.optTypedMap(Object.class, eventData, CampaignConstants.EventDataKeys.Lifecycle.LIFECYCLE_CONTEXT_DATA, null);
         if (lifecycleContextData != null
                 && !lifecycleContextData.isEmpty()
-                && !(DataReader.optString(lifecycleContextData, CampaignConstants.EventDataKeys.Lifecycle.INSTALL_EVENT, null)).equals(CampaignConstants.EventDataKeys.Lifecycle.INSTALL_EVENT)
+                && !(DataReader.optString(lifecycleContextData, CampaignConstants.EventDataKeys.Lifecycle.INSTALL_EVENT, "")).equals(CampaignConstants.EventDataKeys.Lifecycle.INSTALL_EVENT)
                 && initialCampaignRuleFetchCompleted) {
             triggerRulesDownload();
         }
