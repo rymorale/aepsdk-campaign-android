@@ -12,15 +12,17 @@
 package com.adobe.marketing.mobile.campaign;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import android.util.Base64;
 
 import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.EventSource;
@@ -62,10 +64,12 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.stubbing.Answer;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -80,10 +84,10 @@ public class CampaignExtensionTests {
     private String messageCacheDirString2;
     private String rulesCacheDirString;
 
-    private static final String fakeMessageId1 = "d38a46f6-4f43-435a-a862-4038c27b90a1";
-    private static final String fakeMessageId2 = "e38a46f6-4f43-435a-a862-4038c27b90a2";
-    private static final String messageId = "07a1c997-2450-46f0-a454-537906404124";
-    private static final String MESSAGES_CACHE = CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.MESSAGE_CACHE_DIR + File.separator;
+    private static String fakeMessageId1 = "d38a46f6-4f43-435a-a862-4038c27b90a1";
+    private static String fakeMessageId2 = "e38a46f6-4f43-435a-a862-4038c27b90a2";
+    private static String messageId = "07a1c997-2450-46f0-a454-537906404124";
+    private static String MESSAGES_CACHE = CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.MESSAGE_CACHE_DIR + File.separator;
 
     private HashMap<String, Object> expectedMessageEventData;
     private HashMap<String, String> metadataMap;
@@ -127,8 +131,8 @@ public class CampaignExtensionTests {
         cacheDir.mkdirs();
         cacheDir.setWritable(true);
 
-        final String sha256HashForRemoteUrl = "fb0d3704b73d5fa012a521ea31013a61020e79610a3c27e8dd1007f3ec278195";
-        final String cachedFileName = sha256HashForRemoteUrl + ".12345"; //12345 is just a random extension.
+        String sha256HashForRemoteUrl = "fb0d3704b73d5fa012a521ea31013a61020e79610a3c27e8dd1007f3ec278195";
+        String cachedFileName = sha256HashForRemoteUrl + ".12345"; //12345 is just a random extension.
         metadataMap = new HashMap<>();
         metadataMap.put(CampaignConstants.METADATA_PATH, MESSAGES_CACHE + messageId + File.separator + cachedFileName);
 
@@ -171,8 +175,8 @@ public class CampaignExtensionTests {
         clearCacheFiles(cacheDir);
     }
 
-    private SharedStateResult getConfigurationEventData(final Map<String, Object> customConfig) {
-        final Map<String, Object> configData = new HashMap<>();
+    private SharedStateResult getConfigurationEventData(Map<String, Object> customConfig) {
+        Map<String, Object> configData = new HashMap<>();
         configData.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_SERVER_KEY, "testServer");
         configData.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_PKEY_KEY, "testPkey");
         configData.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_MCIAS_KEY, "testMcias");
@@ -182,46 +186,46 @@ public class CampaignExtensionTests {
         configData.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_REGISTRATION_DELAY_KEY, 30);
         configData.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_REGISTRATION_PAUSED_KEY, false);
         configData.putAll(customConfig);
-        final SharedStateResult sharedStateResult = new SharedStateResult(SharedStateStatus.SET, configData);
+        SharedStateResult sharedStateResult = new SharedStateResult(SharedStateStatus.SET, configData);
 
         return sharedStateResult;
     }
 
     private SharedStateResult getIdentityEventData() {
-        final Map<String, Object> identityData = new HashMap<>();
+        Map<String, Object> identityData = new HashMap<>();
         identityData.put(CampaignConstants.EventDataKeys.Identity.VISITOR_ID_MID, "testExperienceCloudId");
-        final SharedStateResult sharedStateResult = new SharedStateResult(SharedStateStatus.SET, identityData);
+        SharedStateResult sharedStateResult = new SharedStateResult(SharedStateStatus.SET, identityData);
 
         return sharedStateResult;
     }
 
     private Map<String, Object> getLifecycleEventData() {
-        final Map<String, Object> lifecycleData = new HashMap<>();
+        Map<String, Object> lifecycleData = new HashMap<>();
         lifecycleData.put(CampaignConstants.EventDataKeys.Lifecycle.LAUNCH_EVENT, "LaunchEvent");
 
-        final Map<String, Object> lifecycleEventData = new HashMap<>();
+        Map<String, Object> lifecycleEventData = new HashMap<>();
         lifecycleEventData.put(CampaignConstants.EventDataKeys.Lifecycle.LIFECYCLE_CONTEXT_DATA, lifecycleData);
         return lifecycleEventData;
     }
 
-    private SharedStateResult getConfigurationEventDataWithCustomRegistrationDelay(final int registrationDelay) {
-        final Map<String, Object> customConfig = new HashMap<>();
+    private SharedStateResult getConfigurationEventDataWithCustomRegistrationDelay(int registrationDelay) {
+        Map<String, Object> customConfig = new HashMap<>();
         customConfig.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_REGISTRATION_DELAY_KEY,
                 registrationDelay);
 
         return getConfigurationEventData(customConfig);
     }
 
-    private SharedStateResult getConfigurationEventDataWithRegistrationPausedStatus(final boolean registrationPaused) {
-        final Map<String, Object> customConfig = new HashMap<>();
+    private SharedStateResult getConfigurationEventDataWithRegistrationPausedStatus(boolean registrationPaused) {
+        Map<String, Object> customConfig = new HashMap<>();
         customConfig.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_REGISTRATION_PAUSED_KEY,
                 registrationPaused);
 
         return getConfigurationEventData(customConfig);
     }
 
-    private SharedStateResult getConfigurationEventDataWithCustomRegistrationDelayAndPauseStatus(final int registrationDelay, final boolean registrationPaused) {
-        final Map<String, Object> customConfig = new HashMap<>();
+    private SharedStateResult getConfigurationEventDataWithCustomRegistrationDelayAndPauseStatus(int registrationDelay, boolean registrationPaused) {
+        Map<String, Object> customConfig = new HashMap<>();
         customConfig.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_REGISTRATION_DELAY_KEY,
                 registrationDelay);
         customConfig.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_REGISTRATION_PAUSED_KEY,
@@ -230,16 +234,16 @@ public class CampaignExtensionTests {
         return getConfigurationEventData(customConfig);
     }
 
-    private Map<String, Object> getMessageConsequenceEventData(final RuleConsequence consequence) {
-        final Map<String, Object> triggeredConsequenceData = new HashMap<>();
+    private Map<String, Object> getMessageConsequenceEventData(RuleConsequence consequence) {
+        Map<String, Object> triggeredConsequenceData = new HashMap<>();
 
         triggeredConsequenceData.put(CampaignConstants.EventDataKeys.RuleEngine.CONSEQUENCE_TRIGGERED,
                 consequence);
         return triggeredConsequenceData;
     }
 
-    private Map<String, Object> getMessageTrackEventData(final String broadlogId, final String deliveryId, final String action) {
-        final Map<String, Object> trackData = new HashMap<>();
+    private Map<String, Object> getMessageTrackEventData(String broadlogId, String deliveryId, String action) {
+        Map<String, Object> trackData = new HashMap<>();
         trackData.put(CampaignConstants.EventDataKeys.Campaign.TRACK_INFO_KEY_BROADLOG_ID, broadlogId);
         trackData.put(CampaignConstants.EventDataKeys.Campaign.TRACK_INFO_KEY_DELIVERY_ID, deliveryId);
         trackData.put(CampaignConstants.EventDataKeys.Campaign.TRACK_INFO_KEY_ACTION, action);
@@ -247,47 +251,47 @@ public class CampaignExtensionTests {
         return trackData;
     }
 
-    private Event getLifecycleEvent(final Map<String, Object> eventData) {
+    private Event getLifecycleEvent(Map<String, Object> eventData) {
         return new Event.Builder("TEST", EventType.LIFECYCLE, EventSource.REQUEST_CONTENT)
                 .setEventData(eventData).build();
     }
 
-    private void setupCachedMessageAssets(final String fakeMessageId1, final String fakeMessageId2) throws Exception {
+    private void setupCachedMessageAssets(String fakeMessageId1, String fakeMessageId2) throws IOException {
         // setup
-        final File existingCacheDir = new File(cacheDir, messageCacheDirString1);
+        File existingCacheDir = new File(cacheDir, messageCacheDirString1);
         existingCacheDir.mkdirs();
-        final File existingCachedFile = new
+        File existingCachedFile = new
                 File(existingCacheDir + File.separator +
                 "028dbbd3617ccfb5e302f4aa2df2eb312d1571ee40b3f4aa448658c9082b0411.1262304000000");
         existingCachedFile.createNewFile();
 
-        final File existingCacheDir2 = new File(cacheDir, messageCacheDirString2);
+        File existingCacheDir2 = new File(cacheDir, messageCacheDirString2);
         existingCacheDir2.mkdirs();
-        final File existingCachedFile2 = new
+        File existingCachedFile2 = new
                 File(existingCacheDir2 + File.separator +
                 "028dbbd3617ccfb5e302f4aa2df2eb312d1571ee40b3f4aa448658c9082b0411.1262304000000");
         existingCachedFile2.createNewFile();
     }
 
-    private File setupCachedRules() throws Exception {
+    private File setupCachedRules() throws IOException {
         // setup
-        final File existingCacheDir = new File(cacheDir, rulesCacheDirString);
+        File existingCacheDir = new File(cacheDir, rulesCacheDirString);
         existingCacheDir.mkdirs();
-        final File existingCachedFile = new
+        File existingCachedFile = new
                 File(existingCacheDir + File.separator +
                 "c3da84c61f5768a6a401d09baf43275f5dcdb6cf57f8ad5382fa6c3d9a6c4a75.1262304000000");
         existingCachedFile.createNewFile();
         return existingCachedFile;
     }
 
-    private void clearCacheFiles(final File file) {
+    private void clearCacheFiles(File file) {
         // clear files from directory first
         if (file.isDirectory()) {
             String[] children = file.list();
 
             if (children != null) {
-                for (final String child : children) {
-                    final File childFile = new File(file, child);
+                for (String child : children) {
+                    File childFile = new File(file, child);
                     clearCacheFiles(childFile);
                 }
             }
@@ -297,7 +301,7 @@ public class CampaignExtensionTests {
     }
 
     // =================================================================================================================
-    // void handleWildcardEvents(final Event event)
+    // void handleWildcardEvents(Event event)
     // =================================================================================================================
 
     @Test
@@ -490,7 +494,7 @@ public class CampaignExtensionTests {
 
 
     // =================================================================================================================
-    // void setCampaignState(final Event event)
+    // void setCampaignState(Event event)
     // =================================================================================================================
 
     @Test
@@ -532,7 +536,7 @@ public class CampaignExtensionTests {
 
 
     // =================================================================================================================
-    // void handleLinkageFieldsEvent(final Event event)
+    // void handleLinkageFieldsEvent(Event event)
     // =================================================================================================================
     @Test
     public void test_handleLinkageFieldsEvent_when_eventIsNull() {
@@ -589,51 +593,59 @@ public class CampaignExtensionTests {
     @Test
     public void test_handleLinkageFieldsEvent_setValidLinkageFields() {
         // setup
-        CampaignState campaignState = new CampaignState();
-        campaignState.setState(getConfigurationEventData(new HashMap<>()), getIdentityEventData());
-        campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, campaignState, mockCacheService, mockCampaignRulesDownloader);
-        String expectedRulesDownloadUrl = "https://testMcias/testServer/testPropertyId/testExperienceCloudId/rules.zip";
-        String expectedBase64EncodedLinkageFields = "eyJrZXkxIjoidmFsdWUxIn0=";
-        HashMap<String, Object> eventData = new HashMap<>();
-        Map<String, String> linkageFields = new HashMap<>();
-        linkageFields.put("key1", "value1");
-        eventData.put(CampaignConstants.EventDataKeys.Campaign.LINKAGE_FIELDS, linkageFields);
+        try (MockedStatic<Base64> ignored = Mockito.mockStatic(Base64.class)) {
+            Answer<String> stringAnswer = invocation -> "eyJrZXkxIjoidmFsdWUxIn0=";
+            when(Base64.encodeToString(any(byte[].class), anyInt())).thenAnswer(stringAnswer);
+            CampaignState campaignState = new CampaignState();
+            campaignState.setState(getConfigurationEventData(new HashMap<>()), getIdentityEventData());
+            campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, campaignState, mockCacheService, mockCampaignRulesDownloader);
+            String expectedRulesDownloadUrl = "https://testMcias/testServer/testPropertyId/testExperienceCloudId/rules.zip";
+            String expectedBase64EncodedLinkageFields = "eyJrZXkxIjoidmFsdWUxIn0=";
+            HashMap<String, Object> eventData = new HashMap<>();
+            Map<String, String> linkageFields = new HashMap<>();
+            linkageFields.put("key1", "value1");
+            eventData.put(CampaignConstants.EventDataKeys.Campaign.LINKAGE_FIELDS, linkageFields);
 
-        Event testEvent = new Event.Builder("Test event", EventType.CAMPAIGN, EventSource.REQUEST_IDENTITY)
-                .setEventData(eventData)
-                .build();
+            Event testEvent = new Event.Builder("Test event", EventType.CAMPAIGN, EventSource.REQUEST_IDENTITY)
+                    .setEventData(eventData)
+                    .build();
 
-        // test
-        campaignExtension.handleLinkageFieldsEvent(testEvent);
+            // test
+            campaignExtension.handleLinkageFieldsEvent(testEvent);
 
-        // verify
-        String encodedLinkageFields = campaignExtension.getLinkageFields();
-        assertEquals(expectedBase64EncodedLinkageFields, encodedLinkageFields);
-        verify(mockCacheService, times(1)).remove(eq(CampaignConstants.RULES_CACHE_FOLDER), eq(""));
-        verify(mockCampaignRulesDownloader, times(1)).loadRulesFromUrl(eq(expectedRulesDownloadUrl), eq(encodedLinkageFields));
+            // verify
+            String encodedLinkageFields = campaignExtension.getLinkageFields();
+            assertEquals(expectedBase64EncodedLinkageFields, encodedLinkageFields);
+            verify(mockCacheService, times(1)).remove(eq(CampaignConstants.RULES_CACHE_FOLDER), eq(""));
+            verify(mockCampaignRulesDownloader, times(1)).loadRulesFromUrl(eq(expectedRulesDownloadUrl), eq(encodedLinkageFields));
+        }
     }
 
     @Test
     public void test_handleLinkageFieldsEvent_setValidLinkageFields_when_campaignStateNotReady() {
         // setup
-        String expectedBase64EncodedLinkageFields = "eyJrZXkxIjoidmFsdWUxIn0=";
-        HashMap<String, Object> eventData = new HashMap<>();
-        Map<String, String> linkageFields = new HashMap<>();
-        linkageFields.put("key1", "value1");
-        eventData.put(CampaignConstants.EventDataKeys.Campaign.LINKAGE_FIELDS, linkageFields);
+        try (MockedStatic<Base64> ignored = Mockito.mockStatic(Base64.class)) {
+            Answer<String> stringAnswer = invocation -> "eyJrZXkxIjoidmFsdWUxIn0=";
+            when(Base64.encodeToString(any(byte[].class), anyInt())).thenAnswer(stringAnswer);
+            String expectedBase64EncodedLinkageFields = "eyJrZXkxIjoidmFsdWUxIn0=";
+            HashMap<String, Object> eventData = new HashMap<>();
+            Map<String, String> linkageFields = new HashMap<>();
+            linkageFields.put("key1", "value1");
+            eventData.put(CampaignConstants.EventDataKeys.Campaign.LINKAGE_FIELDS, linkageFields);
 
-        Event testEvent = new Event.Builder("Test event", EventType.CAMPAIGN, EventSource.REQUEST_IDENTITY)
-                .setEventData(eventData)
-                .build();
+            Event testEvent = new Event.Builder("Test event", EventType.CAMPAIGN, EventSource.REQUEST_IDENTITY)
+                    .setEventData(eventData)
+                    .build();
 
-        // test
-        campaignExtension.handleLinkageFieldsEvent(testEvent);
+            // test
+            campaignExtension.handleLinkageFieldsEvent(testEvent);
 
-        // verify
-        String encodedLinkageFields = campaignExtension.getLinkageFields();
-        assertEquals(expectedBase64EncodedLinkageFields, encodedLinkageFields);
-        verify(mockCacheService, times(1)).remove(eq(CampaignConstants.RULES_CACHE_FOLDER), eq(""));
-        verify(mockCampaignRulesDownloader, times(0)).loadRulesFromUrl(anyString(), anyString());
+            // verify
+            String encodedLinkageFields = campaignExtension.getLinkageFields();
+            assertEquals(expectedBase64EncodedLinkageFields, encodedLinkageFields);
+            verify(mockCacheService, times(1)).remove(eq(CampaignConstants.RULES_CACHE_FOLDER), eq(""));
+            verify(mockCampaignRulesDownloader, times(0)).loadRulesFromUrl(anyString(), anyString());
+        }
     }
 
 
@@ -662,47 +674,51 @@ public class CampaignExtensionTests {
     @Test
     public void test_handleResetLinkageFields_when_linkageFieldsSetPreviously() {
         // setup
-        CampaignState campaignState = new CampaignState();
-        campaignState.setState(getConfigurationEventData(new HashMap<>()), getIdentityEventData());
-        campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, campaignState, mockCacheService, mockCampaignRulesDownloader);
+        try (MockedStatic<Base64> ignored = Mockito.mockStatic(Base64.class)) {
+            Answer<String> stringAnswer = invocation -> "eyJrZXkxIjoidmFsdWUxIn0=";
+            when(Base64.encodeToString(any(byte[].class), anyInt())).thenAnswer(stringAnswer);
+            CampaignState campaignState = new CampaignState();
+            campaignState.setState(getConfigurationEventData(new HashMap<>()), getIdentityEventData());
+            campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, campaignState, mockCacheService, mockCampaignRulesDownloader);
 
-        String expectedRulesDownloadUrl = "https://testMcias/testServer/testPropertyId/testExperienceCloudId/rules.zip";
-        String expectedBase64EncodedLinkageFields = "eyJrZXkxIjoidmFsdWUxIn0=";
-        HashMap<String, Object> eventData = new HashMap<>();
-        Map<String, String> linkageFields = new HashMap<>();
-        linkageFields.put("key1", "value1");
-        eventData.put(CampaignConstants.EventDataKeys.Campaign.LINKAGE_FIELDS, linkageFields);
+            String expectedRulesDownloadUrl = "https://testMcias/testServer/testPropertyId/testExperienceCloudId/rules.zip";
+            String expectedBase64EncodedLinkageFields = "eyJrZXkxIjoidmFsdWUxIn0=";
+            HashMap<String, Object> eventData = new HashMap<>();
+            Map<String, String> linkageFields = new HashMap<>();
+            linkageFields.put("key1", "value1");
+            eventData.put(CampaignConstants.EventDataKeys.Campaign.LINKAGE_FIELDS, linkageFields);
 
-        Event testEvent = new Event.Builder("Test event", EventType.CAMPAIGN, EventSource.REQUEST_IDENTITY)
-                .setEventData(eventData)
-                .build();
+            Event testEvent = new Event.Builder("Test event", EventType.CAMPAIGN, EventSource.REQUEST_IDENTITY)
+                    .setEventData(eventData)
+                    .build();
 
-        // test
-        campaignExtension.handleLinkageFieldsEvent(testEvent);
+            // test
+            campaignExtension.handleLinkageFieldsEvent(testEvent);
 
-        // verify linkage fields are set
-        String encodedLinkageFields = campaignExtension.getLinkageFields();
-        assertEquals(expectedBase64EncodedLinkageFields, encodedLinkageFields);
-        verify(mockCacheService, times(1)).remove(eq(CampaignConstants.RULES_CACHE_FOLDER), eq(""));
-        verify(mockCampaignRulesDownloader, times(1)).loadRulesFromUrl(eq(expectedRulesDownloadUrl), eq(encodedLinkageFields));
+            // verify linkage fields are set
+            String encodedLinkageFields = campaignExtension.getLinkageFields();
+            assertEquals(expectedBase64EncodedLinkageFields, encodedLinkageFields);
+            verify(mockCacheService, times(1)).remove(eq(CampaignConstants.RULES_CACHE_FOLDER), eq(""));
+            verify(mockCampaignRulesDownloader, times(1)).loadRulesFromUrl(eq(expectedRulesDownloadUrl), eq(encodedLinkageFields));
 
-        // setup reset event
-        testEvent = new Event.Builder("Test event", EventType.CAMPAIGN, EventSource.REQUEST_RESET)
-                .build();
+            // setup reset event
+            testEvent = new Event.Builder("Test event", EventType.CAMPAIGN, EventSource.REQUEST_RESET)
+                    .build();
 
-        // test
-        campaignExtension.handleLinkageFieldsEvent(testEvent);
+            // test
+            campaignExtension.handleLinkageFieldsEvent(testEvent);
 
-        // verify linkage fields reset
-        String linkageFieldsString = campaignExtension.getLinkageFields();
-        assertEquals("", linkageFieldsString);
-        verify(mockRulesEngine, times(1)).replaceRules(eq(null));
-        verify(mockCacheService, times(2)).remove(eq(CampaignConstants.RULES_CACHE_FOLDER), eq(""));
-        verify(mockCampaignRulesDownloader, times(1)).loadRulesFromUrl(eq(expectedRulesDownloadUrl), eq(""));
+            // verify linkage fields reset
+            String linkageFieldsString = campaignExtension.getLinkageFields();
+            assertEquals("", linkageFieldsString);
+            verify(mockRulesEngine, times(1)).replaceRules(eq(null));
+            verify(mockCacheService, times(2)).remove(eq(CampaignConstants.RULES_CACHE_FOLDER), eq(""));
+            verify(mockCampaignRulesDownloader, times(1)).loadRulesFromUrl(eq(expectedRulesDownloadUrl), eq(""));
+        }
     }
 
     // =================================================================================================================
-    // void processConfigurationResponse(final Event event)
+    // void processConfigurationResponse(Event event)
     // =================================================================================================================
     @Test
     public void test_processConfiguration_When_NullEvent() {
@@ -799,7 +815,7 @@ public class CampaignExtensionTests {
     }
 
     // =================================================================================================================
-    // void processMessageInformation(final Event event)
+    // void processMessageInformation(Event event)
     // =================================================================================================================
     @Test
     public void test_processMessageInformation_when_campaignConfigured_then_shouldProcessRequest() {
@@ -1054,16 +1070,17 @@ public class CampaignExtensionTests {
     }
 
     // =================================================================================================================
-    // void processLifecycleUpdate(final Event event)
+    // void processLifecycleUpdate(Event event)
     // =================================================================================================================
     @Test
     public void test_processLifecycleUpdate_when_campaignConfigured_then_shouldQueueHit() {
         // setup
         setupServiceProviderMockAndRunTest(() -> {
-            when(mockNamedCollection.getString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_EXPERIENCE_CLOUD_ID_KEY, "")).thenReturn("oldExperienceCloudId");
             ArgumentCaptor<DataEntity> dataEntityArgumentCaptor = ArgumentCaptor.forClass(DataEntity.class);
             CampaignState campaignState = new CampaignState();
             campaignState.setState(getConfigurationEventData(new HashMap<>()), getIdentityEventData());
+            UnitTestNamedCollection fakeNamedCollection = new UnitTestNamedCollection();
+            when(mockDataStoreService.getNamedCollection(anyString())).thenReturn(fakeNamedCollection);
             campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, campaignState, mockCacheService, mockCampaignRulesDownloader);
 
             Event testEvent = new Event.Builder("Test event", EventType.LIFECYCLE,
@@ -1089,28 +1106,287 @@ public class CampaignExtensionTests {
     @Test
     public void test_processLifecycleUpdate_when_campaignNotConfigured_then_shouldNotQueueHit() {
         // setup
-		CampaignState campaignState = new CampaignState();
+        CampaignState campaignState = new CampaignState();
         campaignState.setState(null, getIdentityEventData());
-		campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, campaignState, mockCacheService, mockCampaignRulesDownloader);
+        campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, campaignState, mockCacheService, mockCampaignRulesDownloader);
 
-		final Event testEvent = new Event.Builder("Test event", EventType.LIFECYCLE,
+        Event testEvent = new Event.Builder("Test event", EventType.LIFECYCLE,
                 EventSource.RESPONSE_CONTENT).setEventData(getLifecycleEventData()).build();
 
         // test
         campaignExtension.processLifecycleUpdate(testEvent);
 
         // verify
-		verify(mockPersistentHitQueue, times(0)).queue(any(DataEntity.class));
+        verify(mockPersistentHitQueue, times(0)).queue(any(DataEntity.class));
     }
 
-	@Test
-	public void test_processLifecycleUpdate_when_NoMid_then_shouldNotQueueHit() {
-		// setup
+    @Test
+    public void test_processLifecycleUpdate_when_NoMid_then_shouldNotQueueHit() {
+        // setup
         CampaignState campaignState = new CampaignState();
         campaignState.setState(getConfigurationEventData(new HashMap<>()), null);
         campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, campaignState, mockCacheService, mockCampaignRulesDownloader);
 
-        final Event testEvent = new Event.Builder("Test event", EventType.LIFECYCLE,
+        Event testEvent = new Event.Builder("Test event", EventType.LIFECYCLE,
+                EventSource.RESPONSE_CONTENT).setEventData(getLifecycleEventData()).build();
+
+        // test
+        campaignExtension.processLifecycleUpdate(testEvent);
+
+        // verify
+        verify(mockPersistentHitQueue, times(0)).queue(any(DataEntity.class));
+    }
+
+    @Test
+    public void test_processLifecycleUpdate_when_PrivacyOptOut_then_shouldNotQueueHit() {
+        // setup
+        Map<String, Object> configData = new HashMap<>();
+        configData.put(CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY, "optedout");
+
+        CampaignState campaignState = new CampaignState();
+        campaignState.setState(getConfigurationEventData(configData), getIdentityEventData());
+        campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, campaignState, mockCacheService, mockCampaignRulesDownloader);
+
+        Event testEvent = new Event.Builder("Test event", EventType.LIFECYCLE,
+                EventSource.RESPONSE_CONTENT).setEventData(getLifecycleEventData()).build();
+
+        // test
+        campaignExtension.processLifecycleUpdate(testEvent);
+
+        // verify
+        verify(mockPersistentHitQueue, times(0)).queue(any(DataEntity.class));
+    }
+
+    @Test
+    public void test_processLifecycleUpdate_when_PrivacyUnknown_then_shouldNotQueueHit() {
+        // setup
+        Map<String, Object> configData = new HashMap<>();
+        configData.put(CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY, "unknown");
+
+        CampaignState campaignState = new CampaignState();
+        campaignState.setState(getConfigurationEventData(configData), getIdentityEventData());
+        campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, campaignState, mockCacheService, mockCampaignRulesDownloader);
+
+        Event testEvent = new Event.Builder("Test event", EventType.LIFECYCLE,
+                EventSource.RESPONSE_CONTENT).setEventData(getLifecycleEventData()).build();
+
+        // test
+        campaignExtension.processLifecycleUpdate(testEvent);
+
+        // verify
+        verify(mockPersistentHitQueue, times(0)).queue(any(DataEntity.class));
+    }
+
+	@Test
+	public void
+	test_processLifecycleUpdate_when_ecidIsChanged_and_registrationIsPaused_then_shouldNotQueueHit() {
+		// setup
+        ArgumentCaptor<DataEntity> dataEntityArgumentCaptor = ArgumentCaptor.forClass(DataEntity.class);
+        UnitTestNamedCollection fakeNamedCollection = new UnitTestNamedCollection();
+        when(mockDataStoreService.getNamedCollection(anyString())).thenReturn(fakeNamedCollection);
+        CampaignState campaignState = new CampaignState();
+        campaignState.setState(getConfigurationEventData(new HashMap<>()), getIdentityEventData());
+        campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, campaignState, mockCacheService, mockCampaignRulesDownloader);
+
+        Event testEvent = new Event.Builder("Test event", EventType.LIFECYCLE,
+				EventSource.RESPONSE_CONTENT).setEventData(getLifecycleEventData()).build();
+
+        String payload = "{\"pushPlatform\":\"gcm\"" +
+                ",\"marketingCloudId\":\"" + campaignState.getExperienceCloudId() + "\"}";
+		String url = String.format(CampaignConstants.CAMPAIGN_REGISTRATION_URL, campaignState.getCampaignServer(),
+										 campaignState.getCampaignPkey(), campaignState.getExperienceCloudId());
+
+		// test
+		campaignExtension.processLifecycleUpdate(testEvent);
+
+		// verify
+        verify(mockPersistentHitQueue, times(1)).queue(dataEntityArgumentCaptor.capture());
+        DataEntity capturedDataEntity = dataEntityArgumentCaptor.getValue();
+        CampaignHit campaignHit = Utils.campaignHitFromDataEntity(capturedDataEntity);
+        assertEquals(url, campaignHit.url);
+        assertEquals(payload, campaignHit.payload);
+
+		// setup for second part of test
+		// add values to datastore to simulate a previous successful campaign registration request
+		// and set registration paused status to true
+        Mockito.reset(mockPersistentHitQueue);
+        Map<String, Object> pausedConfig = new HashMap<>();
+        pausedConfig.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_REGISTRATION_PAUSED_KEY, true);
+		campaignState.setState((getConfigurationEventData(pausedConfig)), getIdentityEventData());
+        fakeNamedCollection.setLong(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY, System.currentTimeMillis());
+		fakeNamedCollection.setString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_EXPERIENCE_CLOUD_ID_KEY, "newExperienceCloudId");
+
+		// test
+		campaignExtension.processLifecycleUpdate(testEvent);
+
+		// verify
+        verify(mockPersistentHitQueue, times(0)).queue(any(DataEntity.class));
+	}
+
+	@Test
+	public void test_processLifecycleUpdate_when_ecidIsChanged_then_shouldQueueHit() {
+		// setup
+        ArgumentCaptor<DataEntity> dataEntityArgumentCaptor = ArgumentCaptor.forClass(DataEntity.class);
+        UnitTestNamedCollection fakeNamedCollection = new UnitTestNamedCollection();
+        when(mockDataStoreService.getNamedCollection(anyString())).thenReturn(fakeNamedCollection);
+        CampaignState campaignState = new CampaignState();
+        campaignState.setState(getConfigurationEventData(new HashMap<>()), getIdentityEventData());
+        campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, campaignState, mockCacheService, mockCampaignRulesDownloader);
+
+        Event testEvent = new Event.Builder("Test event", EventType.LIFECYCLE,
+				EventSource.RESPONSE_CONTENT).setEventData(getLifecycleEventData()).build();
+
+        String payload = "{\"pushPlatform\":\"gcm\"" +
+                ",\"marketingCloudId\":\"" + campaignState.getExperienceCloudId() + "\"}";
+        String url = String.format(CampaignConstants.CAMPAIGN_REGISTRATION_URL, campaignState.getCampaignServer(),
+                campaignState.getCampaignPkey(), campaignState.getExperienceCloudId());
+
+        // test
+        campaignExtension.processLifecycleUpdate(testEvent);
+
+        // verify
+        verify(mockPersistentHitQueue, times(1)).queue(dataEntityArgumentCaptor.capture());
+        DataEntity capturedDataEntity = dataEntityArgumentCaptor.getValue();
+        CampaignHit campaignHit = Utils.campaignHitFromDataEntity(capturedDataEntity);
+        assertEquals(url, campaignHit.url);
+        assertEquals(payload, campaignHit.payload);
+
+		// setup for second part of test
+		// add values to datastore to simulate a previous successful campaign registration request
+        Mockito.reset(mockPersistentHitQueue);
+        fakeNamedCollection.setLong(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY, System.currentTimeMillis());
+        fakeNamedCollection.setString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_EXPERIENCE_CLOUD_ID_KEY, "newExperienceCloudId");
+
+		// test
+		campaignExtension.processLifecycleUpdate(testEvent);
+
+		// verify
+        verify(mockPersistentHitQueue, times(1)).queue(dataEntityArgumentCaptor.capture());
+        capturedDataEntity = dataEntityArgumentCaptor.getValue();
+        campaignHit = Utils.campaignHitFromDataEntity(capturedDataEntity);
+        assertEquals(url, campaignHit.url);
+        assertEquals(payload, campaignHit.payload);
+	}
+
+	@Test
+	public void
+	test_processLifecycleUpdate_when_customRegistrationDelayOfZeroProvided_then_shouldQueueHit() {
+        // setup
+        // set registration delay to 0 days (send hit immediately)
+        ArgumentCaptor<DataEntity> dataEntityArgumentCaptor = ArgumentCaptor.forClass(DataEntity.class);
+        UnitTestNamedCollection fakeNamedCollection = new UnitTestNamedCollection();
+        when(mockDataStoreService.getNamedCollection(anyString())).thenReturn(fakeNamedCollection);
+
+        Map<String, Object> configData = new HashMap<>();
+        configData.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_REGISTRATION_DELAY_KEY, 0);
+        CampaignState campaignState = new CampaignState();
+        campaignState.setState(getConfigurationEventData(new HashMap<>()), getIdentityEventData());
+        campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, campaignState, mockCacheService, mockCampaignRulesDownloader);
+
+        Event testEvent = new Event.Builder("Test event", EventType.LIFECYCLE,
+                EventSource.RESPONSE_CONTENT).setEventData(getLifecycleEventData()).build();
+
+        String payload = "{\"pushPlatform\":\"gcm\"" +
+                ",\"marketingCloudId\":\"" + campaignState.getExperienceCloudId() + "\"}";
+        String url = String.format(CampaignConstants.CAMPAIGN_REGISTRATION_URL, campaignState.getCampaignServer(),
+                campaignState.getCampaignPkey(), campaignState.getExperienceCloudId());
+
+
+        // add values to datastore to simulate a previous successful campaign registration request
+        fakeNamedCollection.setLong(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY, System.currentTimeMillis());
+        fakeNamedCollection.setString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_EXPERIENCE_CLOUD_ID_KEY, "newExperienceCloudId");
+
+        // test
+        campaignExtension.processLifecycleUpdate(testEvent);
+
+        // verify
+        verify(mockPersistentHitQueue, times(1)).queue(dataEntityArgumentCaptor.capture());
+        DataEntity capturedDataEntity = dataEntityArgumentCaptor.getValue();
+        CampaignHit campaignHit = Utils.campaignHitFromDataEntity(capturedDataEntity);
+        assertEquals(url, campaignHit.url);
+        assertEquals(payload, campaignHit.payload);
+	}
+
+	@Test
+	public void
+	test_processLifecycleUpdate_when_customRegistrationDelayProvided_then_shouldNotQueueHit_ifDelayNotElapsed() {
+		// setup
+		// set registration delay to 30 days
+        UnitTestNamedCollection fakeNamedCollection = new UnitTestNamedCollection();
+        when(mockDataStoreService.getNamedCollection(anyString())).thenReturn(fakeNamedCollection);
+
+        Map<String, Object> configData = new HashMap<>();
+        configData.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_REGISTRATION_DELAY_KEY, 30);
+        CampaignState campaignState = new CampaignState();
+        campaignState.setState(getConfigurationEventData(new HashMap<>()), getIdentityEventData());
+        campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, campaignState, mockCacheService, mockCampaignRulesDownloader);
+
+        Event testEvent = new Event.Builder("Test event", EventType.LIFECYCLE,
+                EventSource.RESPONSE_CONTENT).setEventData(getLifecycleEventData()).build();
+
+        // add values to datastore to simulate a previous successful campaign registration request
+        fakeNamedCollection.setLong(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY, System.currentTimeMillis());
+        fakeNamedCollection.setString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_EXPERIENCE_CLOUD_ID_KEY, "testExperienceCloudId");
+
+        // test
+        campaignExtension.processLifecycleUpdate(testEvent);
+
+        // verify
+        verify(mockPersistentHitQueue, times(0)).queue(any(DataEntity.class));
+	}
+
+	@Test
+	public void test_processLifecycleUpdate_when_registrationPausedIsEqualToFalse_then_shouldQueueHit() {
+        // setup
+        // set registration delay to 30 days
+        ArgumentCaptor<DataEntity> dataEntityArgumentCaptor = ArgumentCaptor.forClass(DataEntity.class);
+        UnitTestNamedCollection fakeNamedCollection = new UnitTestNamedCollection();
+        when(mockDataStoreService.getNamedCollection(anyString())).thenReturn(fakeNamedCollection);
+
+        Map<String, Object> configData = new HashMap<>();
+        configData.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_REGISTRATION_PAUSED_KEY, false);
+        CampaignState campaignState = new CampaignState();
+        campaignState.setState(getConfigurationEventData(new HashMap<>()), getIdentityEventData());
+        campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, campaignState, mockCacheService, mockCampaignRulesDownloader);
+
+        Event testEvent = new Event.Builder("Test event", EventType.LIFECYCLE,
+                EventSource.RESPONSE_CONTENT).setEventData(getLifecycleEventData()).build();
+
+        String payload = "{\"pushPlatform\":\"gcm\"" +
+                ",\"marketingCloudId\":\"" + campaignState.getExperienceCloudId() + "\"}";
+        String url = String.format(CampaignConstants.CAMPAIGN_REGISTRATION_URL, campaignState.getCampaignServer(),
+                campaignState.getCampaignPkey(), campaignState.getExperienceCloudId());
+
+
+        // add values to datastore to simulate a previous successful campaign registration request
+        fakeNamedCollection.setLong(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY, System.currentTimeMillis());
+        fakeNamedCollection.setString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_EXPERIENCE_CLOUD_ID_KEY, "newExperienceCloudId");
+
+        // test
+        campaignExtension.processLifecycleUpdate(testEvent);
+
+        // verify
+        verify(mockPersistentHitQueue, times(1)).queue(dataEntityArgumentCaptor.capture());
+        DataEntity capturedDataEntity = dataEntityArgumentCaptor.getValue();
+        CampaignHit campaignHit = Utils.campaignHitFromDataEntity(capturedDataEntity);
+        assertEquals(url, campaignHit.url);
+        assertEquals(payload, campaignHit.payload);
+	}
+
+	@Test
+	public void test_processLifecycleUpdate_when_registrationPausedIsEqualToTrue_then_shouldNotQueueHit() {
+        // setup
+        // set registration delay to 30 days
+        UnitTestNamedCollection fakeNamedCollection = new UnitTestNamedCollection();
+        when(mockDataStoreService.getNamedCollection(anyString())).thenReturn(fakeNamedCollection);
+
+        Map<String, Object> configData = new HashMap<>();
+        configData.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_REGISTRATION_PAUSED_KEY, true);
+        CampaignState campaignState = new CampaignState();
+        campaignState.setState(getConfigurationEventData(configData), getIdentityEventData());
+        campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, campaignState, mockCacheService, mockCampaignRulesDownloader);
+
+        Event testEvent = new Event.Builder("Test event", EventType.LIFECYCLE,
                 EventSource.RESPONSE_CONTENT).setEventData(getLifecycleEventData()).build();
 
         // test
@@ -1119,361 +1395,19 @@ public class CampaignExtensionTests {
         // verify
         verify(mockPersistentHitQueue, times(0)).queue(any(DataEntity.class));
 	}
-//
-//	@Test
-//	public void test_processLifecycleUpdate_when_PrivacyOptOut_then_shouldNotQueueHit() throws Exception {
-//		// setup
-//		EventData configData = getConfigurationEventData();
-//		configData.putString(CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY, "optedout");
-//
-//		campaignState.setState(configData, getIdentityEventData());
-//		final Event testEvent = new Event.Builder("Test event", EventType.LIFECYCLE,
-//				EventSource.RESPONSE_CONTENT).setData(getLifecycleEventData()).build();
-//
-//		// test
-//		campaignExtension.processLifecycleUpdate(testEvent, campaignState);
-//
-//		// verify
-//		assertFalse("CampaignHitsDatabase queue should not be called",
-//					campaignHitsDatabase.queueWasCalled);
-//	}
-//
-//	@Test
-//	public void test_processLifecycleUpdate_when_PrivacyUnknown_then_shouldNotQueueHit() throws Exception {
-//		// setup
-//		EventData configData = getConfigurationEventData();
-//		configData.putString(CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY, "optunknown");
-//
-//		campaignState.setState(configData, getIdentityEventData());
-//		final Event testEvent = new Event.Builder("Test event", EventType.LIFECYCLE,
-//				EventSource.RESPONSE_CONTENT).setData(getLifecycleEventData()).build();
-//
-//		// test
-//		campaignExtension.processLifecycleUpdate(testEvent, campaignState);
-//
-//		// verify
-//		assertFalse("CampaignHitsDatabase queue should not be called",
-//					campaignHitsDatabase.queueWasCalled);
-//	}
-//
-//	@Test
-//	public void test_processLifecycleUpdate_when_NullNetworkService_then_shouldNotCrash() throws Exception {
-//		// setup
-//		campaignState.setState(getConfigurationEventData(), getIdentityEventData());
-//		final Event testEvent = new Event.Builder("Test event", EventType.LIFECYCLE,
-//				EventSource.RESPONSE_CONTENT).setData(getLifecycleEventData()).build();
-//
-//		platformServices.mockNetworkService = null;
-//
-//		// test
-//		campaignExtension.processLifecycleUpdate(testEvent, campaignState);
-//
-//		// verify
-//		assertFalse("CampaignHitsDatabase queue should not be called",
-//					campaignHitsDatabase.queueWasCalled);
-//	}
-//
-//	@Test
-//	public void
-//	test_processLifecycleUpdate_when_ecidIsChanged_and_registrationIsPaused_then_shouldNotQueueHit()
-//	throws Exception {
-//		// setup
-//		campaignState.setState(getConfigurationEventData(), getIdentityEventData());
-//		final Event testEvent = new Event.Builder("Test event", EventType.LIFECYCLE,
-//				EventSource.RESPONSE_CONTENT).setData(getLifecycleEventData()).build();
-//
-//		final String payload = "{\"marketingCloudId\":\"" + campaignState.getExperienceCloudId() +
-//							   "\",\"pushPlatform\":\"gcm\"}";
-//		final String url = String.format(CampaignConstants.CAMPAIGN_REGISTRATION_URL, campaignState.getCampaignServer(),
-//										 campaignState.getCampaignPkey(), campaignState.getExperienceCloudId());
-//
-//		// test
-//		campaignExtension.processLifecycleUpdate(testEvent, campaignState);
-//		waitForExecutor(campaignExtension.getExecutor(), 1);
-//
-//		// verify
-//		assertTrue("CampaignHitsDatabase queue should be called",
-//				   campaignHitsDatabase.queueWasCalled);
-//		assertEquals(campaignHitsDatabase.queueParameterCampaignHit.url, url);
-//		assertEquals(campaignHitsDatabase.queueParameterCampaignHit.getHttpCommand(), NetworkService.HttpCommand.POST);
-//		assertEquals(campaignHitsDatabase.queueParameterCampaignHit.timeout, 10);
-//		assertEquals(campaignHitsDatabase.queueParameterCampaignHit.body, payload);
-//		assertEquals(campaignHitsDatabase.queueParameterTimestamp, testEvent.getTimestamp());
-//
-//		// setup for second part of test
-//		// add values to datastore to simulate a previous successful campaign registration request
-//		// and set registration paused status to true
-//		campaignState.setState(updateConfigurationEventDataWithRegistrationPausedStatus(getConfigurationEventData(), true),
-//							   getIdentityEventData());
-//		final long timestamp = System.currentTimeMillis();
-//		campaignHitsDatabase.updateTimestampInDataStore(timestamp);
-//		campaignHitsDatabase.queueWasCalled = false;
-//		campaignDataStore.setString(CampaignConstants.CAMPAIGN_DATA_STORE_EXPERIENCE_CLOUD_ID_KEY, "newExperienceCloudId");
-//
-//		// test
-//		campaignExtension.processLifecycleUpdate(testEvent, campaignState);
-//		waitForExecutor(campaignExtension.getExecutor(), 1);
-//
-//		// verify
-//		assertFalse("CampaignHitsDatabase queue should be called",
-//					campaignHitsDatabase.queueWasCalled);
-//	}
-//
-//	@Test
-//	public void test_processLifecycleUpdate_when_ecidIsChanged_then_shouldQueueHit() throws Exception {
-//		// setup
-//		campaignState.setState(getConfigurationEventData(), getIdentityEventData());
-//		final Event testEvent = new Event.Builder("Test event", EventType.LIFECYCLE,
-//				EventSource.RESPONSE_CONTENT).setData(getLifecycleEventData()).build();
-//
-//		final String payload = "{\"marketingCloudId\":\"" + campaignState.getExperienceCloudId() +
-//							   "\",\"pushPlatform\":\"gcm\"}";
-//		final String url = String.format(CampaignConstants.CAMPAIGN_REGISTRATION_URL, campaignState.getCampaignServer(),
-//										 campaignState.getCampaignPkey(), campaignState.getExperienceCloudId());
-//
-//		// test
-//		campaignExtension.processLifecycleUpdate(testEvent, campaignState);
-//		waitForExecutor(campaignExtension.getExecutor(), 1);
-//
-//		// verify
-//		assertTrue("CampaignHitsDatabase queue should be called",
-//				   campaignHitsDatabase.queueWasCalled);
-//		assertEquals(campaignHitsDatabase.queueParameterCampaignHit.url, url);
-//		assertEquals(campaignHitsDatabase.queueParameterCampaignHit.getHttpCommand(), NetworkService.HttpCommand.POST);
-//		assertEquals(campaignHitsDatabase.queueParameterCampaignHit.timeout, 10);
-//		assertEquals(campaignHitsDatabase.queueParameterCampaignHit.body, payload);
-//		assertEquals(campaignHitsDatabase.queueParameterTimestamp, testEvent.getTimestamp());
-//
-//		// setup for second part of test
-//		// add values to datastore to simulate a previous successful campaign registration request
-//		final long timestamp = System.currentTimeMillis();
-//		campaignHitsDatabase.updateTimestampInDataStore(timestamp);
-//		campaignHitsDatabase.queueWasCalled = false;
-//		campaignDataStore.setString(CampaignConstants.CAMPAIGN_DATA_STORE_EXPERIENCE_CLOUD_ID_KEY, "newExperienceCloudId");
-//
-//		// test
-//		campaignExtension.processLifecycleUpdate(testEvent, campaignState);
-//		waitForExecutor(campaignExtension.getExecutor(), 1);
-//
-//		// verify
-//		assertTrue("CampaignHitsDatabase queue should be called",
-//				   campaignHitsDatabase.queueWasCalled);
-//		assertEquals(campaignHitsDatabase.queueParameterCampaignHit.url, url);
-//		assertEquals(campaignHitsDatabase.queueParameterCampaignHit.getHttpCommand(), NetworkService.HttpCommand.POST);
-//		assertEquals(campaignHitsDatabase.queueParameterCampaignHit.timeout, 10);
-//		assertEquals(campaignHitsDatabase.queueParameterCampaignHit.body, payload);
-//		assertEquals(campaignHitsDatabase.queueParameterTimestamp, testEvent.getTimestamp());
-//	}
-//
-//	@Test
-//	public void test_processLifecycleUpdate_when_customRegistrationDelayProvided_then_shouldQueueHit_ifDelayElapsed()
-//	throws Exception {
-//		// setup
-//		// set registration delay to 1 day
-//		campaignState.setState(getConfigurationEventDataWithCustomRegistrationDelay(getConfigurationEventData(), 1),
-//							   getIdentityEventData());
-//		// set timestamp on event to 2 days from now
-//		final long futureTimestamp = System.currentTimeMillis() + (TimeUnit.DAYS.toMillis(2));
-//		final Event testEvent = new Event.Builder("Test event", EventType.LIFECYCLE,
-//				EventSource.RESPONSE_CONTENT).setData(getLifecycleEventData()).setTimestamp(futureTimestamp).build();
-//
-//		final String payload = "{\"marketingCloudId\":\"" + campaignState.getExperienceCloudId() +
-//							   "\",\"pushPlatform\":\"gcm\"}";
-//		final String url = String.format(CampaignConstants.CAMPAIGN_REGISTRATION_URL, campaignState.getCampaignServer(),
-//										 campaignState.getCampaignPkey(), campaignState.getExperienceCloudId());
-//		// add values to datastore to simulate a previous successful campaign registration request
-//		campaignHitsDatabase.updateTimestampInDataStore(System.currentTimeMillis());
-//		campaignDataStore.setString(CampaignConstants.CAMPAIGN_DATA_STORE_EXPERIENCE_CLOUD_ID_KEY, "newExperienceCloudId");
-//
-//		// test
-//		campaignExtension.processLifecycleUpdate(testEvent, campaignState);
-//		waitForExecutor(campaignExtension.getExecutor(), 1);
-//
-//		// verify
-//		assertTrue("CampaignHitsDatabase queue should be called",
-//				   campaignHitsDatabase.queueWasCalled);
-//		assertEquals(campaignHitsDatabase.queueParameterCampaignHit.url, url);
-//		assertEquals(campaignHitsDatabase.queueParameterCampaignHit.getHttpCommand(), NetworkService.HttpCommand.POST);
-//		assertEquals(campaignHitsDatabase.queueParameterCampaignHit.timeout, 10);
-//		assertEquals(campaignHitsDatabase.queueParameterCampaignHit.body, payload);
-//		assertEquals(campaignHitsDatabase.queueParameterTimestamp, testEvent.getTimestamp());
-//	}
-//
-//	@Test
-//	public void
-//	test_processLifecycleUpdate_when_customRegistrationDelayOfZeroProvided_then_shouldQueueHit() throws
-//		Exception {
-//		// setup
-//		// set registration delay to 0 days (should send a registration request every launch event)
-//		campaignState.setState(getConfigurationEventDataWithCustomRegistrationDelay(getConfigurationEventData(), 0),
-//							   getIdentityEventData());
-//		final long currentTimestamp = System.currentTimeMillis();
-//		final Event testEvent = new Event.Builder("Test event", EventType.LIFECYCLE,
-//				EventSource.RESPONSE_CONTENT).setData(getLifecycleEventData()).setTimestamp(currentTimestamp).build();
-//
-//		final String payload = "{\"marketingCloudId\":\"" + campaignState.getExperienceCloudId() +
-//							   "\",\"pushPlatform\":\"gcm\"}";
-//		final String url = String.format(CampaignConstants.CAMPAIGN_REGISTRATION_URL, campaignState.getCampaignServer(),
-//										 campaignState.getCampaignPkey(), campaignState.getExperienceCloudId());
-//		// add values to datastore to simulate a previous successful campaign registration request
-//		campaignHitsDatabase.updateTimestampInDataStore(currentTimestamp);
-//		campaignDataStore.setString(CampaignConstants.CAMPAIGN_DATA_STORE_EXPERIENCE_CLOUD_ID_KEY, "newExperienceCloudId");
-//
-//		// test
-//		campaignExtension.processLifecycleUpdate(testEvent, campaignState);
-//		waitForExecutor(campaignExtension.getExecutor(), 1);
-//
-//		// verify
-//		assertTrue("CampaignHitsDatabase queue should be called",
-//				   campaignHitsDatabase.queueWasCalled);
-//		assertEquals(campaignHitsDatabase.queueParameterCampaignHit.url, url);
-//		assertEquals(campaignHitsDatabase.queueParameterCampaignHit.getHttpCommand(), NetworkService.HttpCommand.POST);
-//		assertEquals(campaignHitsDatabase.queueParameterCampaignHit.timeout, 10);
-//		assertEquals(campaignHitsDatabase.queueParameterCampaignHit.body, payload);
-//		assertEquals(campaignHitsDatabase.queueParameterTimestamp, testEvent.getTimestamp());
-//	}
-//
-//	@Test
-//	public void
-//	test_processLifecycleUpdate_when_customRegistrationDelayProvided_then_shouldNotQueueHit_ifDelayNotElapsed() throws
-//		Exception {
-//		// setup
-//		// set registration delay to 30 days
-//		campaignState.setState(getConfigurationEventDataWithCustomRegistrationDelay(getConfigurationEventData(), 30),
-//							   getIdentityEventData());
-//
-//		// set timestamp on event to 25 days from now
-//		final long futureTimestamp = System.currentTimeMillis() + (TimeUnit.DAYS.toMillis(25));
-//		final Event testEvent = new Event.Builder("Test event", EventType.LIFECYCLE,
-//				EventSource.RESPONSE_CONTENT).setData(getLifecycleEventData()).setTimestamp(futureTimestamp).build();
-//
-//		final String payload = "{\"marketingCloudId\":\"" + campaignState.getExperienceCloudId() +
-//							   "\",\"pushPlatform\":\"gcm\"}";
-//		final String url = String.format(CampaignConstants.CAMPAIGN_REGISTRATION_URL, campaignState.getCampaignServer(),
-//										 campaignState.getCampaignPkey(), campaignState.getExperienceCloudId());
-//		// add values to datastore to simulate a previous successful campaign registration request
-//		campaignHitsDatabase.updateTimestampInDataStore(System.currentTimeMillis());
-//		campaignDataStore.setString(CampaignConstants.CAMPAIGN_DATA_STORE_EXPERIENCE_CLOUD_ID_KEY, "testExperienceCloudId");
-//
-//		// test
-//		campaignExtension.processLifecycleUpdate(testEvent, campaignState);
-//		waitForExecutor(campaignExtension.getExecutor(), 1);
-//
-//		// verify
-//		assertFalse("CampaignHitsDatabase queue should not be called",
-//					campaignHitsDatabase.queueWasCalled);
-//	}
-//
-//	@Test
-//	public void test_processLifecycleUpdate_when_registrationPausedIsEqualToFalse_then_shouldQueueHit() throws
-//		Exception {
-//		// setup
-//		// set registration paused to false
-//		campaignState.setState(updateConfigurationEventDataWithRegistrationPausedStatus(getConfigurationEventData(), false),
-//							   getIdentityEventData());
-//
-//		// set timestamp on event to 80 days from now
-//		final long futureTimestamp = System.currentTimeMillis() + (TimeUnit.DAYS.toMillis(80));
-//		final Event testEvent = new Event.Builder("Test event", EventType.LIFECYCLE,
-//				EventSource.RESPONSE_CONTENT).setData(getLifecycleEventData()).setTimestamp(futureTimestamp).build();
-//
-//		final String payload = "{\"marketingCloudId\":\"" + campaignState.getExperienceCloudId() +
-//							   "\",\"pushPlatform\":\"gcm\"}";
-//		final String url = String.format(CampaignConstants.CAMPAIGN_REGISTRATION_URL, campaignState.getCampaignServer(),
-//										 campaignState.getCampaignPkey(), campaignState.getExperienceCloudId());
-//
-//		// add values to datastore to simulate a previous successful campaign registration request
-//		campaignHitsDatabase.updateTimestampInDataStore(System.currentTimeMillis());
-//		campaignDataStore.setString(CampaignConstants.CAMPAIGN_DATA_STORE_EXPERIENCE_CLOUD_ID_KEY, "newExperienceCloudId");
-//
-//		// test
-//		campaignExtension.processLifecycleUpdate(testEvent, campaignState);
-//		waitForExecutor(campaignExtension.getExecutor(), 1);
-//
-//		// verify
-//		assertTrue("CampaignHitsDatabase queue should be called",
-//				   campaignHitsDatabase.queueWasCalled);
-//		assertEquals(campaignHitsDatabase.queueParameterCampaignHit.url, url);
-//		assertEquals(campaignHitsDatabase.queueParameterCampaignHit.getHttpCommand(), NetworkService.HttpCommand.POST);
-//		assertEquals(campaignHitsDatabase.queueParameterCampaignHit.timeout, 10);
-//		assertEquals(campaignHitsDatabase.queueParameterCampaignHit.body, payload);
-//		assertEquals(campaignHitsDatabase.queueParameterTimestamp, testEvent.getTimestamp());
-//	}
-//
-//	@Test
-//	public void test_processLifecycleUpdate_when_registrationPausedIsEqualToTrue_then_shouldNotQueueHit() throws
-//		Exception {
-//		// setup
-//		// set registration paused to true
-//		campaignState.setState(updateConfigurationEventDataWithRegistrationPausedStatus(getConfigurationEventData(), true),
-//							   getIdentityEventData());
-//
-//		// set timestamp on event to 80 days from now
-//		final long futureTimestamp = System.currentTimeMillis() + (TimeUnit.DAYS.toMillis(80));
-//		final Event testEvent = new Event.Builder("Test event", EventType.LIFECYCLE,
-//				EventSource.RESPONSE_CONTENT).setData(getLifecycleEventData()).setTimestamp(futureTimestamp).build();
-//
-//		final String payload = "{\"marketingCloudId\":\"" + campaignState.getExperienceCloudId() +
-//							   "\",\"pushPlatform\":\"gcm\"}";
-//		final String url = String.format(CampaignConstants.CAMPAIGN_REGISTRATION_URL, campaignState.getCampaignServer(),
-//										 campaignState.getCampaignPkey(), campaignState.getExperienceCloudId());
-//
-//		// add values to datastore to simulate a previous successful campaign registration request
-//		campaignHitsDatabase.updateTimestampInDataStore(System.currentTimeMillis());
-//		campaignDataStore.setString(CampaignConstants.CAMPAIGN_DATA_STORE_EXPERIENCE_CLOUD_ID_KEY, "newExperienceCloudId");
-//
-//		// test
-//		campaignExtension.processLifecycleUpdate(testEvent, campaignState);
-//		waitForExecutor(campaignExtension.getExecutor(), 1);
-//
-//		// verify
-//		assertFalse("CampaignHitsDatabase queue should not be called",
-//					campaignHitsDatabase.queueWasCalled);
-//	}
-//
-//	@Test
-//	public void
-//	test_processLifecycleUpdate_when_customRegistrationDelayProvided_and_registrationPausedIsEqualToTrue_then_shouldNotQueueHit()
-//	throws Exception {
-//		// setup
-//		// set registration delay to 1 day
-//		campaignState.setState(updateConfigurationEventDataWithCustomRegistrationDelayAndPauseStatus(
-//								   getConfigurationEventData(),
-//								   1, true), getIdentityEventData());
-//		// set timestamp on event to 2 days from now
-//		final long futureTimestamp = System.currentTimeMillis() + (TimeUnit.DAYS.toMillis(2));
-//		final Event testEvent = new Event.Builder("Test event", EventType.LIFECYCLE,
-//				EventSource.RESPONSE_CONTENT).setData(getLifecycleEventData()).setTimestamp(futureTimestamp).build();
-//
-//		final String payload = "{\"marketingCloudId\":\"" + campaignState.getExperienceCloudId() +
-//							   "\",\"pushPlatform\":\"gcm\"}";
-//		final String url = String.format(CampaignConstants.CAMPAIGN_REGISTRATION_URL, campaignState.getCampaignServer(),
-//										 campaignState.getCampaignPkey(), campaignState.getExperienceCloudId());
-//		// add values to datastore to simulate a previous successful campaign registration request
-//		campaignHitsDatabase.updateTimestampInDataStore(System.currentTimeMillis());
-//		campaignDataStore.setString(CampaignConstants.CAMPAIGN_DATA_STORE_EXPERIENCE_CLOUD_ID_KEY, "newExperienceCloudId");
-//
-//		// test
-//		campaignExtension.processLifecycleUpdate(testEvent, campaignState);
-//		waitForExecutor(campaignExtension.getExecutor(), 1);
-//
-//		// verify
-//		assertFalse("CampaignHitsDatabase queue should not be called",
-//					campaignHitsDatabase.queueWasCalled);
-//	}
-//
+
 //	// =================================================================================================================
-//	// void triggerRulesDownload(final Event event, final CampaignState campaignState)
+//	// void triggerRulesDownload(Event event, CampaignState campaignState)
 //	// =================================================================================================================
 //
 //	@Test
-//	public void test_triggerRulesDownload__when_campaignConfigured_then_shouldTriggerRulesDownload() throws Exception {
+//	public void test_triggerRulesDownload__when_campaignConfigured_then_shouldTriggerRulesDownload() {
 //		// setup
 //		campaignState.setState(getConfigurationEventData(), getIdentityEventData());
-//		final Event testEvent = new Event.Builder("Test event", EventType.CONFIGURATION,
+//		Event testEvent = new Event.Builder("Test event", EventType.CONFIGURATION,
 //				EventSource.RESPONSE_CONTENT).build();
 //
-//		final String url = String.format(CampaignConstants.CAMPAIGN_RULES_DOWNLOAD_URL, campaignState.getCampaignMcias(),
+//		String url = String.format(CampaignConstants.CAMPAIGN_RULES_DOWNLOAD_URL, campaignState.getCampaignMcias(),
 //										 campaignState.getCampaignServer(), campaignState.getPropertyId(), campaignState.getExperienceCloudId());
 //
 //		// test
@@ -1488,10 +1422,10 @@ public class CampaignExtensionTests {
 //	}
 //
 //	@Test
-//	public void test_triggerRulesDownload_when_campaignNotConfigured_then_shouldNotProcessRequest() throws Exception {
+//	public void test_triggerRulesDownload_when_campaignNotConfigured_then_shouldNotProcessRequest() {
 //		// setup
 //		campaignState.setState(new EventData(), getIdentityEventData());
-//		final Event testEvent = new Event.Builder("Test event", EventType.CONFIGURATION,
+//		Event testEvent = new Event.Builder("Test event", EventType.CONFIGURATION,
 //				EventSource.RESPONSE_CONTENT).build();
 //
 //		// test
@@ -1502,10 +1436,10 @@ public class CampaignExtensionTests {
 //	}
 //
 //	@Test
-//	public void test_triggerRulesDownload_when_NoMid_then_shouldNotProcessRequest() throws Exception {
+//	public void test_triggerRulesDownload_when_NoMid_then_shouldNotProcessRequest() {
 //		// setup
 //		campaignState.setState(getConfigurationEventData(), new EventData());
-//		final Event testEvent = new Event.Builder("Test event", EventType.CONFIGURATION,
+//		Event testEvent = new Event.Builder("Test event", EventType.CONFIGURATION,
 //				EventSource.RESPONSE_CONTENT).build();
 //
 //		// test
@@ -1516,13 +1450,13 @@ public class CampaignExtensionTests {
 //	}
 //
 //	@Test
-//	public void test_triggerRulesDownload_when_PrivacyOptOut_then_shouldNotProcessRequest() throws Exception {
+//	public void test_triggerRulesDownload_when_PrivacyOptOut_then_shouldNotProcessRequest() {
 //		// setup
 //		EventData configData = getConfigurationEventData();
 //		configData.putString(CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY, "optedout");
 //
 //		campaignState.setState(configData, getIdentityEventData());
-//		final Event testEvent = new Event.Builder("Test event", EventType.CONFIGURATION,
+//		Event testEvent = new Event.Builder("Test event", EventType.CONFIGURATION,
 //				EventSource.RESPONSE_CONTENT).build();
 //
 //		// test
@@ -1533,13 +1467,13 @@ public class CampaignExtensionTests {
 //	}
 //
 //	@Test
-//	public void test_triggerRulesDownload_when_PrivacyUnknown_then_shouldNotProcessRequest() throws Exception {
+//	public void test_triggerRulesDownload_when_PrivacyUnknown_then_shouldNotProcessRequest() {
 //		// setup
 //		EventData configData = getConfigurationEventData();
 //		configData.putString(CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY, "optunknown");
 //
 //		campaignState.setState(configData, getIdentityEventData());
-//		final Event testEvent = new Event.Builder("Test event", EventType.CONFIGURATION,
+//		Event testEvent = new Event.Builder("Test event", EventType.CONFIGURATION,
 //				EventSource.RESPONSE_CONTENT).build();
 //
 //		// test
@@ -1550,13 +1484,13 @@ public class CampaignExtensionTests {
 //	}
 //
 //	// =================================================================================================================
-//	// void dispatchMessageInteraction(final Map<String, String> messageData)
+//	// void dispatchMessageInteraction(Map<String, String> messageData)
 //	// =================================================================================================================
 //
 //	@Test
-//	public void test_dispatchMessageInteraction_happy() throws Exception {
+//	public void test_dispatchMessageInteraction_happy() {
 //		// setup
-//		final Map<String, String> testMessageData = new HashMap<String, String>();
+//		Map<String, String> testMessageData = new HashMap<String, String>();
 //		testMessageData.put(CampaignConstants.ContextDataKeys.MESSAGE_ID, "testMessageId");
 //		testMessageData.put(CampaignConstants.ContextDataKeys.MESSAGE_VIEWED, "1");
 //
@@ -1571,9 +1505,9 @@ public class CampaignExtensionTests {
 //	}
 //
 //	@Test
-//	public void test_dispatchMessageInteraction_whenNullDispatcher_then_shouldNotDispatch() throws Exception {
+//	public void test_dispatchMessageInteraction_whenNullDispatcher_then_shouldNotDispatch() {
 //		// setup
-//		final Map<String, String> testMessageData = new HashMap<String, String>();
+//		Map<String, String> testMessageData = new HashMap<String, String>();
 //		testMessageData.put(CampaignConstants.ContextDataKeys.MESSAGE_ID, "testMessageId");
 //		testMessageData.put(CampaignConstants.ContextDataKeys.MESSAGE_VIEWED, "1");
 //
@@ -1587,15 +1521,15 @@ public class CampaignExtensionTests {
 //	}
 //
 //	// =================================================================================================================
-//	// void dispatchMessageInfo(final String broadlogId, final String deliveryId, final String action)
+//	// void dispatchMessageInfo(String broadlogId, String deliveryId, String action)
 //	// =================================================================================================================
 //
 //	@Test
-//	public void test_dispatchMessageInfo_happy() throws Exception {
+//	public void test_dispatchMessageInfo_happy() {
 //		// setup
-//		final String broadlogId = "h87a1";
-//		final String deliveryId = "22dc";
-//		final String action = "7";
+//		String broadlogId = "h87a1";
+//		String deliveryId = "22dc";
+//		String action = "7";
 //		campaignExtension.genericDataOSEventDispatcher = genericDataOSEventDispatcher;
 //
 //		// test
@@ -1609,11 +1543,11 @@ public class CampaignExtensionTests {
 //	}
 //
 //	@Test
-//	public void test_dispatchMessageInfo_whenNullDispatcher_then_shouldNotDispatch() throws Exception {
+//	public void test_dispatchMessageInfo_whenNullDispatcher_then_shouldNotDispatch() {
 //		// setup
-//		final String broadlogId = "h87a1";
-//		final String deliveryId = "22dc";
-//		final String action = "7";
+//		String broadlogId = "h87a1";
+//		String deliveryId = "22dc";
+//		String action = "7";
 //		campaignExtension.genericDataOSEventDispatcher = null;
 //
 //		// test
@@ -1624,29 +1558,29 @@ public class CampaignExtensionTests {
 //	}
 //
 //	// =================================================================================================================
-//	// void clearCachedAssetsForMessagesNotInList(final List<String> activeMessageIds)
+//	// void clearCachedAssetsForMessagesNotInList(List<String> activeMessageIds)
 //	// =================================================================================================================
 //
 //	@Test
-//	public void test_clearCachedMessageAssets_When_EmptyList_Then_RemoveAllAssets() throws Exception {
+//	public void test_clearCachedMessageAssets_When_EmptyList_Then_RemoveAllAssets() {
 //		// setup
 //		setupCachedMessageAssets(fakeMessageId1, fakeMessageId2);
 //
-//		final String response = "abcd";
-//		final int responseCode = 200;
-//		final String responseMessage = "";
-//		final HashMap<String, String> responseProperties = new HashMap<String, String>();
+//		String response = "abcd";
+//		int responseCode = 200;
+//		String responseMessage = "";
+//		HashMap<String, String> responseProperties = new HashMap<String, String>();
 //		responseProperties.put("Last-Modified", "Fri, 1 Jan 2010 00:00:00 UTC");
 //
 //		mockNetworkService.connectUrlAsyncCallbackParametersConnection =
 //			new MockConnection(response, responseCode, responseMessage, responseProperties);
 //
 //		// pre-verify
-//		final CacheManager manager = new CacheManager(mockSystemInfoService);
-//		final File cachedFile = manager.getFileForCachedURL("https://www.pexels.com/photo/grey-fur-kitten-127028/",
+//		CacheManager manager = new CacheManager(mockSystemInfoService);
+//		File cachedFile = manager.getFileForCachedURL("https://www.pexels.com/photo/grey-fur-kitten-127028/",
 //								messageCacheDirString1, false);
 //		assertNotNull("cachedFile should exist", cachedFile);
-//		final File cachedFile2 = manager.getFileForCachedURL("https://www.pexels.com/photo/grey-fur-kitten-127028/",
+//		File cachedFile2 = manager.getFileForCachedURL("https://www.pexels.com/photo/grey-fur-kitten-127028/",
 //								 messageCacheDirString2, false);
 //		assertNotNull("cachedFile2 should exist", cachedFile2);
 //
@@ -1654,26 +1588,26 @@ public class CampaignExtensionTests {
 //		campaignExtension.clearCachedAssetsForMessagesNotInList(new ArrayList<String>());
 //
 //		// verify
-//		final File cachedFile3 = manager.getFileForCachedURL("https://www.pexels.com/photo/grey-fur-kitten-127028/",
+//		File cachedFile3 = manager.getFileForCachedURL("https://www.pexels.com/photo/grey-fur-kitten-127028/",
 //								 messageCacheDirString1, false);
 //		assertNull("cachedFile3 should not exist", cachedFile3);
-//		final File cachedFile4 = manager.getFileForCachedURL("https://www.pexels.com/photo/grey-fur-kitten-127028/",
+//		File cachedFile4 = manager.getFileForCachedURL("https://www.pexels.com/photo/grey-fur-kitten-127028/",
 //								 messageCacheDirString2, false);
 //		assertNull("cachedFile4 should not exist", cachedFile4);
 //	}
 //
 //	@Test
-//	public void test_clearCachedMessageAssets_When_MessageIdsInList_Then_RemoveAllAssetsNotInList() throws Exception {
+//	public void test_clearCachedMessageAssets_When_MessageIdsInList_Then_RemoveAllAssetsNotInList() {
 //		// setup
-//		final ArrayList<String> messageIds = new ArrayList<String>();
+//		ArrayList<String> messageIds = new ArrayList<String>();
 //		messageIds.add(fakeMessageId1);
 //
 //		setupCachedMessageAssets(fakeMessageId1, fakeMessageId2);
 //
-//		final String response = "abcd";
-//		final int responseCode = 200;
-//		final String responseMessage = "";
-//		final HashMap<String, String> responseProperties = new HashMap<String, String>();
+//		String response = "abcd";
+//		int responseCode = 200;
+//		String responseMessage = "";
+//		HashMap<String, String> responseProperties = new HashMap<String, String>();
 //		responseProperties.put("Last-Modified", "Fri, 1 Jan 2010 00:00:00 UTC");
 //
 //		mockNetworkService.connectUrlAsyncCallbackParametersConnection =
@@ -1683,11 +1617,11 @@ public class CampaignExtensionTests {
 //		campaignExtension.clearCachedAssetsForMessagesNotInList(messageIds);
 //
 //		// verify
-//		final CacheManager manager = new CacheManager(mockSystemInfoService);
-//		final File cachedFile = manager.getFileForCachedURL("https://www.pexels.com/photo/grey-fur-kitten-127028/",
+//		CacheManager manager = new CacheManager(mockSystemInfoService);
+//		File cachedFile = manager.getFileForCachedURL("https://www.pexels.com/photo/grey-fur-kitten-127028/",
 //								messageCacheDirString1, false);
 //		assertNotNull("Cached file for active message should still exist", cachedFile);
-//		final File cachedFile2 = manager.getFileForCachedURL("https://www.pexels.com/photo/grey-fur-kitten-127028/",
+//		File cachedFile2 = manager.getFileForCachedURL("https://www.pexels.com/photo/grey-fur-kitten-127028/",
 //								 messageCacheDirString2, false);
 //		assertNull("Cached file for inactive message should be removed", cachedFile2);
 //	}
@@ -1697,22 +1631,22 @@ public class CampaignExtensionTests {
 //	// =================================================================================================================
 //
 //	@Test
-//	public void test_clearRulesCacheDirectory_happy() throws Exception {
+//	public void test_clearRulesCacheDirectory_happy() {
 //		// setup
 //		setupCachedRules();
 //
-//		final String response = "";
-//		final int responseCode = 200;
-//		final String responseMessage = "";
-//		final HashMap<String, String> responseProperties = new HashMap<String, String>();
+//		String response = "";
+//		int responseCode = 200;
+//		String responseMessage = "";
+//		HashMap<String, String> responseProperties = new HashMap<String, String>();
 //		responseProperties.put("Last-Modified", "Fri, 1 Jan 2010 00:00:00 UTC");
 //
 //		mockNetworkService.connectUrlReturnValue = ((NetworkService.HttpConnection)new MockConnection(response, responseCode,
 //				responseMessage, responseProperties));
 //
 //		// pre-verify
-//		final CacheManager manager = new CacheManager(mockSystemInfoService);
-//		final File cachedFile = manager.getFileForCachedURL(
+//		CacheManager manager = new CacheManager(mockSystemInfoService);
+//		File cachedFile = manager.getFileForCachedURL(
 //									"https://mcias-va7.cloud.adobe.io/mcias/mcias.campaign-demo.adobe.com/PR146b40abd1be4a0ab224c16cbdc04bff/37922783516695133647566171476397216484/rules.zip",
 //									rulesCacheDirString, false);
 //		assertNotNull("cachedFile should exist", cachedFile);
@@ -1721,7 +1655,7 @@ public class CampaignExtensionTests {
 //		campaignExtension.clearRulesCacheDirectory();
 //
 //		// verify
-//		final File cachedFile2 = manager.getFileForCachedURL(
+//		File cachedFile2 = manager.getFileForCachedURL(
 //									 "https://mcias-va7.cloud.adobe.io/mcias/mcias.campaign-demo.adobe.com/PR146b40abd1be4a0ab224c16cbdc04bff/37922783516695133647566171476397216484/rules.zip",
 //									 rulesCacheDirString, false);
 //		assertNull("cachedFile1 should not exist", cachedFile2);
@@ -1732,14 +1666,14 @@ public class CampaignExtensionTests {
 //	// =================================================================================================================
 //
 //	@Test
-//	public void test_loadCachedMessages_happy() throws Exception {
+//	public void test_loadCachedMessages_happy() {
 //		// setup
-//		final File cacheFile = setupCachedRules();
-//		final String rulesUrl =
+//		File cacheFile = setupCachedRules();
+//		String rulesUrl =
 //			"https://mcias-va7.cloud.adobe.io/mcias/mcias.campaign-demo.adobe.com/PR146b40abd1be4a0ab224c16cbdc04bff/37922783516695133647566171476397216484/rules.zip";
 //		campaignDataStore.setString(CampaignConstants.CAMPAIGN_DATA_STORE_REMOTES_URL_KEY, rulesUrl);
 //
-//		final MockCampaignRulesRemoteDownloader mockCampaignRulesRemoteDownloader = getMockCampaignRulesRemoteDownloader(
+//		MockCampaignRulesRemoteDownloader mockCampaignRulesRemoteDownloader = getMockCampaignRulesRemoteDownloader(
 //					rulesUrl, rulesCacheDirString);
 //		assertNotNull(mockCampaignRulesRemoteDownloader);
 //
@@ -1755,14 +1689,14 @@ public class CampaignExtensionTests {
 //	}
 //
 //	@Test
-//	public void test_loadCachedMessages_When_DataStoreIsEmpty_Then_ShouldNotCallGetCachePath() throws Exception {
+//	public void test_loadCachedMessages_When_DataStoreIsEmpty_Then_ShouldNotCallGetCachePath() {
 //		// setup
 //		setupCachedRules();
-//		final String rulesUrl =
+//		String rulesUrl =
 //			"https://mcias-va7.cloud.adobe.io/mcias/mcias.campaign-demo.adobe.com/PR146b40abd1be4a0ab224c16cbdc04bff/37922783516695133647566171476397216484/rules.zip";
 //		campaignDataStore.removeAll();
 //
-//		final MockCampaignRulesRemoteDownloader mockCampaignRulesRemoteDownloader = getMockCampaignRulesRemoteDownloader(
+//		MockCampaignRulesRemoteDownloader mockCampaignRulesRemoteDownloader = getMockCampaignRulesRemoteDownloader(
 //					rulesUrl, rulesCacheDirString);
 //		assertNotNull(mockCampaignRulesRemoteDownloader);
 //
@@ -1780,11 +1714,11 @@ public class CampaignExtensionTests {
 //		Exception {
 //		// setup
 //		setupCachedRules();
-//		final String rulesUrl =
+//		String rulesUrl =
 //			"https://mcias-va7.cloud.adobe.io/mcias/mcias.campaign-demo.adobe.com/PR146b40abd1be4a0ab224c16cbdc04bff/37922783516695133647566171476397216484/rules.zip";
 //		campaignDataStore.setString(CampaignConstants.CAMPAIGN_DATA_STORE_REMOTES_URL_KEY, "");
 //
-//		final MockCampaignRulesRemoteDownloader mockCampaignRulesRemoteDownloader = getMockCampaignRulesRemoteDownloader(
+//		MockCampaignRulesRemoteDownloader mockCampaignRulesRemoteDownloader = getMockCampaignRulesRemoteDownloader(
 //					rulesUrl, rulesCacheDirString);
 //		assertNotNull(mockCampaignRulesRemoteDownloader);
 //
@@ -1798,13 +1732,13 @@ public class CampaignExtensionTests {
 //	}
 //
 //	@Test
-//	public void test_loadCachedMessages_When_NoCachedRulesForUrl_Then_ShouldGetNullCachePath() throws Exception {
+//	public void test_loadCachedMessages_When_NoCachedRulesForUrl_Then_ShouldGetNullCachePath() {
 //		// setup
 //		setupCachedRules();
-//		final String rulesUrl = "http://mock.com/rules.zip";
+//		String rulesUrl = "http://mock.com/rules.zip";
 //		campaignDataStore.setString(CampaignConstants.CAMPAIGN_DATA_STORE_REMOTES_URL_KEY, rulesUrl);
 //
-//		final MockCampaignRulesRemoteDownloader mockCampaignRulesRemoteDownloader = getMockCampaignRulesRemoteDownloader(
+//		MockCampaignRulesRemoteDownloader mockCampaignRulesRemoteDownloader = getMockCampaignRulesRemoteDownloader(
 //					rulesUrl, rulesCacheDirString);
 //		assertNotNull(mockCampaignRulesRemoteDownloader);
 //
@@ -1819,14 +1753,14 @@ public class CampaignExtensionTests {
 //	}
 //
 //	// =================================================================================================================
-//	// CampaignRulesRemoteDownloader getCampaignRulesRemoteDownloader(final String url,
-//	//																  final Map<String, String> requestProperties)
+//	// CampaignRulesRemoteDownloader getCampaignRulesRemoteDownloader(String url,
+//	//																  Map<String, String> requestProperties)
 //	// =================================================================================================================
 //
 //	@Test
-//	public void test_getCampaignRulesRemoteDownloader_happy() throws Exception {
+//	public void test_getCampaignRulesRemoteDownloader_happy() {
 //		// setup
-//		final String rulesUrl = "http://mock.com/rules.zip";
+//		String rulesUrl = "http://mock.com/rules.zip";
 //
 //		// test
 //		CampaignRulesRemoteDownloader remoteDownloader = campaignExtension.getCampaignRulesRemoteDownloader(rulesUrl,
@@ -1837,9 +1771,9 @@ public class CampaignExtensionTests {
 //	}
 //
 //	@Test
-//	public void test_getCampaignRulesRemoteDownloader_When_NullPlatformServices_Then_ShouldReturnNull() throws Exception {
+//	public void test_getCampaignRulesRemoteDownloader_When_NullPlatformServices_Then_ShouldReturnNull() {
 //		// setup
-//		final String rulesUrl = "http://mock.com/rules.zip";
+//		String rulesUrl = "http://mock.com/rules.zip";
 //		campaignExtension = new MockCampaignExtension(eventHub, null, campaignHitsDatabase);
 //
 //		// test
@@ -1857,12 +1791,12 @@ public class CampaignExtensionTests {
 //	@Test
 //	public void testDispatchMessageEventWithActionViewed() {
 //
-//		final String hexValueOfMessageId = "bbc6";
-//		final String decimalValueOfMessageId = "48070";
+//		String hexValueOfMessageId = "bbc6";
+//		String decimalValueOfMessageId = "48070";
 //		campaignExtension.dispatchMessageEvent("1", hexValueOfMessageId);
 //		Assert.assertTrue(eventHub.isDispatchedCalled);
 //		Assert.assertEquals(eventHub.dispatchedEventList.size(), 1);
-//		final Event event = eventHub.dispatchedEventList.get(0);
+//		Event event = eventHub.dispatchedEventList.get(0);
 //
 //		try {
 //			Assert.assertEquals(event.getData().getString2(CampaignConstants.ContextDataKeys.MESSAGE_ID), decimalValueOfMessageId);
@@ -1876,12 +1810,12 @@ public class CampaignExtensionTests {
 //	@Test
 //	public void testDispatchMessageEventWithActionClicked() {
 //
-//		final String hexValueOfMessageId = "bbc6";
-//		final String decimalValueOfMessageId = "48070";
+//		String hexValueOfMessageId = "bbc6";
+//		String decimalValueOfMessageId = "48070";
 //		campaignExtension.dispatchMessageEvent("2", hexValueOfMessageId);
 //		Assert.assertTrue(eventHub.isDispatchedCalled);
 //		Assert.assertEquals(eventHub.dispatchedEventList.size(), 1);
-//		final Event event = eventHub.dispatchedEventList.get(0);
+//		Event event = eventHub.dispatchedEventList.get(0);
 //
 //		try {
 //			Assert.assertEquals(event.getData().getString2(CampaignConstants.ContextDataKeys.MESSAGE_ID), decimalValueOfMessageId);
@@ -1896,7 +1830,7 @@ public class CampaignExtensionTests {
 //	@Test
 //	public void testDispatchMessageEventWithActionImpression() {
 //
-//		final String hexValueOfMessageId = "bbc6";
+//		String hexValueOfMessageId = "bbc6";
 //		campaignExtension.dispatchMessageEvent("7", hexValueOfMessageId);
 //		Assert.assertFalse(eventHub.isDispatchedCalled);
 //	}
