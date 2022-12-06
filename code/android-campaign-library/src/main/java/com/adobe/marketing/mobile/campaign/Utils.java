@@ -11,6 +11,7 @@
 
 package com.adobe.marketing.mobile.campaign;
 
+import com.adobe.marketing.mobile.internal.util.StringEncoder;
 import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.Log;
@@ -62,9 +63,11 @@ class Utils {
                 clearCachedAssetsNotInList(child, assetsToRetain);
             }
         } else {
-            if (!assetsToRetain.contains(cacheAsset.getName())) {
-                if (cacheAsset.exists()) {
-                    cacheAsset.delete();
+            for (final String asset : assetsToRetain) {
+                if (!cacheAsset.getName().equals(StringEncoder.sha2hash(asset))) {
+                    if (cacheAsset.exists()) {
+                        cacheAsset.delete();
+                    }
                 }
             }
         }
