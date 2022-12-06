@@ -615,7 +615,7 @@ public class CampaignExtensionTests {
             // verify
             String encodedLinkageFields = campaignExtension.getLinkageFields();
             assertEquals(expectedBase64EncodedLinkageFields, encodedLinkageFields);
-            verify(mockCacheService, times(1)).remove(eq(CampaignConstants.RULES_CACHE_FOLDER), eq(""));
+            verify(mockCacheService, times(1)).remove(eq(CampaignConstants.CACHE_BASE_DIR), eq(CampaignConstants.RULES_CACHE_FOLDER));
             verify(mockCampaignRulesDownloader, times(1)).loadRulesFromUrl(eq(expectedRulesDownloadUrl), eq(encodedLinkageFields));
         }
     }
@@ -642,7 +642,7 @@ public class CampaignExtensionTests {
             // verify
             String encodedLinkageFields = campaignExtension.getLinkageFields();
             assertEquals(expectedBase64EncodedLinkageFields, encodedLinkageFields);
-            verify(mockCacheService, times(1)).remove(eq(CampaignConstants.RULES_CACHE_FOLDER), eq(""));
+            verify(mockCacheService, times(1)).remove(eq(CampaignConstants.CACHE_BASE_DIR), eq(CampaignConstants.RULES_CACHE_FOLDER));
             verify(mockCampaignRulesDownloader, times(0)).loadRulesFromUrl(anyString(), anyString());
         }
     }
@@ -666,7 +666,7 @@ public class CampaignExtensionTests {
         String linkageFields = campaignExtension.getLinkageFields();
         assertEquals("", linkageFields);
         verify(mockRulesEngine, times(1)).replaceRules(eq(null));
-        verify(mockCacheService, times(1)).remove(eq(CampaignConstants.RULES_CACHE_FOLDER), eq(""));
+        verify(mockCacheService, times(1)).remove(eq(CampaignConstants.CACHE_BASE_DIR), eq(CampaignConstants.RULES_CACHE_FOLDER));
         verify(mockCampaignRulesDownloader, times(1)).loadRulesFromUrl(eq(expectedRulesDownloadUrl), eq(""));
     }
 
@@ -697,7 +697,7 @@ public class CampaignExtensionTests {
             // verify linkage fields are set
             String encodedLinkageFields = campaignExtension.getLinkageFields();
             assertEquals(expectedBase64EncodedLinkageFields, encodedLinkageFields);
-            verify(mockCacheService, times(1)).remove(eq(CampaignConstants.RULES_CACHE_FOLDER), eq(""));
+            verify(mockCacheService, times(1)).remove(eq(CampaignConstants.CACHE_BASE_DIR), eq(CampaignConstants.RULES_CACHE_FOLDER));
             verify(mockCampaignRulesDownloader, times(1)).loadRulesFromUrl(eq(expectedRulesDownloadUrl), eq(encodedLinkageFields));
 
             // setup reset event
@@ -711,7 +711,7 @@ public class CampaignExtensionTests {
             String linkageFieldsString = campaignExtension.getLinkageFields();
             assertEquals("", linkageFieldsString);
             verify(mockRulesEngine, times(1)).replaceRules(eq(null));
-            verify(mockCacheService, times(2)).remove(eq(CampaignConstants.RULES_CACHE_FOLDER), eq(""));
+            verify(mockCacheService, times(2)).remove(eq(CampaignConstants.CACHE_BASE_DIR), eq(CampaignConstants.RULES_CACHE_FOLDER));
             verify(mockCampaignRulesDownloader, times(1)).loadRulesFromUrl(eq(expectedRulesDownloadUrl), eq(""));
         }
     }
@@ -788,7 +788,7 @@ public class CampaignExtensionTests {
         String linkageFields = campaignExtension.getLinkageFields();
         assertEquals("", linkageFields);
         verify(mockRulesEngine, times(1)).replaceRules(eq(null));
-        verify(mockCacheService, times(1)).remove(eq(CampaignConstants.RULES_CACHE_FOLDER), eq(""));
+        verify(mockCacheService, times(1)).remove(eq(CampaignConstants.CACHE_BASE_DIR), eq(CampaignConstants.RULES_CACHE_FOLDER));
         verify(mockNamedCollection, times(1)).removeAll();
     }
 

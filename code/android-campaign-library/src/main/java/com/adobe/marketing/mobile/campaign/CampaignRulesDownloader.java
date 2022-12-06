@@ -197,7 +197,7 @@ class CampaignRulesDownloader {
                         Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "cacheRemoteAssets - Can't download assets, no remote assets found in consequence for message id %s", consequence.getId());
                         break;
                     }
-                    campaignMessageAssetsDownloader = new CampaignMessageAssetsDownloader(assetUrls, consequenceId);
+                    campaignMessageAssetsDownloader = new CampaignMessageAssetsDownloader(cacheService, assetUrls, consequenceId);
                     campaignMessageAssetsDownloader.downloadAssetCollection();
                 } else {
                     Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "cacheRemoteAssets - Can't download assets, Consequence id is null");
@@ -259,7 +259,7 @@ class CampaignRulesDownloader {
         // Delete the temporary directory created for processing
         deleteTemporaryDirectory(key);
 
-        final CacheResult cachedRulesJson = cacheService.get(CampaignConstants.CACHE_BASE_DIR, CampaignConstants.RULES_JSON_FILE_NAME);
+        final CacheResult cachedRulesJson = cacheService.get(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER, CampaignConstants.RULES_JSON_FILE_NAME);
         final String rulesJsonString = StreamUtils.readAsString(cachedRulesJson.getData());
         return new RulesLoadResult(rulesJsonString, RulesLoadResult.Reason.SUCCESS);
     }
@@ -301,7 +301,7 @@ class CampaignRulesDownloader {
                 try {
                     final String fileName = fileEntry.getName();
                     Log.trace(CampaignConstants.LOG_TAG, SELF_TAG, "Caching file (%s)", fileName);
-                    cacheService.set(CampaignConstants.CACHE_BASE_DIR, fileName, new CacheEntry(new FileInputStream(fileEntry), CacheExpiry.never(), metadata));
+                    cacheService.set(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER, fileName, new CacheEntry(new FileInputStream(fileEntry), CacheExpiry.never(), metadata));
                 } catch (final FileNotFoundException exception) {
                     return false;
                 }

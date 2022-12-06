@@ -31,6 +31,7 @@ public final class CampaignConstants {
     static final String CAMPAIGN_NAMED_COLLECTION_EXPERIENCE_CLOUD_ID_KEY = "ExperienceCloudId";
     static final String CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY = "CampaignRegistrationTimestamp";
 
+    static final String AEPSDK_CACHE_BASE_DIR = "aepsdkcache";
     static final String CACHE_BASE_DIR = "campaign";
     static final String MESSAGE_CACHE_DIR = "messages";
     static final String ZIP_HANDLE = "campaign_rules.zip";

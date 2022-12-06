@@ -536,7 +536,7 @@ public class CampaignExtension extends Extension {
      */
     void clearRulesCacheDirectory() {
         if (cacheService != null) {
-            cacheService.remove(CampaignConstants.RULES_CACHE_FOLDER, "");
+            cacheService.remove(CampaignConstants.CACHE_BASE_DIR, CampaignConstants.RULES_CACHE_FOLDER);
         }
     }
 

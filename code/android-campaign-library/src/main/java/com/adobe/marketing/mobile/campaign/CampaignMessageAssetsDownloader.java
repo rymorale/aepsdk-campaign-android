@@ -43,21 +43,20 @@ class CampaignMessageAssetsDownloader {
     private final CacheService cacheService;
     private final String messageId;
     private File assetDir;
-    private final String assetCacheLocation;
 
     /**
      * Constructor.
      *
+     * @param cacheService    {@link CacheService} instance to use for caching assets
      * @param assets          {@code ArrayList<String>} of assets to download and cache
      * @param parentMessageId {@link String} containing the message Id of the requesting message used as a cache subdirectory
      */
-    CampaignMessageAssetsDownloader(final List<String> assets, final String parentMessageId) {
+    CampaignMessageAssetsDownloader(final CacheService cacheService, final List<String> assets, final String parentMessageId) {
         this.assetsCollection = assets;
         this.networkService = ServiceProvider.getInstance().getNetworkService();
         this.deviceInfoService = ServiceProvider.getInstance().getDeviceInfoService();
-        this.cacheService = new FileCacheService();
+        this.cacheService = cacheService;
         this.messageId = parentMessageId;
-        this.assetCacheLocation =  CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.MESSAGE_CACHE_DIR + File.separator + messageId;
         createMessageAssetCacheDirectory();
     }
 
@@ -85,7 +84,7 @@ class CampaignMessageAssetsDownloader {
         // download assets within the assets to retain list
         for (final String url : assetsToRetain) {
             // 304 - Not Modified support
-            final CacheResult cachedAsset = cacheService.get(assetCacheLocation, url);
+            final CacheResult cachedAsset = cacheService.get(assetDir + File.separator + messageId, url);
             final Map<String, String> requestProperties = Utils.extractHeadersFromCache(cachedAsset);
             final NetworkRequest networkRequest = new NetworkRequest(url, HttpMethod.GET, null, requestProperties, CampaignConstants.CAMPAIGN_TIMEOUT_DEFAULT, CampaignConstants.CAMPAIGN_TIMEOUT_DEFAULT);
             networkService.connectAsync(networkRequest, connection -> {
@@ -120,10 +119,10 @@ class CampaignMessageAssetsDownloader {
 
         Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "cacheAssetData - Caching asset %s for message id %s.", key, messageId);
         final Map<String, String> metadata = Utils.extractMetadataFromResponse(connection);
-        final String cachePath = ServiceProvider.getInstance().getDeviceInfoService().getApplicationCacheDir().getAbsolutePath();
-        metadata.put(CampaignConstants.METADATA_PATH, cachePath + File.separator + assetCacheLocation);
+        final String assetStoragePath = CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.MESSAGE_CACHE_DIR + File.separator + messageId;
+        metadata.put(CampaignConstants.METADATA_PATH, assetStoragePath);
         final CacheEntry cacheEntry = new CacheEntry(connection.getInputStream(), CacheExpiry.never(), metadata);
-        cacheService.set(assetCacheLocation, key, cacheEntry);
+        cacheService.set(assetStoragePath, key, cacheEntry);
     }
 
     /**
@@ -145,7 +144,7 @@ class CampaignMessageAssetsDownloader {
      */
     private void createMessageAssetCacheDirectory() {
         try {
-            assetDir = new File(deviceInfoService.getApplicationCacheDir() + File.separator + CampaignConstants.CACHE_BASE_DIR + File.separator
+            assetDir = new File(deviceInfoService.getApplicationCacheDir() + File.separator + CampaignConstants.AEPSDK_CACHE_BASE_DIR + File.separator + CampaignConstants.CACHE_BASE_DIR + File.separator
                     + CampaignConstants.MESSAGE_CACHE_DIR);
 
             if (!assetDir.exists() && !assetDir.mkdirs()) {
