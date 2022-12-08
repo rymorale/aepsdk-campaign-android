@@ -16,7 +16,7 @@ import com.adobe.marketing.mobile.services.NamedCollection;
 import java.util.HashMap;
 import java.util.Map;
 
-public class UnitTestNamedCollection implements NamedCollection {
+public class FakeNamedCollection implements NamedCollection {
     private Map<String, Object> storedValues = new HashMap<>();
 
     @Override

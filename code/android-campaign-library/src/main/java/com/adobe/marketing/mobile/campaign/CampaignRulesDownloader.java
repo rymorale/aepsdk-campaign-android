@@ -197,7 +197,7 @@ class CampaignRulesDownloader {
                         Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "cacheRemoteAssets - Can't download assets, no remote assets found in consequence for message id %s", consequence.getId());
                         break;
                     }
-                    campaignMessageAssetsDownloader = new CampaignMessageAssetsDownloader(cacheService, assetUrls, consequenceId);
+                    campaignMessageAssetsDownloader = new CampaignMessageAssetsDownloader(assetUrls, consequenceId);
                     campaignMessageAssetsDownloader.downloadAssetCollection();
                 } else {
                     Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "cacheRemoteAssets - Can't download assets, Consequence id is null");

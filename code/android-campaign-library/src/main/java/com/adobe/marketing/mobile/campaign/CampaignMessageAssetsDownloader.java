@@ -22,13 +22,11 @@ import com.adobe.marketing.mobile.services.caching.CacheEntry;
 import com.adobe.marketing.mobile.services.caching.CacheExpiry;
 import com.adobe.marketing.mobile.services.caching.CacheResult;
 import com.adobe.marketing.mobile.services.caching.CacheService;
-import com.adobe.marketing.mobile.services.internal.caching.FileCacheService;
 import com.adobe.marketing.mobile.util.UrlUtils;
 
 import java.io.File;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -47,15 +45,14 @@ class CampaignMessageAssetsDownloader {
     /**
      * Constructor.
      *
-     * @param cacheService    {@link CacheService} instance to use for caching assets
      * @param assets          {@code ArrayList<String>} of assets to download and cache
      * @param parentMessageId {@link String} containing the message Id of the requesting message used as a cache subdirectory
      */
-    CampaignMessageAssetsDownloader(final CacheService cacheService, final List<String> assets, final String parentMessageId) {
+    CampaignMessageAssetsDownloader(final List<String> assets, final String parentMessageId) {
         this.assetsCollection = assets;
         this.networkService = ServiceProvider.getInstance().getNetworkService();
         this.deviceInfoService = ServiceProvider.getInstance().getDeviceInfoService();
-        this.cacheService = cacheService;
+        this.cacheService = ServiceProvider.getInstance().getCacheService();
         this.messageId = parentMessageId;
         createMessageAssetCacheDirectory();
     }

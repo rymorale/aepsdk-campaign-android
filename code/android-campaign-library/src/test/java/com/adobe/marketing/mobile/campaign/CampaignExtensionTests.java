@@ -13,7 +13,6 @@ package com.adobe.marketing.mobile.campaign;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -49,8 +48,6 @@ import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.services.Networking;
 import com.adobe.marketing.mobile.services.PersistentHitQueue;
 import com.adobe.marketing.mobile.services.ServiceProvider;
-import com.adobe.marketing.mobile.services.caching.CacheEntry;
-import com.adobe.marketing.mobile.services.caching.CacheExpiry;
 import com.adobe.marketing.mobile.services.caching.CacheResult;
 import com.adobe.marketing.mobile.services.caching.CacheService;
 import com.adobe.marketing.mobile.services.ui.AlertListener;
@@ -71,12 +68,9 @@ import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -87,12 +81,7 @@ public class CampaignExtensionTests {
 
     private CampaignExtension campaignExtension;
     private File cacheDir;
-    private String messageCacheDirString1;
-    private String messageCacheDirString2;
-    private String rulesCacheDirString;
 
-    private static final String fakeMessageId1 = "d38a46f6-4f43-435a-a862-4038c27b90a1";
-    private static final String fakeMessageId2 = "e38a46f6-4f43-435a-a862-4038c27b90a2";
     private static final String messageId = "07a1c997-2450-46f0-a454-537906404124";
     private static final String MESSAGES_CACHE = CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.MESSAGE_CACHE_DIR + File.separator;
 
@@ -151,10 +140,6 @@ public class CampaignExtensionTests {
         expectedViewedEventMessageData = new HashMap<>();
         expectedViewedEventMessageData.put("a.message.viewed", "1");
         expectedViewedEventMessageData.put("a.message.id", "47973");
-
-        messageCacheDirString1 = CampaignConstants.MESSAGE_CACHE_DIR + File.separator + fakeMessageId1;
-        messageCacheDirString2 = CampaignConstants.MESSAGE_CACHE_DIR + File.separator + fakeMessageId2;
-        rulesCacheDirString = CampaignConstants.RULES_CACHE_FOLDER;
 
         campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, mockCampaignState, mockCacheService, mockCampaignRulesDownloader);
     }
@@ -1100,7 +1085,7 @@ public class CampaignExtensionTests {
             ArgumentCaptor<DataEntity> dataEntityArgumentCaptor = ArgumentCaptor.forClass(DataEntity.class);
             CampaignState campaignState = new CampaignState();
             campaignState.setState(getConfigurationEventData(new HashMap<>()), getIdentityEventData());
-            UnitTestNamedCollection fakeNamedCollection = new UnitTestNamedCollection();
+            FakeNamedCollection fakeNamedCollection = new FakeNamedCollection();
             when(mockDataStoreService.getNamedCollection(anyString())).thenReturn(fakeNamedCollection);
             campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, campaignState, mockCacheService, mockCampaignRulesDownloader);
 
@@ -1203,7 +1188,7 @@ public class CampaignExtensionTests {
     test_processLifecycleUpdate_when_ecidIsChanged_and_registrationIsPaused_then_shouldNotQueueHit() {
         // setup
         ArgumentCaptor<DataEntity> dataEntityArgumentCaptor = ArgumentCaptor.forClass(DataEntity.class);
-        UnitTestNamedCollection fakeNamedCollection = new UnitTestNamedCollection();
+        FakeNamedCollection fakeNamedCollection = new FakeNamedCollection();
         when(mockDataStoreService.getNamedCollection(anyString())).thenReturn(fakeNamedCollection);
         CampaignState campaignState = new CampaignState();
         campaignState.setState(getConfigurationEventData(new HashMap<>()), getIdentityEventData());
@@ -1248,7 +1233,7 @@ public class CampaignExtensionTests {
     public void test_processLifecycleUpdate_when_ecidIsChanged_then_shouldQueueHit() {
         // setup
         ArgumentCaptor<DataEntity> dataEntityArgumentCaptor = ArgumentCaptor.forClass(DataEntity.class);
-        UnitTestNamedCollection fakeNamedCollection = new UnitTestNamedCollection();
+        FakeNamedCollection fakeNamedCollection = new FakeNamedCollection();
         when(mockDataStoreService.getNamedCollection(anyString())).thenReturn(fakeNamedCollection);
         CampaignState campaignState = new CampaignState();
         campaignState.setState(getConfigurationEventData(new HashMap<>()), getIdentityEventData());
@@ -1295,7 +1280,7 @@ public class CampaignExtensionTests {
         // setup
         // set registration delay to 0 days (send hit immediately)
         ArgumentCaptor<DataEntity> dataEntityArgumentCaptor = ArgumentCaptor.forClass(DataEntity.class);
-        UnitTestNamedCollection fakeNamedCollection = new UnitTestNamedCollection();
+        FakeNamedCollection fakeNamedCollection = new FakeNamedCollection();
         when(mockDataStoreService.getNamedCollection(anyString())).thenReturn(fakeNamedCollection);
 
         Map<String, Object> configData = new HashMap<>();
@@ -1333,7 +1318,7 @@ public class CampaignExtensionTests {
     test_processLifecycleUpdate_when_customRegistrationDelayProvided_then_shouldNotQueueHit_ifDelayNotElapsed() {
         // setup
         // set registration delay to 30 days
-        UnitTestNamedCollection fakeNamedCollection = new UnitTestNamedCollection();
+        FakeNamedCollection fakeNamedCollection = new FakeNamedCollection();
         when(mockDataStoreService.getNamedCollection(anyString())).thenReturn(fakeNamedCollection);
 
         Map<String, Object> configData = new HashMap<>();
@@ -1361,7 +1346,7 @@ public class CampaignExtensionTests {
         // setup
         // set registration delay to 30 days
         ArgumentCaptor<DataEntity> dataEntityArgumentCaptor = ArgumentCaptor.forClass(DataEntity.class);
-        UnitTestNamedCollection fakeNamedCollection = new UnitTestNamedCollection();
+        FakeNamedCollection fakeNamedCollection = new FakeNamedCollection();
         when(mockDataStoreService.getNamedCollection(anyString())).thenReturn(fakeNamedCollection);
 
         Map<String, Object> configData = new HashMap<>();
@@ -1398,7 +1383,7 @@ public class CampaignExtensionTests {
     public void test_processLifecycleUpdate_when_registrationPausedIsEqualToTrue_then_shouldNotQueueHit() {
         // setup
         // set registration delay to 30 days
-        UnitTestNamedCollection fakeNamedCollection = new UnitTestNamedCollection();
+        FakeNamedCollection fakeNamedCollection = new FakeNamedCollection();
         when(mockDataStoreService.getNamedCollection(anyString())).thenReturn(fakeNamedCollection);
 
         Map<String, Object> configData = new HashMap<>();
