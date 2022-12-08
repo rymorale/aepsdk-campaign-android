@@ -64,10 +64,8 @@ class Utils {
             }
         } else {
             for (final String asset : assetsToRetain) {
-                if (!cacheAsset.getName().equals(StringEncoder.sha2hash(asset))) {
-                    if (cacheAsset.exists()) {
-                        cacheAsset.delete();
-                    }
+                if (!cacheAsset.getName().equals(StringEncoder.sha2hash(asset)) && cacheAsset.exists()) {
+                    cacheAsset.delete();
                 }
             }
         }
