@@ -132,7 +132,9 @@ class CampaignRulesDownloader {
             case HttpURLConnection.HTTP_OK:
                 rulesLoadResult = extractRules(url, connection.getInputStream(), Utils.extractMetadataFromResponse(connection));
                 // save remotes url in Campaign Named Collection
-                updateUrlInNamedCollection(url);
+                if (rulesLoadResult.getReason() == RulesLoadResult.Reason.SUCCESS) {
+                    updateUrlInNamedCollection(url);
+                }
                 break;
             case HttpURLConnection.HTTP_NOT_MODIFIED:
                 rulesLoadResult = new RulesLoadResult(StreamUtils.readAsString(cacheService.get(CampaignConstants.CACHE_BASE_DIR, CampaignConstants.RULES_JSON_FILE_NAME).getData()), RulesLoadResult.Reason.NOT_MODIFIED);
@@ -147,14 +149,15 @@ class CampaignRulesDownloader {
         connection.close();
 
         // register rules
-        final List<LaunchRule> campaignRules = JSONRulesParser.parse(Objects.requireNonNull(rulesLoadResult.getData()), extensionApi);
-        if (campaignRules != null) {
-            Log.trace(CampaignConstants.LOG_TAG, SELF_TAG, "Registering %s Campaign rule(s).", campaignRules.size());
-            campaignRulesEngine.replaceRules(campaignRules);
+        if (rulesLoadResult.getData() != null) {
+            final List<LaunchRule> campaignRules = JSONRulesParser.parse(rulesLoadResult.getData(), extensionApi);
+            if (campaignRules != null) {
+                Log.trace(CampaignConstants.LOG_TAG, SELF_TAG, "Registering %s Campaign rule(s).", campaignRules.size());
+                campaignRulesEngine.replaceRules(campaignRules);
+                // cache any image assets present in each rule consequence
+                cacheRemoteAssets(campaignRules);
+            }
         }
-
-        // cache any image assets present in each rule consequence
-        cacheRemoteAssets(campaignRules);
     }
 
     /**

@@ -21,82 +21,6 @@ internal object FileUtils {
     private const val MAX_BUFFER_SIZE = 4096
 
     /**
-     * Verifies if the directory is writable
-     *
-     * @param directory the directory to check for
-     * @return true if [directory] represents a directory and the directory is writable.
-     *         false otherwise
-     */
-    @JvmStatic
-    fun isWritableDirectory(directory: File?): Boolean {
-        return directory != null && directory.isDirectory && directory.canWrite()
-    }
-
-    /**
-     * Reads the content of [file] as a [String].
-     *
-     * @param file the file whose contents need to be read
-     * @return contents of the file as a string or,
-     *         null if the file cannot be read
-     */
-    @JvmStatic
-    fun readAsString(file: File?): String? {
-        if (!isReadable(file)) {
-            Log.debug(
-                LOG_TAG,
-                TAG, "Failed to read file: ($file)"
-            )
-            return null
-        }
-
-        val content = StringBuilder()
-        try {
-            BufferedReader(InputStreamReader(FileInputStream(file), Charsets.UTF_8)).use { br ->
-                var line: String?
-                while (br.readLine().also { line = it } != null) {
-                    content.append(line)
-                }
-            }
-        } catch (e: Exception) {
-            Log.debug(
-                LOG_TAG,
-                TAG,
-                "Failed to read $file contents. $e"
-            )
-            return null
-        }
-
-        return content.toString()
-    }
-
-    /**
-     * Checks if the [file] content can be read.
-     *
-     * @param file the source file whose readability is to be validated
-     * @return true if [file] exists, is not null, is a file and has read permissions;
-     *         false otherwise
-     */
-    @JvmStatic
-    fun isReadable(file: File?): Boolean {
-        try {
-            if (file == null || !file.exists() || !file.canRead() || !file.isFile) {
-                Log.debug(
-                    LOG_TAG,
-                    TAG,
-                    "File does not exist or does't have read permission $file"
-                )
-                return false
-            }
-            return true
-        } catch (e: SecurityException) {
-            Log.debug(
-                LOG_TAG, TAG, "Failed to read file ($e)"
-            )
-            return false
-        }
-    }
-
-    /**
      * Reads the content of [inputStream] into [file].
      *
      * @param file the file whose contents need to be created/updated read from the [inputStream]
@@ -202,39 +126,6 @@ internal object FileUtils {
         }
 
         return extractedSuccessfully
-    }
-
-    /**
-     * Removes the relative part of the file name(if exists).
-     *
-     * for ex: File name `/mydatabase/../../database1` will be converted to `mydatabase_database1`
-     *
-     * @param filePath the file name
-     * @return file name without relative path
-     */
-    @JvmStatic
-    fun removeRelativePath(filePath: String): String {
-        return if (filePath.isEmpty()) {
-            filePath
-        } else {
-            var result = filePath.replace("\\.[/\\\\]".toRegex(), "\\.")
-            result = result.replace("[/\\\\](\\.{2,})".toRegex(), "_")
-            result = result.replace("/".toRegex(), "")
-            result
-        }
-    }
-
-    /**
-     * Copies the contents from `src` to `dest`.
-     *
-     * @param src [File] from which the contents are read
-     * @param dest [File] to which contents are written to
-     * @throws Exception if `src` or `dest` is not present or it does not have read permissions
-     */
-    @JvmStatic
-    @Throws(Exception::class)
-    fun copyFile(src: File, dest: File) {
-        src.copyTo(dest, true)
     }
 
     @JvmStatic

@@ -17,30 +17,38 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.adobe.marketing.mobile.ExtensionApi;
+import com.adobe.marketing.mobile.launch.rulesengine.LaunchRule;
 import com.adobe.marketing.mobile.launch.rulesengine.LaunchRulesEngine;
+import com.adobe.marketing.mobile.launch.rulesengine.RuleConsequence;
 import com.adobe.marketing.mobile.services.DeviceInforming;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.NetworkCallback;
@@ -55,536 +63,512 @@ import com.adobe.marketing.mobile.services.ui.UIService;
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class CampaignRulesDownloaderTests {
 
-	private CampaignRulesDownloader campaignRulesDownloader;
+    private CampaignRulesDownloader campaignRulesDownloader;
 
-	private File cacheDir;
-	private File zipFile = TestUtils.getResource("campaign_rules.zip");
-	private File ruleJsonFile = TestUtils.getResource("rules.json");
-	private HashMap<String, String> metadataMap;
-	private static final String messageId = "07a1c997-2450-46f0-a454-537906404124";
-	private static final String MESSAGES_CACHE = CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.MESSAGE_CACHE_DIR + File.separator;
+    private File cacheDir;
+    private HashMap<String, Object> detailMap;
+    private ArrayList<ArrayList<String>> remoteAssetsList;
+    private ArrayList<String> remoteAssetOne;
+    private ArrayList<String> remoteAssetTwo;
+    private final File zipFile = TestUtils.getResource("campaign_rules.zip");
+    private final File ruleJsonFile = TestUtils.getResource("rules.json");
+    private HashMap<String, String> metadataMap;
+    private static final String ETAG = "\"ABCDE-12345\"";
+    private static final String WEAK_ETAG = "W/\"ABCDE-12345\"";
+    private static final String TIME_SINCE_EPOCH_MILLISECONDS = "1669896000000";
+    private static final String TIME_SINCE_EPOCH_RFC2882 = "Thu, 01 Dec 2022 12:00:00 GMT";
+    private static final String messageId = "07a1c997-2450-46f0-a454-537906404124";
+    private static final String MESSAGES_CACHE = CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.MESSAGE_CACHE_DIR + File.separator;
     private FakeNamedCollection fakeNamedCollection = new FakeNamedCollection();
 
-	@Rule
-	public TemporaryFolder temporaryFolder = new TemporaryFolder();
+    @Rule
+    public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-	@Mock
-	ExtensionApi mockExtensionApi;
-	@Mock
-	ServiceProvider mockServiceProvider;
-	@Mock
-	LaunchRulesEngine mockRulesEngine;
-	@Mock
-	UIService mockUIService;
-	@Mock
-	CacheService mockCacheService;
-	@Mock
-	CacheResult mockCacheResult;
-	@Mock
-	DeviceInforming mockDeviceInfoService;
-	@Mock
-	Networking mockNetworkService;
-	@Mock
-	HttpConnecting mockHttpConnection;
+    @Mock
+    ExtensionApi mockExtensionApi;
+    @Mock
+    ServiceProvider mockServiceProvider;
+    @Mock
+    LaunchRulesEngine mockRulesEngine;
+    @Mock
+    UIService mockUIService;
+    @Mock
+    CacheService mockCacheService;
+    @Mock
+    CacheResult mockCacheResult;
+    @Mock
+    DeviceInforming mockDeviceInfoService;
+    @Mock
+    Networking mockNetworkService;
+    @Mock
+    HttpConnecting mockHttpConnection;
+    @Mock
+    LaunchRule mockLaunchRule;
+    @Mock
+    RuleConsequence mockRuleConsequence;
 
-	@Before
-	public void setup() {
-		String sha256HashForRemoteUrl = "fb0d3704b73d5fa012a521ea31013a61020e79610a3c27e8dd1007f3ec278195";
-		String cachedFileName = sha256HashForRemoteUrl + ".12345"; //12345 is just a random extension.
-		metadataMap = new HashMap<>();
-		metadataMap.put(CampaignConstants.METADATA_PATH, MESSAGES_CACHE + messageId + File.separator + cachedFileName);
-	}
+    @Before
+    public void setup() {
+        MockitoAnnotations.initMocks(this);
+        String sha256HashForRemoteUrl = "fb0d3704b73d5fa012a521ea31013a61020e79610a3c27e8dd1007f3ec278195";
+        String cachedFileName = sha256HashForRemoteUrl + ".12345"; //12345 is just a random extension.
 
-	@After
-	public void tearDown() {
-		clearCacheFiles(cacheDir);
-	}
+        metadataMap = new HashMap<>();
+        metadataMap.put(CampaignConstants.METADATA_PATH, MESSAGES_CACHE + messageId + File.separator + cachedFileName);
+        metadataMap.put(CampaignConstants.HTTP_HEADER_ETAG, ETAG);
+        metadataMap.put(CampaignConstants.HTTP_HEADER_LAST_MODIFIED, TIME_SINCE_EPOCH_MILLISECONDS);
 
-	/**
-	 * Deletes the directory and all files inside it.
-	 *
-	 * @param file instance of {@link File} points to the directory need to be deleted.
-	 */
-	private static void clearCacheFiles(final File file) {
-		// clear files from directory first
-		if (file.isDirectory()) {
-			String[] children = file.list();
+        remoteAssetOne = new ArrayList<>();
+        remoteAssetOne.add("http://asset1-url00.jpeg");
+        remoteAssetOne.add("http://asset1-url01.jpeg");
+        remoteAssetOne.add("01.jpeg");
 
-			if (children != null) {
-				for (final String child : children) {
-					final File childFile = new File(file, child);
-					clearCacheFiles(childFile);
-				}
-			}
-		}
+        remoteAssetTwo = new ArrayList<>();
+        remoteAssetTwo.add("http://asset2-url10.jpeg");
+        remoteAssetTwo.add("http://asset2-url11.jpeg");
 
-		file.delete(); // delete file or empty directory
-	}
+        remoteAssetsList = new ArrayList<>();
+        remoteAssetsList.add(remoteAssetOne);
+        remoteAssetsList.add(remoteAssetTwo);
 
-	private void setupServiceProviderMockAndRunTest(Runnable testRunnable) {
-		cacheDir = new File("cache");
-		cacheDir.mkdirs();
-		cacheDir.setWritable(true);
-		try (MockedStatic<ServiceProvider> serviceProviderMockedStatic = Mockito.mockStatic(ServiceProvider.class)) {
-			serviceProviderMockedStatic.when(ServiceProvider::getInstance).thenReturn(mockServiceProvider);
-			when(mockCacheResult.getData()).thenReturn(new FileInputStream(ruleJsonFile));
-			when(mockCacheService.get(anyString(), anyString())).thenReturn(mockCacheResult);
-			when(mockCacheService.set(anyString(), anyString(), any(CacheEntry.class))).thenReturn(true);
-			when(mockServiceProvider.getCacheService()).thenReturn(mockCacheService);
-			when(mockServiceProvider.getDeviceInfoService()).thenReturn(mockDeviceInfoService);
-			when(mockServiceProvider.getUIService()).thenReturn(mockUIService);
-			when(mockServiceProvider.getNetworkService()).thenReturn(mockNetworkService);
-			when(mockDeviceInfoService.getApplicationCacheDir()).thenReturn(cacheDir);
-			// create CampaignRulesDownloader instance
-			campaignRulesDownloader = new CampaignRulesDownloader(mockExtensionApi, mockRulesEngine, fakeNamedCollection, mockCacheService);
-			testRunnable.run();
-		} catch (FileNotFoundException e) {
-			fail(e.getMessage());
-		}
-	}
+        detailMap = new HashMap<>();
+        detailMap.put("template", "fullscreen");
+        detailMap.put("html", "happy_test.html");
+        detailMap.put("remoteAssets", remoteAssetsList);
 
-	private File setupCachedRules() {
-		// setup
-		final File existingCacheDir = new File(cacheDir, CampaignConstants.RULES_CACHE_FOLDER);
-		existingCacheDir.mkdirs();
-		final File existingCachedFile = new
-				File(existingCacheDir + File.separator +
-				"c3da84c61f5768a6a401d09baf43275f5dcdb6cf57f8ad5382fa6c3d9a6c4a75");
-		try {
-			existingCachedFile.createNewFile();
-		} catch (IOException exception) {
-			fail(exception.getMessage());
-		}
-		return existingCachedFile;
-	}
+        when(mockRuleConsequence.getDetail()).thenReturn(detailMap);
+        when(mockRuleConsequence.getId()).thenReturn(messageId);
+        when(mockRuleConsequence.getType()).thenReturn(CampaignConstants.MESSAGE_CONSEQUENCE_MESSAGE_TYPE);
+    }
 
-	// =================================================================================================================
-	// void loadCachedMessages()
-	// =================================================================================================================
-	@Test
-	public void test_loadCachedMessages_happy() {
-		// setup
-		setupServiceProviderMockAndRunTest(() -> {
-			when(mockHttpConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
-			try {
-				when(mockHttpConnection.getInputStream()).thenReturn(new FileInputStream(zipFile));
-			} catch (FileNotFoundException e) {
-				fail(e.getMessage());
-			}
-			doAnswer((Answer<Void>) invocation -> {
-				NetworkCallback callback = invocation.getArgument(1);
-				callback.call(mockHttpConnection);
-				return null;
-			}).when(mockNetworkService)
-					.connectAsync(any(NetworkRequest.class), any(NetworkCallback.class));
-			String rulesUrl =
-					"https://mcias-va7.cloud.adobe.io/mcias/mcias.campaign-demo.adobe.com/PR146b40abd1be4a0ab224c16cbdc04bff/37922783516695133647566171476397216484/rules.zip";
+    @After
+    public void tearDown() {
+        clearCacheFiles(cacheDir);
+        fakeNamedCollection = new FakeNamedCollection();
+    }
 
-			// test
-			campaignRulesDownloader.loadRulesFromUrl(rulesUrl, null);
+    /**
+     * Deletes the directory and all files inside it.
+     *
+     * @param file instance of {@link File} points to the directory need to be deleted.
+     */
+    private static void clearCacheFiles(final File file) {
+        // clear files from directory first
+        if (file.isDirectory()) {
+            String[] children = file.list();
 
-			// verify
-			verify(mockNetworkService, times(1)).connectAsync(any(NetworkRequest.class), any(NetworkCallback.class));
-			// verify extracted rules json is cached
-			verify(mockCacheService, times(1)).set(eq(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER), eq("rules.json"), any(CacheEntry.class));
-			// verify rules json is retrieved to be loaded into the rules engine
-			verify(mockCacheService, times(1)).get(eq(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER), eq(CampaignConstants.RULES_JSON_FILE_NAME));
-			// verify rules remote url added to named collection
-			assertEquals(rulesUrl, fakeNamedCollection.getString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY, ""));
-			// verify rules loaded into the rules engine
-			verify(mockRulesEngine, times(1)).replaceRules(any());
-		});
-	}
+            if (children != null) {
+                for (final String child : children) {
+                    final File childFile = new File(file, child);
+                    clearCacheFiles(childFile);
+                }
+            }
+        }
 
-//
-//	@Test
-//	public void test_loadCachedMessages_When_NoCachedRulesForUrl_Then_ShouldGetNullCachePath() {
-//		// setup
-//		setupCachedRules();
-//		String rulesUrl = "http://mock.com/rules.zip";
-//		campaignDataStore.setString(CampaignConstants.CAMPAIGN_DATA_STORE_REMOTES_URL_KEY, rulesUrl);
-//
-//		MockCampaignRulesRemoteDownloader mockCampaignRulesRemoteDownloader = getMockCampaignRulesRemoteDownloader(
-//				rulesUrl, rulesCacheDirString);
-//		assertNotNull(mockCampaignRulesRemoteDownloader);
-//
-//		campaignExtension.getCampaignRulesRemoteDownloaderReturnValue = mockCampaignRulesRemoteDownloader;
-//
-//		// test
-//		campaignExtension.loadCachedMessages();
-//
-//		// verify
-//		assertTrue(mockCampaignRulesRemoteDownloader.getCachePathWasCalled);
-//		assertNull(mockCampaignRulesRemoteDownloader.getCachePathReturnValue);
-//	}
-//
-//	@Test
-//	public void startDownloadSync_When_ProtocolHandlerIsNull_ThenBundlePathNull()throws Exception {
-//		//Setup
-//		platformServices.mockSystemInfoService.applicationCacheDir = temporaryFolder.getRoot();
-//		CacheManager cacheManager = new CacheManager(platformServices.mockSystemInfoService);
-//		rulesRemoteDownloader = getVerifiableRulesRemoteDownloaderForUrl("http://mock.com", cacheManager);
-//		Map<String, String> requestProperties = new HashMap<String, String>();
-//		requestProperties.put("Last-Modified", "Fri, 1 Jan 2010 00:00:00 UTC");
-//
-//		platformServices.mockNetworkService.connectUrlReturnValue = new MockConnection("test response", 200, "",
-//				requestProperties);
-//		//test
-//		File bundle = rulesRemoteDownloader.startDownloadSync();
-//		//verify
-//		assertNull(bundle);
-//		File sdkCacheDir = new File(temporaryFolder.getRoot(), DEFAULT_CACHE_DIR);
-//		assertEquals(0, sdkCacheDir.list().length);
-//	}
-//
-//	@Test
-//	public void startDownloadSync_When_ProtocolHandlerIsNotNull_ThenBundlePathValid() throws Exception {
-//		//Setup
-//		String mockUrl = "http://mock.com";
-//		CacheManager cacheManager = new CacheManager(platformServices.mockSystemInfoService);
-//		File expectedBundleFile = new File(temporaryFolder.getRoot(),
-//										   DEFAULT_CACHE_DIR + "/" + cacheManager.sha2hash(mockUrl));
-//		platformServices.mockSystemInfoService.applicationCacheDir = temporaryFolder.getRoot();
-//		rulesRemoteDownloader = getVerifiableRulesRemoteDownloaderForUrl(mockUrl, cacheManager);
-//		Map<String, String> requestProperties = new HashMap<String, String>();
-//		requestProperties.put("Last-Modified", "Fri, 1 Jan 2010 00:00:00 UTC");
-//
-//		platformServices.mockNetworkService.connectUrlReturnValue = new MockConnection("test response", 200, "",
-//				requestProperties);
-//
-//		//set a valid protocol handler
-//		rulesRemoteDownloader.setRulesBundleProtocolHandler(
-//			getProtocolHandler(1234568989987L, 1234, true, null));
-//
-//		//test
-//		File bundle = rulesRemoteDownloader.startDownloadSync();
-//		//verify
-//		assertEquals(expectedBundleFile.getAbsolutePath(), bundle.getAbsolutePath());
-//		File sdkCacheDir = new File(temporaryFolder.getRoot(), DEFAULT_CACHE_DIR);
-//		assertEquals(1, sdkCacheDir.list().length);
-//	}
-//
-//	@Test
-//	public void
-//	startDownloadSyncWithETagPresentInResponseHeaders_When_ProtocolHandlerIsNotNull_ThenBundlePathValid_And_FilenameContainsETag()
-//	throws Exception {
-//		//Setup
-//		String mockUrl = "http://mock.com";
-//		CacheManager cacheManager = new CacheManager(platformServices.mockSystemInfoService);
-//		File expectedBundleFile = new File(temporaryFolder.getRoot(),
-//										   DEFAULT_CACHE_DIR + "/" + cacheManager.sha2hash(mockUrl));
-//		platformServices.mockSystemInfoService.applicationCacheDir = temporaryFolder.getRoot();
-//		rulesRemoteDownloader = getVerifiableRulesRemoteDownloaderForUrl(mockUrl, cacheManager);
-//		Map<String, String> requestProperties = new HashMap<String, String>();
-//		requestProperties.put("Last-Modified", "Fri, 1 Jan 2010 00:00:00 UTC");
-//		requestProperties.put("ETag", ETAG);
-//
-//		platformServices.mockNetworkService.connectUrlReturnValue = new MockConnection("test response", 200, "",
-//				requestProperties);
-//
-//		//set a valid protocol handler
-//		rulesRemoteDownloader.setRulesBundleProtocolHandler(
-//			getProtocolHandler(1234568989987L, 1234, true, ETAG));
-//
-//		//test
-//		File bundle = rulesRemoteDownloader.startDownloadSync();
-//		//verify
-//		assertEquals(expectedBundleFile.getAbsolutePath(), bundle.getAbsolutePath());
-//		File sdkCacheDir = new File(temporaryFolder.getRoot(), DEFAULT_CACHE_DIR);
-//		assertEquals(1, sdkCacheDir.list().length);
-//		String[] fileNameTokens = sdkCacheDir.list()[0].split("\\.");
-//		assertEquals(ETAG, HexStringUtil.hexToString(fileNameTokens[fileNameTokens.length - 2]));
-//	}
-//
-//	@Test
-//	public void
-//	startDownloadSyncWithWeakETagPresentInResponseHeaders_When_ProtocolHandlerIsNotNull_ThenBundlePathValid_And_FilenameContainsWeakETag()
-//	throws Exception {
-//		//Setup
-//		String mockUrl = "http://mock.com";
-//		CacheManager cacheManager = new CacheManager(platformServices.mockSystemInfoService);
-//		File expectedBundleFile = new File(temporaryFolder.getRoot(),
-//										   DEFAULT_CACHE_DIR + "/" + cacheManager.sha2hash(mockUrl));
-//		platformServices.mockSystemInfoService.applicationCacheDir = temporaryFolder.getRoot();
-//		rulesRemoteDownloader = getVerifiableRulesRemoteDownloaderForUrl(mockUrl, cacheManager);
-//		Map<String, String> requestProperties = new HashMap<String, String>();
-//		requestProperties.put("Last-Modified", "Fri, 1 Jan 2010 00:00:00 UTC");
-//		requestProperties.put("ETag", WEAK_ETAG);
-//
-//		platformServices.mockNetworkService.connectUrlReturnValue = new MockConnection("test response", 200, "",
-//				requestProperties);
-//
-//		//set a valid protocol handler
-//		rulesRemoteDownloader.setRulesBundleProtocolHandler(
-//			getProtocolHandler(1234568989987L, 1234, true, WEAK_ETAG));
-//
-//		//test
-//		File bundle = rulesRemoteDownloader.startDownloadSync();
-//		//verify
-//		assertEquals(expectedBundleFile.getAbsolutePath(), bundle.getAbsolutePath());
-//		File sdkCacheDir = new File(temporaryFolder.getRoot(), DEFAULT_CACHE_DIR);
-//		assertEquals(1, sdkCacheDir.list().length);
-//		String[] fileNameTokens = sdkCacheDir.list()[0].split("\\.");
-//		assertEquals(WEAK_ETAG, HexStringUtil.hexToString(fileNameTokens[fileNameTokens.length - 2]));
-//	}
-//
-//	@Test
-//	public void startDownloadSync_When_ProtocolHandlerCannotProcessBundle_ThenBundlePathValid() throws Exception {
-//		//Setup
-//		String mockUrl = "http://mock.com";
-//		CacheManager cacheManager = new CacheManager(platformServices.mockSystemInfoService);
-//		platformServices.mockSystemInfoService.applicationCacheDir = temporaryFolder.getRoot();
-//		rulesRemoteDownloader = getVerifiableRulesRemoteDownloaderForUrl(mockUrl, cacheManager);
-//		Map<String, String> requestProperties = new HashMap<String, String>();
-//		requestProperties.put("Last-Modified", "Fri, 1 Jan 2010 00:00:00 UTC");
-//
-//		platformServices.mockNetworkService.connectUrlReturnValue = new MockConnection("test response", 200, "",
-//				requestProperties);
-//
-//		//set a valid protocol handler
-//		rulesRemoteDownloader.setRulesBundleProtocolHandler(
-//			getProtocolHandler(1234568989987L, 1234, false, null));
-//
-//		//test
-//		File bundle = rulesRemoteDownloader.startDownloadSync();
-//		//verify
-//		assertNull(bundle);
-//		File sdkCacheDir = new File(temporaryFolder.getRoot(), DEFAULT_CACHE_DIR);
-//		assertEquals(0, sdkCacheDir.list().length);
-//	}
-//
-//	@Test
-//	public void startDownloadSync_When_DownloadedFileNull_ThenBundlePathNull() throws Exception {
-//		//Setup
-//		String mockUrl = "http://mock.com";
-//		CacheManager cacheManager = new CacheManager(platformServices.mockSystemInfoService);
-//		platformServices.mockSystemInfoService.applicationCacheDir = temporaryFolder.getRoot();
-//		rulesRemoteDownloader = getVerifiableRulesRemoteDownloaderForUrl(mockUrl, cacheManager);
-//
-//		//This will cause the remote download to return null file
-//		platformServices.mockNetworkService.connectUrlReturnValue = null;
-//
-//		//set a valid protocol handler
-//		rulesRemoteDownloader.setRulesBundleProtocolHandler(
-//			getProtocolHandler(1234568989987L, 1234, true, null));
-//
-//		//test
-//		File bundle = rulesRemoteDownloader.startDownloadSync();
-//		//verify
-//		assertNull(bundle);
-//		File sdkCacheDir = new File(temporaryFolder.getRoot(), DEFAULT_CACHE_DIR);
-//		assertEquals(0, sdkCacheDir.list().length);
-//	}
-//
-//	@Test
-//	public void startDownloadSync_When_DownloadedFileIsDirectory_ThenBundlePathSameAsDownloadedPath() throws Exception {
-//		//Setup
-//		String mockUrl = "http://mock.com";
-//		CacheManager cacheManager = new CacheManager(platformServices.mockSystemInfoService);
-//		File cachedDirectoryFile = new File(temporaryFolder.getRoot(),
-//											DEFAULT_CACHE_DIR + "/" + cacheManager.sha2hash(mockUrl));
-//		assertTrue(cachedDirectoryFile.mkdirs());
-//		//
-//		File dummyRules = new File(cachedDirectoryFile, "rules.json");
-//		dummyRules.createNewFile();
-//		//
-//
-//		platformServices.mockSystemInfoService.applicationCacheDir = temporaryFolder.getRoot();
-//		rulesRemoteDownloader = getVerifiableRulesRemoteDownloaderForUrl(mockUrl, cacheManager);
-//		Map<String, String> requestProperties = new HashMap<String, String>();
-//		requestProperties.put("Last-Modified", "Fri, 1 Jan 2010 00:00:00 UTC");
-//
-//		//This will cause the remote download to return null file
-//		platformServices.mockNetworkService.connectUrlReturnValue = new MockConnection("test response", 416, "",
-//				requestProperties);
-//
-//		//set a valid protocol handler
-//		rulesRemoteDownloader.setRulesBundleProtocolHandler(
-//			getProtocolHandler(1234568989987L, 1234, true, null));
-//
-//		//test
-//		File bundle = rulesRemoteDownloader.startDownloadSync();
-//		//verify
-//		assertEquals(cachedDirectoryFile.getAbsolutePath(), bundle.getAbsolutePath());
-//		assertEquals(1, cachedDirectoryFile.list().length);
-//		assertEquals("rules.json", cachedDirectoryFile.list()[0]);
-//	}
-//
-//	@Test
-//	public void getCachePath_happy() throws Exception {
-//		//Setup
-//		String mockUrl = "http://mock.com";
-//		CacheManager cacheManager = new CacheManager(platformServices.mockSystemInfoService);
-//
-//		File cachedDirectoryFile = new File(temporaryFolder.getRoot(),
-//											RULES_CACHE_DIR + "/" + cacheManager.sha2hash(mockUrl));
-//		assertTrue(cachedDirectoryFile.mkdirs());
-//
-//		File dummyRules = new File(cachedDirectoryFile, "rules.json");
-//		dummyRules.createNewFile();
-//
-//		platformServices.mockSystemInfoService.applicationCacheDir = temporaryFolder.getRoot();
-//		rulesRemoteDownloader = getVerifiableRulesRemoteDownloaderForUrl(mockUrl, RULES_CACHE_DIR, cacheManager);
-//
-//		//test
-//		File rulesDirectory = rulesRemoteDownloader.getCachePath();
-//
-//		//verify
-//		assertEquals(cachedDirectoryFile.getAbsolutePath(), rulesDirectory.getAbsolutePath());
-//		assertEquals(1, rulesDirectory.list().length);
-//		assertEquals("rules.json", rulesDirectory.list()[0]);
-//	}
-//
-//	@Test
-//	public void getCachePath_When_EmptyUrl_ThenShouldReturnNull() throws Exception {
-//		//Setup
-//		String mockUrl = "http://mock.com";
-//		CacheManager cacheManager = new CacheManager(platformServices.mockSystemInfoService);
-//
-//		File cachedDirectoryFile = new File(temporaryFolder.getRoot(),
-//											RULES_CACHE_DIR + "/" + cacheManager.sha2hash(mockUrl));
-//		assertTrue(cachedDirectoryFile.mkdirs());
-//
-//		File dummyRules = new File(cachedDirectoryFile, "rules.json");
-//		dummyRules.createNewFile();
-//
-//		platformServices.mockSystemInfoService.applicationCacheDir = temporaryFolder.getRoot();
-//		rulesRemoteDownloader = getVerifiableRulesRemoteDownloaderForUrl("", RULES_CACHE_DIR, cacheManager);
-//
-//		//test
-//		File rulesDirectory = rulesRemoteDownloader.getCachePath();
-//
-//		//verify
-//		assertNull(rulesDirectory);
-//	}
-//
-//	@Test
-//	public void getCachePath_When_NullUrl_ThenShouldReturnNull() throws Exception {
-//		//Setup
-//		String mockUrl = "http://mock.com";
-//		CacheManager cacheManager = new CacheManager(platformServices.mockSystemInfoService);
-//
-//		File cachedDirectoryFile = new File(temporaryFolder.getRoot(),
-//											RULES_CACHE_DIR + "/" + cacheManager.sha2hash(mockUrl));
-//		assertTrue(cachedDirectoryFile.mkdirs());
-//
-//		File dummyRules = new File(cachedDirectoryFile, "rules.json");
-//		dummyRules.createNewFile();
-//
-//		platformServices.mockSystemInfoService.applicationCacheDir = temporaryFolder.getRoot();
-//		rulesRemoteDownloader = getVerifiableRulesRemoteDownloaderForUrl(null, RULES_CACHE_DIR, cacheManager);
-//
-//		//test
-//		File rulesDirectory = rulesRemoteDownloader.getCachePath();
-//
-//		//verify
-//		assertNull(rulesDirectory);
-//	}
-//
-//	@Test
-//	public void getCachePath_When_UrlNotCached_ThenShouldReturnNull() throws Exception {
-//		//Setup
-//		String mockUrl = "http://mock.com";
-//		CacheManager cacheManager = new CacheManager(platformServices.mockSystemInfoService);
-//
-//		platformServices.mockSystemInfoService.applicationCacheDir = temporaryFolder.getRoot();
-//		rulesRemoteDownloader = getVerifiableRulesRemoteDownloaderForUrl(mockUrl, RULES_CACHE_DIR, cacheManager);
-//
-//		//test
-//		File rulesDirectory = rulesRemoteDownloader.getCachePath();
-//
-//		//verify
-//		assertNull(rulesDirectory);
-//	}
-//
-//	@Test
-//	public void getCachePath_When_EmptyDirectoryOverride_ThenShouldUseDefaultCacheDirectory() throws Exception {
-//		//Setup
-//		String mockUrl = "http://mock.com";
-//		CacheManager cacheManager = new CacheManager(platformServices.mockSystemInfoService);
-//
-//		File cachedDirectoryFile = new File(temporaryFolder.getRoot(),
-//											DEFAULT_CACHE_DIR + "/" + cacheManager.sha2hash(mockUrl));
-//		assertTrue(cachedDirectoryFile.mkdirs());
-//
-//		File dummyRules = new File(cachedDirectoryFile, "rules.json");
-//		dummyRules.createNewFile();
-//
-//		platformServices.mockSystemInfoService.applicationCacheDir = temporaryFolder.getRoot();
-//		rulesRemoteDownloader = getVerifiableRulesRemoteDownloaderForUrl(mockUrl, "", cacheManager);
-//
-//		//test
-//		File rulesDirectory = rulesRemoteDownloader.getCachePath();
-//
-//		//verify
-//		assertEquals(cachedDirectoryFile.getAbsolutePath(), rulesDirectory.getAbsolutePath());
-//		assertEquals(1, rulesDirectory.list().length);
-//		assertEquals("rules.json", rulesDirectory.list()[0]);
-//	}
-//
-//	@Test
-//	public void getCachePath_When_NullDirectoryOverride_ThenShouldUseDefaultCacheDirectory() throws Exception {
-//		//Setup
-//		String mockUrl = "http://mock.com";
-//		CacheManager cacheManager = new CacheManager(platformServices.mockSystemInfoService);
-//
-//		File cachedDirectoryFile = new File(temporaryFolder.getRoot(),
-//											DEFAULT_CACHE_DIR + "/" + cacheManager.sha2hash(mockUrl));
-//		assertTrue(cachedDirectoryFile.mkdirs());
-//
-//		File dummyRules = new File(cachedDirectoryFile, "rules.json");
-//		dummyRules.createNewFile();
-//
-//		platformServices.mockSystemInfoService.applicationCacheDir = temporaryFolder.getRoot();
-//		rulesRemoteDownloader = getVerifiableRulesRemoteDownloaderForUrl(mockUrl, null, cacheManager);
-//
-//		//test
-//		File rulesDirectory = rulesRemoteDownloader.getCachePath();
-//
-//		//verify
-//		assertEquals(cachedDirectoryFile.getAbsolutePath(), rulesDirectory.getAbsolutePath());
-//		assertEquals(1, rulesDirectory.list().length);
-//		assertEquals("rules.json", rulesDirectory.list()[0]);
-//	}
-//
-//	private CampaignRulesRemoteDownloader getVerifiableRulesRemoteDownloaderForUrl(final String url,
-//			final String directoryOverride,
-//			final CacheManager cacheManager) {
-//		try {
-//			return new CampaignRulesRemoteDownloader(platformServices.getMockNetworkService(),
-//					platformServices.mockSystemInfoService, url, directoryOverride, cacheManager);
-//		} catch (Exception e) {
-//			fail("Could not create the RulesRemoteDownloader instance - " + e);
-//		}
-//
-//		return null;
-//	}
-//
-//	private CampaignRulesRemoteDownloader getVerifiableRulesRemoteDownloaderForUrl(final String url,
-//			final CacheManager cacheManager) {
-//		try {
-//			return new CampaignRulesRemoteDownloader(platformServices.getMockNetworkService(),
-//					platformServices.mockSystemInfoService, url, cacheManager);
-//		} catch (Exception e) {
-//			fail("Could not create the RulesRemoteDownloader instance - " + e);
-//		}
-//
-//		return null;
-//	}
-//
-//	private CampaignRulesRemoteDownloader.RulesBundleNetworkProtocolHandler getProtocolHandler(long lastModifiedDate,
-//			long bundleSize,
-//			boolean protocolDownloadedBundleReturnValue,
-//			String etag) {
-//		MockMetadata mockMetadata = new MockMetadata();
-//		mockMetadata.getLastModifiedDateReturn = lastModifiedDate;
-//		mockMetadata.getSizeReturn = bundleSize;
-//		mockMetadata.getEtagReturn = etag;
-//
-//		MockProtocolHandler protocolHandler = new MockProtocolHandler();
-//		protocolHandler.getMetadataReturn = mockMetadata;
-//		protocolHandler.processDownloadedBundleReturn = protocolDownloadedBundleReturnValue;
-//
-//		return protocolHandler;
-//	}
+        file.delete(); // delete file or empty directory
+    }
+
+    private void setupServiceProviderMockAndRunTest(boolean networkServiceNull, Runnable testRunnable) {
+        cacheDir = new File("cache");
+        cacheDir.mkdirs();
+        cacheDir.setWritable(true);
+        try (MockedStatic<ServiceProvider> serviceProviderMockedStatic = Mockito.mockStatic(ServiceProvider.class)) {
+            serviceProviderMockedStatic.when(ServiceProvider::getInstance).thenReturn(mockServiceProvider);
+            when(mockCacheResult.getData()).thenReturn(new FileInputStream(ruleJsonFile));
+            when(mockCacheResult.getMetadata()).thenReturn(metadataMap);
+            when(mockCacheService.set(anyString(), anyString(), any(CacheEntry.class))).thenReturn(true);
+            when(mockCacheService.get(eq(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER), eq(CampaignConstants.RULES_JSON_FILE_NAME))).thenReturn(mockCacheResult);
+            when(mockCacheService.get(eq(CampaignConstants.CACHE_BASE_DIR), eq(CampaignConstants.RULES_JSON_FILE_NAME))).thenReturn(mockCacheResult);
+            when(mockServiceProvider.getCacheService()).thenReturn(mockCacheService);
+            when(mockServiceProvider.getDeviceInfoService()).thenReturn(mockDeviceInfoService);
+            when(mockServiceProvider.getUIService()).thenReturn(mockUIService);
+            if (!networkServiceNull) {
+                when(mockServiceProvider.getNetworkService()).thenReturn(mockNetworkService);
+            } else {
+                when(mockServiceProvider.getNetworkService()).thenReturn(null);
+            }
+            when(mockDeviceInfoService.getApplicationCacheDir()).thenReturn(cacheDir);
+            // create CampaignRulesDownloader instance
+            campaignRulesDownloader = new CampaignRulesDownloader(mockExtensionApi, mockRulesEngine, fakeNamedCollection, mockCacheService);
+            testRunnable.run();
+        } catch (FileNotFoundException e) {
+            fail(e.getMessage());
+        }
+    }
+
+    // =================================================================================================================
+    // void loadRulesFromUrl(final String url, final String linkageFields)
+    // =================================================================================================================
+    @Test
+    public void test_loadRulesFromUrl_When_urlIsNull() {
+        // setup
+        setupServiceProviderMockAndRunTest(false, () -> {
+            // test
+            campaignRulesDownloader.loadRulesFromUrl(null, null);
+
+            // verify no network request
+            verify(mockNetworkService, times(0)).connectAsync(any(NetworkRequest.class), any(NetworkCallback.class));
+        });
+    }
+
+    @Test
+    public void test_loadRulesFromUrl_When_networkServiceIsNull() {
+        // setup
+        setupServiceProviderMockAndRunTest(true, () -> {
+            // test
+            campaignRulesDownloader.loadRulesFromUrl(null, null);
+
+            // verify no network request
+            verify(mockNetworkService, times(0)).connectAsync(any(NetworkRequest.class), any(NetworkCallback.class));
+        });
+    }
+
+    @Test
+    public void test_loadRulesFromUrl_When_etagPresentInCachedFileMetadata_Then_RuleDownloadRequestContainsEtagInHeaders() {
+        // setup
+        ArgumentCaptor<NetworkRequest> networkRequestArgumentCaptor = ArgumentCaptor.forClass(NetworkRequest.class);
+        // setup cached rules zip
+        when(mockCacheService.get(eq(CampaignConstants.CACHE_BASE_DIR), eq(CampaignConstants.ZIP_HANDLE))).thenReturn(mockCacheResult);
+
+        setupServiceProviderMockAndRunTest(false, () -> {
+            when(mockHttpConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
+            try {
+                when(mockHttpConnection.getInputStream()).thenReturn(new FileInputStream(zipFile));
+            } catch (FileNotFoundException e) {
+                fail(e.getMessage());
+            }
+            doAnswer((Answer<Void>) invocation -> {
+                NetworkCallback callback = invocation.getArgument(1);
+                callback.call(mockHttpConnection);
+                return null;
+            }).when(mockNetworkService)
+                    .connectAsync(any(NetworkRequest.class), any(NetworkCallback.class));
+            String rulesUrl =
+                    "https://mcias-va7.cloud.adobe.io/mcias/mcias.campaign-demo.adobe.com/PR146b40abd1be4a0ab224c16cbdc04bff/37922783516695133647566171476397216484/rules.zip";
+
+            // test
+            campaignRulesDownloader.loadRulesFromUrl(rulesUrl, null);
+
+            // verify network request headers contain etag
+            verify(mockNetworkService, times(1)).connectAsync(networkRequestArgumentCaptor.capture(), any(NetworkCallback.class));
+            NetworkRequest capturedNetworkRequest = networkRequestArgumentCaptor.getValue();
+            Map<String, String> headers = capturedNetworkRequest.getHeaders();
+            assertEquals(ETAG, headers.get(CampaignConstants.HTTP_HEADER_IF_NONE_MATCH));
+            assertEquals(TIME_SINCE_EPOCH_RFC2882, headers.get(CampaignConstants.HTTP_HEADER_IF_MODIFIED_SINCE));
+            // verify extracted rules json is cached
+            verify(mockCacheService, times(1)).set(eq(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER), eq("rules.json"), any(CacheEntry.class));
+            // verify rules json is retrieved to be loaded into the rules engine
+            verify(mockCacheService, times(1)).get(eq(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER), eq(CampaignConstants.RULES_JSON_FILE_NAME));
+            // verify rules remote url added to named collection
+            assertEquals(rulesUrl, fakeNamedCollection.getString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY, ""));
+            // verify rules loaded into the rules engine
+            verify(mockRulesEngine, times(1)).replaceRules(any());
+        });
+    }
+
+    @Test
+    public void test_loadRulesFromUrl_When_WeakEtagPresentInCachedFileMetadata_Then_RuleDownloadRequestContainsWeakEtagInHeaders() {
+        // setup
+        ArgumentCaptor<NetworkRequest> networkRequestArgumentCaptor = ArgumentCaptor.forClass(NetworkRequest.class);
+        // setup cached rules zip
+        when(mockCacheService.get(eq(CampaignConstants.CACHE_BASE_DIR), eq(CampaignConstants.ZIP_HANDLE))).thenReturn(mockCacheResult);
+        // setup metadata map with weak etag
+        metadataMap.put(CampaignConstants.HTTP_HEADER_ETAG, WEAK_ETAG);
+
+        setupServiceProviderMockAndRunTest(false, () -> {
+            when(mockHttpConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
+            try {
+                when(mockHttpConnection.getInputStream()).thenReturn(new FileInputStream(zipFile));
+            } catch (FileNotFoundException e) {
+                fail(e.getMessage());
+            }
+            doAnswer((Answer<Void>) invocation -> {
+                NetworkCallback callback = invocation.getArgument(1);
+                callback.call(mockHttpConnection);
+                return null;
+            }).when(mockNetworkService)
+                    .connectAsync(any(NetworkRequest.class), any(NetworkCallback.class));
+            String rulesUrl =
+                    "https://mcias-va7.cloud.adobe.io/mcias/mcias.campaign-demo.adobe.com/PR146b40abd1be4a0ab224c16cbdc04bff/37922783516695133647566171476397216484/rules.zip";
+
+            // test
+            campaignRulesDownloader.loadRulesFromUrl(rulesUrl, null);
+
+            // verify network request headers contain weak etag
+            verify(mockNetworkService, times(1)).connectAsync(networkRequestArgumentCaptor.capture(), any(NetworkCallback.class));
+            NetworkRequest capturedNetworkRequest = networkRequestArgumentCaptor.getValue();
+            Map<String, String> headers = capturedNetworkRequest.getHeaders();
+            assertEquals(WEAK_ETAG, headers.get(CampaignConstants.HTTP_HEADER_IF_NONE_MATCH));
+            assertEquals(TIME_SINCE_EPOCH_RFC2882, headers.get(CampaignConstants.HTTP_HEADER_IF_MODIFIED_SINCE));
+            // verify extracted rules json is cached
+            verify(mockCacheService, times(1)).set(eq(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER), eq("rules.json"), any(CacheEntry.class));
+            // verify rules json is retrieved to be loaded into the rules engine
+            verify(mockCacheService, times(1)).get(eq(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER), eq(CampaignConstants.RULES_JSON_FILE_NAME));
+            // verify rules remote url added to named collection
+            assertEquals(rulesUrl, fakeNamedCollection.getString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY, ""));
+            // verify rules loaded into the rules engine
+            verify(mockRulesEngine, times(1)).replaceRules(any());
+        });
+    }
+
+
+    @Test
+    public void test_loadRulesFromUrl_When_NoCachedMessagesPresent_Then_RuleDownloadRequestContainsNoEtagInHeaders() {
+        // setup
+        ArgumentCaptor<NetworkRequest> networkRequestArgumentCaptor = ArgumentCaptor.forClass(NetworkRequest.class);
+        // setup no cached rules zip present
+        when(mockCacheService.get(eq(CampaignConstants.CACHE_BASE_DIR), eq(CampaignConstants.ZIP_HANDLE))).thenReturn(null);
+
+        metadataMap.put(CampaignConstants.HTTP_HEADER_ETAG, WEAK_ETAG);
+        setupServiceProviderMockAndRunTest(false, () -> {
+            when(mockHttpConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
+            try {
+                when(mockHttpConnection.getInputStream()).thenReturn(new FileInputStream(zipFile));
+            } catch (FileNotFoundException e) {
+                fail(e.getMessage());
+            }
+            doAnswer((Answer<Void>) invocation -> {
+                NetworkCallback callback = invocation.getArgument(1);
+                callback.call(mockHttpConnection);
+                return null;
+            }).when(mockNetworkService)
+                    .connectAsync(any(NetworkRequest.class), any(NetworkCallback.class));
+            String rulesUrl =
+                    "https://mcias-va7.cloud.adobe.io/mcias/mcias.campaign-demo.adobe.com/PR146b40abd1be4a0ab224c16cbdc04bff/37922783516695133647566171476397216484/rules.zip";
+
+            // test
+            campaignRulesDownloader.loadRulesFromUrl(rulesUrl, null);
+
+            // verify network request has empty headers
+            verify(mockNetworkService, times(1)).connectAsync(networkRequestArgumentCaptor.capture(), any(NetworkCallback.class));
+            NetworkRequest capturedNetworkRequest = networkRequestArgumentCaptor.getValue();
+            Map<String, String> headers = capturedNetworkRequest.getHeaders();
+            assertEquals(0, headers.size());
+            // verify extracted rules json is cached
+            verify(mockCacheService, times(1)).set(eq(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER), eq("rules.json"), any(CacheEntry.class));
+            // verify rules json is retrieved to be loaded into the rules engine
+            verify(mockCacheService, times(1)).get(eq(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER), eq(CampaignConstants.RULES_JSON_FILE_NAME));
+            // verify rules remote url added to named collection
+            assertEquals(rulesUrl, fakeNamedCollection.getString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY, ""));
+            // verify rules loaded into the rules engine
+            verify(mockRulesEngine, times(1)).replaceRules(any());
+        });
+    }
+
+    @Test
+    public void test_loadRulesFromUrl_When_LinkageFieldsSet_Then_RuleDownloadRequestContainsEncodedLinkageFieldsInHeaders() {
+        // setup
+        ArgumentCaptor<NetworkRequest> networkRequestArgumentCaptor = ArgumentCaptor.forClass(NetworkRequest.class);
+        // setup cached rules zip
+        when(mockCacheService.get(eq(CampaignConstants.CACHE_BASE_DIR), eq(CampaignConstants.ZIP_HANDLE))).thenReturn(mockCacheResult);
+        // setup encoded linkage fields string
+        String linkageFields = "dXNlck5hbWU6dGVzdFVzZXI="; // userName:testUser
+
+        setupServiceProviderMockAndRunTest(false, () -> {
+            when(mockHttpConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
+            try {
+                when(mockHttpConnection.getInputStream()).thenReturn(new FileInputStream(zipFile));
+            } catch (FileNotFoundException e) {
+                fail(e.getMessage());
+            }
+            doAnswer((Answer<Void>) invocation -> {
+                NetworkCallback callback = invocation.getArgument(1);
+                callback.call(mockHttpConnection);
+                return null;
+            }).when(mockNetworkService)
+                    .connectAsync(any(NetworkRequest.class), any(NetworkCallback.class));
+            String rulesUrl =
+                    "https://mcias-va7.cloud.adobe.io/mcias/mcias.campaign-demo.adobe.com/PR146b40abd1be4a0ab224c16cbdc04bff/37922783516695133647566171476397216484/rules.zip";
+
+            // test
+            campaignRulesDownloader.loadRulesFromUrl(rulesUrl, linkageFields);
+
+            // verify network request headers contain linkage fields
+            verify(mockNetworkService, times(1)).connectAsync(networkRequestArgumentCaptor.capture(), any(NetworkCallback.class));
+            NetworkRequest capturedNetworkRequest = networkRequestArgumentCaptor.getValue();
+            Map<String, String> headers = capturedNetworkRequest.getHeaders();
+            assertEquals(ETAG, headers.get(CampaignConstants.HTTP_HEADER_IF_NONE_MATCH));
+            assertEquals(TIME_SINCE_EPOCH_RFC2882, headers.get(CampaignConstants.HTTP_HEADER_IF_MODIFIED_SINCE));
+            assertEquals(linkageFields, headers.get(CampaignConstants.LINKAGE_FIELD_NETWORK_HEADER));
+            // verify extracted rules json is cached
+            verify(mockCacheService, times(1)).set(eq(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER), eq("rules.json"), any(CacheEntry.class));
+            // verify rules json is retrieved to be loaded into the rules engine
+            verify(mockCacheService, times(1)).get(eq(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER), eq(CampaignConstants.RULES_JSON_FILE_NAME));
+            // verify rules remote url added to named collection
+            assertEquals(rulesUrl, fakeNamedCollection.getString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY, ""));
+            // verify rules loaded into the rules engine
+            verify(mockRulesEngine, times(1)).replaceRules(any());
+        });
+    }
+
+    @Test
+    public void test_loadRulesFromUrl_When_RuleDownloadRequestResponseContainsNotModified_Then_RulesLoadedFromCache() {
+        // setup
+        ArgumentCaptor<NetworkRequest> networkRequestArgumentCaptor = ArgumentCaptor.forClass(NetworkRequest.class);
+        // setup cached rules zip
+        when(mockCacheService.get(eq(CampaignConstants.CACHE_BASE_DIR), eq(CampaignConstants.ZIP_HANDLE))).thenReturn(mockCacheResult);
+
+        setupServiceProviderMockAndRunTest(false, () -> {
+            when(mockHttpConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_NOT_MODIFIED);
+            doAnswer((Answer<Void>) invocation -> {
+                NetworkCallback callback = invocation.getArgument(1);
+                callback.call(mockHttpConnection);
+                return null;
+            }).when(mockNetworkService)
+                    .connectAsync(any(NetworkRequest.class), any(NetworkCallback.class));
+            String rulesUrl =
+                    "https://mcias-va7.cloud.adobe.io/mcias/mcias.campaign-demo.adobe.com/PR146b40abd1be4a0ab224c16cbdc04bff/37922783516695133647566171476397216484/rules.zip";
+
+            // test
+            campaignRulesDownloader.loadRulesFromUrl(rulesUrl, null);
+
+            // verify network request headers contain etag
+            verify(mockNetworkService, times(1)).connectAsync(networkRequestArgumentCaptor.capture(), any(NetworkCallback.class));
+            NetworkRequest capturedNetworkRequest = networkRequestArgumentCaptor.getValue();
+            Map<String, String> headers = capturedNetworkRequest.getHeaders();
+            assertEquals(ETAG, headers.get(CampaignConstants.HTTP_HEADER_IF_NONE_MATCH));
+            assertEquals(TIME_SINCE_EPOCH_RFC2882, headers.get(CampaignConstants.HTTP_HEADER_IF_MODIFIED_SINCE));
+            // verify no extracted rules json is cached
+            verify(mockCacheService, times(0)).set(eq(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER), eq("rules.json"), any(CacheEntry.class));
+            // verify cached rules json is retrieved instead
+            verify(mockCacheService, times(1)).get(eq(CampaignConstants.CACHE_BASE_DIR), eq(CampaignConstants.RULES_JSON_FILE_NAME));
+            // verify rules remote url not added to named collection
+            assertEquals("", fakeNamedCollection.getString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY, ""));
+            // verify rules loaded into the rules engine
+            verify(mockRulesEngine, times(1)).replaceRules(any());
+        });
+    }
+
+    @Test
+    public void test_loadRulesFromUrl_When_RuleDownloadRequestResponseContainsNotFound_Then_NoRulesLoadedOrCached() {
+        // setup
+        ArgumentCaptor<NetworkRequest> networkRequestArgumentCaptor = ArgumentCaptor.forClass(NetworkRequest.class);
+
+        setupServiceProviderMockAndRunTest(false, () -> {
+            when(mockHttpConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_NOT_FOUND);
+            doAnswer((Answer<Void>) invocation -> {
+                NetworkCallback callback = invocation.getArgument(1);
+                callback.call(mockHttpConnection);
+                return null;
+            }).when(mockNetworkService)
+                    .connectAsync(any(NetworkRequest.class), any(NetworkCallback.class));
+            String rulesUrl =
+                    "https://mcias-va7.cloud.adobe.io/mcias/mcias.campaign-demo.adobe.com/PR146b40abd1be4a0ab224c16cbdc04bff/37922783516695133647566171476397216484/rules.zip";
+
+            // test
+            campaignRulesDownloader.loadRulesFromUrl(rulesUrl, null);
+
+            // verify network request
+            verify(mockNetworkService, times(1)).connectAsync(networkRequestArgumentCaptor.capture(), any(NetworkCallback.class));
+            NetworkRequest capturedNetworkRequest = networkRequestArgumentCaptor.getValue();
+            Map<String, String> headers = capturedNetworkRequest.getHeaders();
+            assertEquals(0, headers.size());
+            // verify no extracted rules json is cached
+            verify(mockCacheService, times(0)).set(eq(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER), eq("rules.json"), any(CacheEntry.class));
+            // verify rules remote url not added to named collection
+            assertEquals("", fakeNamedCollection.getString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY, ""));
+            // verify rules not loaded into the rules engine
+            verify(mockRulesEngine, times(0)).replaceRules(any());
+        });
+    }
+
+    @Test
+    public void test_loadRulesFromUrl_When_InvalidZipContentDownloaded_Then_NoRulesLoadedOrCached() {
+        // setup
+        ArgumentCaptor<NetworkRequest> networkRequestArgumentCaptor = ArgumentCaptor.forClass(NetworkRequest.class);
+
+        setupServiceProviderMockAndRunTest(false, () -> {
+            when(mockHttpConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
+            when(mockHttpConnection.getInputStream()).thenReturn(null);
+            doAnswer((Answer<Void>) invocation -> {
+                NetworkCallback callback = invocation.getArgument(1);
+                callback.call(mockHttpConnection);
+                return null;
+            }).when(mockNetworkService)
+                    .connectAsync(any(NetworkRequest.class), any(NetworkCallback.class));
+            String rulesUrl =
+                    "https://mcias-va7.cloud.adobe.io/mcias/mcias.campaign-demo.adobe.com/PR146b40abd1be4a0ab224c16cbdc04bff/37922783516695133647566171476397216484/rules.zip";
+
+            // test
+            campaignRulesDownloader.loadRulesFromUrl(rulesUrl, null);
+
+            // verify network request
+            verify(mockNetworkService, times(1)).connectAsync(networkRequestArgumentCaptor.capture(), any(NetworkCallback.class));
+            NetworkRequest capturedNetworkRequest = networkRequestArgumentCaptor.getValue();
+            Map<String, String> headers = capturedNetworkRequest.getHeaders();
+            assertEquals(0, headers.size());
+            // verify no extracted rules json is cached
+            verify(mockCacheService, times(0)).set(eq(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER), eq("rules.json"), any(CacheEntry.class));
+            // verify no rules json is retrieved to be loaded into the rules engine
+            verify(mockCacheService, times(0)).get(eq(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER), eq(CampaignConstants.RULES_JSON_FILE_NAME));
+            // verify no rules remote url added to named collection
+            assertEquals("", fakeNamedCollection.getString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY, ""));
+            // verify no rules loaded into the rules engine
+            verify(mockRulesEngine, times(0)).replaceRules(any());
+        });
+    }
+
+    // =================================================================================================================
+    //  void cacheRemoteAssets(final List<LaunchRule> campaignRules)
+    // =================================================================================================================
+    @Test
+    public void test_cacheRemoteAssets_When_campaignRulesAreEmpty_Then_AssetsNotDownloaded() {
+        // setup
+        try (MockedConstruction mockConstruction = mockConstruction(CampaignMessageAssetsDownloader.class)) {
+            setupServiceProviderMockAndRunTest(false, () -> {
+                List<LaunchRule> campaignRules = new ArrayList<>();
+
+                // test
+                campaignRulesDownloader.cacheRemoteAssets(campaignRules);
+
+                // verify no CampaignMessageAssetsDownloader instance instantiated
+                assertEquals(0, mockConstruction.constructed().size());
+            });
+        }
+    }
+
+    @Test
+    public void test_cacheRemoteAssets_When_campaignRulesValid_Then_AssetsDownloaded() {
+        // setup
+        try (MockedConstruction mockConstruction = mockConstruction(CampaignMessageAssetsDownloader.class)) {
+            List<RuleConsequence> ruleConsequenceList = new ArrayList<>();
+            ruleConsequenceList.add(mockRuleConsequence);
+            when(mockLaunchRule.getConsequenceList()).thenReturn(ruleConsequenceList);
+
+            setupServiceProviderMockAndRunTest(false, () -> {
+                List<LaunchRule> campaignRules = new ArrayList<>();
+                campaignRules.add(mockLaunchRule);
+
+                // test
+                campaignRulesDownloader.cacheRemoteAssets(campaignRules);
+
+                // verify
+                CampaignMessageAssetsDownloader mockCampaignMessageAssetsDownloader = (CampaignMessageAssetsDownloader) mockConstruction.constructed().get(0);
+                verify(mockCampaignMessageAssetsDownloader, times(1)).downloadAssetCollection();
+            });
+        }
+    }
+
+    @Test
+    public void test_cacheRemoteAssets_When_campaignRuleAssetsEmpty_Then_AssetsNotDownloaded() {
+        // setup
+        detailMap.put("remoteAssets", new ArrayList<>());
+        when(mockRuleConsequence.getDetail()).thenReturn(detailMap);
+        try (MockedConstruction mockConstruction = mockConstruction(CampaignMessageAssetsDownloader.class)) {
+            List<RuleConsequence> ruleConsequenceList = new ArrayList<>();
+            ruleConsequenceList.add(mockRuleConsequence);
+            when(mockLaunchRule.getConsequenceList()).thenReturn(ruleConsequenceList);
+
+            setupServiceProviderMockAndRunTest(false, () -> {
+                List<LaunchRule> campaignRules = new ArrayList<>();
+                campaignRules.add(mockLaunchRule);
+
+                // test
+                campaignRulesDownloader.cacheRemoteAssets(campaignRules);
+
+                // verify no CampaignMessageAssetsDownloader instance instantiated
+                assertEquals(0, mockConstruction.constructed().size());
+            });
+        }
+    }
 }

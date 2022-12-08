@@ -95,9 +95,6 @@ public final class CampaignConstants {
     // cache service metadata
     static final String METADATA_PATH = "pathToFile";
 
-    private CampaignConstants() {
-    }
-
     /**
      * Context data keys
      */
