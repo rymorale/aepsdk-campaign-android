@@ -224,9 +224,7 @@ apply from: 'checkstyle.gradle'
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    implementation ('com.github.adobe.aepsdk-core-android:core:dev-v2.0.0-SNAPSHOT') {
-        transitive(false)
-    }
+    implementation ('com.github.adobe.aepsdk-core-android:core:dev-v2.0.0-SNAPSHOT')
 
     // Firebase sdk compile only
     compileOnly "com.google.firebase:firebase-messaging:21.1.0"
@@ -241,6 +239,11 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:${junitVersion}"
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.9.9'
+
+    // functional test dependencies
+    androidTestImplementation ('com.github.adobe.aepsdk-core-android:lifecycle:dev-v2.0.0-SNAPSHOT')
+    androidTestImplementation ('com.github.adobe.aepsdk-core-android:identity:dev-v2.0.0-SNAPSHOT')
+    androidTestImplementation ('com.github.adobe.aepsdk-core-android:signal:dev-v2.0.0-SNAPSHOT')
 }
 
 tasks.withType(Test) {

@@ -23,6 +23,7 @@ import com.adobe.marketing.mobile.ExtensionApi;
 import com.adobe.marketing.mobile.MobilePrivacyStatus;
 import com.adobe.marketing.mobile.SharedStateResolution;
 import com.adobe.marketing.mobile.SharedStateResult;
+import com.adobe.marketing.mobile.SharedStateStatus;
 import com.adobe.marketing.mobile.launch.rulesengine.LaunchRule;
 import com.adobe.marketing.mobile.launch.rulesengine.LaunchRulesEngine;
 import com.adobe.marketing.mobile.launch.rulesengine.RuleConsequence;
@@ -78,7 +79,7 @@ public class CampaignExtension extends Extension {
     private final CampaignState campaignState;
     private final DataStoring dataStoreService;
     private String linkageFields;
-    private boolean initialCampaignRuleFetchCompleted = false;
+    private boolean hasToDownloadRules = true;
 
     /**
      * Constructor.
@@ -199,22 +200,18 @@ public class CampaignExtension extends Extension {
                 EventSource.WILDCARD,
                 this::handleWildcardEvents
         );
+        getApi().registerEventListener(
+                EventType.HUB,
+                EventSource.SHARED_STATE,
+                this::handleHubSharedState
+        );
     }
 
     @Override
     public boolean readyForEvent(final Event event) {
-        final String stateName = DataReader.optString(event.getEventData(), CampaignConstants.EventDataKeys.STATE_OWNER, "");
-
-        if (CampaignConstants.EventDataKeys.Configuration.EXTENSION_NAME.equals(stateName) ||
-                CampaignConstants.EventDataKeys.Identity.EXTENSION_NAME.equals(stateName)) {
-            setCampaignState(event);
-        }
-
-//        return getApi().getSharedState(CampaignConstants.EventDataKeys.Configuration.EXTENSION_NAME,
-//                event, false, SharedStateResolution.ANY).getStatus() == SharedStateStatus.SET && getApi().getSharedState(CampaignConstants.EventDataKeys.Identity.EXTENSION_NAME,
-//                event, false, SharedStateResolution.ANY).getStatus() == SharedStateStatus.SET &&
-//                campaignState.isStateSet();
-        return true;
+        return getApi().getSharedState(CampaignConstants.EventDataKeys.Configuration.EXTENSION_NAME,
+                event, false, SharedStateResolution.ANY).getStatus() == SharedStateStatus.SET && getApi().getSharedState(CampaignConstants.EventDataKeys.Identity.EXTENSION_NAME,
+                event, false, SharedStateResolution.ANY).getStatus() == SharedStateStatus.SET;
     }
 
     // ========================================================================
@@ -270,6 +267,35 @@ public class CampaignExtension extends Extension {
     }
 
     /**
+     * Processes {@code SharedState} update events to handle any update to {@code Identity} extension shared state.
+     *
+     * @param event to be processed
+     */
+    void handleHubSharedState(final Event event) {
+        if (event == null) {
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "handleHubSharedState - Unable to process event, event received is null.");
+            return;
+        }
+
+        final Map<String, Object> eventData = event.getEventData();
+        if (eventData == null || eventData.isEmpty()) {
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "handleHubSharedState - Shared state update event is null");
+            return;
+        }
+        if (!eventData.get(CampaignConstants.EventDataKeys.STATE_OWNER).equals(CampaignConstants.EventDataKeys.Identity.EXTENSION_NAME)) {
+            return;
+        }
+
+        if (!hasToDownloadRules) {
+            return;
+        }
+
+        hasToDownloadRules = false;
+        setCampaignState(event);
+        triggerRulesDownload();
+    }
+
+    /**
      * Processes {@code Configuration} response to handle any update to {@code MobilePrivacyStatus}, handle any update
      * to the number of days to delay or pause the sending of the Campaign registration request, and to trigger Campaign rules download.
      * <p>
@@ -290,7 +316,9 @@ public class CampaignExtension extends Extension {
             Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "processConfigurationResponse - Configuration response event is null");
             return;
         }
+
         setCampaignState(event);
+
         final MobilePrivacyStatus privacyStatus = campaignState.getMobilePrivacyStatus();
         // notify campaign persistent hit queue of any privacy status changes
         campaignPersistentHitQueue.handlePrivacyChange(privacyStatus);
@@ -299,8 +327,12 @@ public class CampaignExtension extends Extension {
             return;
         }
 
-        if (!initialCampaignRuleFetchCompleted) {
+        if (campaignState.canDownloadRulesWithCurrentState()) {
+            hasToDownloadRules = true;
             triggerRulesDownload();
+        } else {
+            // Cannot download rules now. Most probably because Identity shared state hasn't received yet and we don't have ECID. Will try to download rules after receiving Identity shared state.
+            hasToDownloadRules = false;
         }
     }
 
@@ -436,8 +468,7 @@ public class CampaignExtension extends Extension {
         final Map<String, Object> lifecycleContextData = DataReader.optTypedMap(Object.class, eventData, CampaignConstants.EventDataKeys.Lifecycle.LIFECYCLE_CONTEXT_DATA, null);
         if (lifecycleContextData != null
                 && !lifecycleContextData.isEmpty()
-                && !(DataReader.optString(lifecycleContextData, CampaignConstants.EventDataKeys.Lifecycle.INSTALL_EVENT, "")).equals(CampaignConstants.EventDataKeys.Lifecycle.INSTALL_EVENT)
-                && initialCampaignRuleFetchCompleted) {
+                && !(DataReader.optString(lifecycleContextData, CampaignConstants.EventDataKeys.Lifecycle.INSTALL_EVENT, "")).equals(CampaignConstants.EventDataKeys.Lifecycle.INSTALL_EVENT)) {
             triggerRulesDownload();
         }
 
@@ -464,18 +495,11 @@ public class CampaignExtension extends Extension {
      * @see CampaignRulesDownloader#loadRulesFromUrl(String, String)
      */
     void triggerRulesDownload() {
-        if (!campaignState.canDownloadRulesWithCurrentState()) {
-            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
-                    "triggerRulesDownload -  Campaign extension is not configured to download rules.");
-            return;
-        }
-
         final String rulesUrl = String.format(CampaignConstants.CAMPAIGN_RULES_DOWNLOAD_URL, campaignState.getCampaignMcias(),
                 campaignState.getCampaignServer(), campaignState.getPropertyId(),
                 campaignState.getExperienceCloudId());
 
         campaignRulesDownloader.loadRulesFromUrl(rulesUrl, getLinkageFields());
-        initialCampaignRuleFetchCompleted = true;
     }
 
     /**
@@ -524,8 +548,10 @@ public class CampaignExtension extends Extension {
             return;
         }
 
-        clearRulesCacheDirectory();
-        triggerRulesDownload();
+        if (campaignState.canDownloadRulesWithCurrentState()) {
+            clearRulesCacheDirectory();
+            triggerRulesDownload();
+        }
     }
 
     /**

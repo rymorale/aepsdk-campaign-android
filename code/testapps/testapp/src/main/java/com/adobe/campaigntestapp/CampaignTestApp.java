@@ -11,20 +11,16 @@
 
 package com.adobe.campaigntestapp;
 
-import com.adobe.marketing.mobile.AdobeCallback;
-import com.adobe.marketing.mobile.Event;
-import com.adobe.marketing.mobile.EventSource;
-import com.adobe.marketing.mobile.EventType;
-import com.adobe.marketing.mobile.Extension;
-//import com.adobe.marketing.mobile.Identity;
+import com.adobe.marketing.mobile.Identity;
+import com.adobe.marketing.mobile.Lifecycle;
 import com.adobe.marketing.mobile.MobileCore;
-//import com.adobe.marketing.mobile.Lifecycle;
 import com.adobe.marketing.mobile.Campaign;
 import com.adobe.marketing.mobile.LoggingMode;
-//import com.adobe.marketing.mobile.Signal;
-//import com.adobe.marketing.mobile.UserProfile;
-//import com.adobe.marketing.mobile.InvalidInitException;
+import com.adobe.marketing.mobile.Signal;
 import com.adobe.marketing.mobile.campaign.CampaignExtension;
+import com.adobe.marketing.mobile.identity.IdentityExtension;
+import com.adobe.marketing.mobile.lifecycle.LifecycleExtension;
+import com.adobe.marketing.mobile.signal.SignalExtension;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.iid.FirebaseInstanceId;
@@ -36,11 +32,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class CampaignTestApp extends Application {
 
@@ -52,31 +44,14 @@ public class CampaignTestApp extends Application {
 		MobileCore.setApplication(this);
 		MobileCore.setLogLevel(LoggingMode.DEBUG);
 
-//		try {
-//			UserProfile.registerExtension();
-//			Identity.registerExtension();
-//			Lifecycle.registerExtension();
-//			Signal.registerExtension();
-//			MobileCore.start(o -> MobileCore.configureWithAppID("31d8b0ad1f9f/98da4ef07438/launch-b7548c1d44a2-development"));
-//		} catch (InvalidInitException e) {
-//			e.printStackTrace();
-//
-//		}
-
-		MobileCore.registerExtensions(Arrays.asList(CampaignExtension.class), o -> {
+		// TODO: add userprofile 2.0
+		MobileCore.registerExtensions(Arrays.asList(CampaignExtension.class, LifecycleExtension.class, IdentityExtension.class, SignalExtension.class), o -> {
 			MobileCore.configureWithAppID("31d8b0ad1f9f/98da4ef07438/launch-b7548c1d44a2-development");
 			try {
 				Thread.sleep(1000);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			// mock lifecycle event for testing
-			Map<String, Object> eventData = new HashMap<>();
-			Map<String, Object> lifecycleData = new HashMap<>();
-			lifecycleData.put("launchevent", "launchevent");
-			eventData.put("lifecyclecontextdata", lifecycleData);
-			Event lifecycleEvent = new Event.Builder("mock lifecycle", EventType.LIFECYCLE, EventSource.RESPONSE_CONTENT).setEventData(eventData).build();
-			MobileCore.dispatchEvent(lifecycleEvent);
 		});
 
 		application = this;
@@ -103,9 +78,9 @@ public class CampaignTestApp extends Application {
 		Log.d("Core version ", MobileCore.extensionVersion());
 		Log.d("Campaign version ", Campaign.extensionVersion());
 //		Log.d("UserProfile version ", UserProfile.extensionVersion());
-//		Log.d("Identity version ", Identity.extensionVersion());
-//		Log.d("Lifecycle version ", Lifecycle.extensionVersion());
-//		Log.d("Signal version ", Signal.extensionVersion());
+		Log.d("Identity version ", Identity.extensionVersion());
+		Log.d("Lifecycle version ", Lifecycle.extensionVersion());
+		Log.d("Signal version ", Signal.extensionVersion());
 	}
 
 	public static Application getApplication() {

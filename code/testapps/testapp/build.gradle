@@ -36,11 +36,19 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.0'
     implementation project(":${rootProject.moduleProjectName}")
-    //implementation "com.adobe.marketing.mobile:core:$rootProject.mavenCoreVersion"
-    implementation ('com.github.adobe.aepsdk-core-android:core:dev-v2.0.0-SNAPSHOT')
-//    implementation 'com.adobe.marketing.mobile:userprofile:+'
-//    implementation 'com.adobe.marketing.mobile:identity:+'
-//    implementation 'com.adobe.marketing.mobile:lifecycle:+'
-//    implementation 'com.adobe.marketing.mobile:signal:+'
+    // implementation "com.adobe.marketing.mobile:core:$rootProject.mavenCoreVersion"
+    implementation ('com.github.adobe.aepsdk-core-android:core:dev-v2.0.0-SNAPSHOT') {
+        transitive(true)
+    }
+    implementation ('com.github.adobe.aepsdk-core-android:lifecycle:dev-v2.0.0-SNAPSHOT') {
+        transitive(false)
+    }
+    implementation ('com.github.adobe.aepsdk-core-android:identity:dev-v2.0.0-SNAPSHOT') {
+        transitive(false)
+    }
+    implementation ('com.github.adobe.aepsdk-core-android:signal:dev-v2.0.0-SNAPSHOT') {
+        transitive(false)
+    }
+    // implementation 'com.adobe.marketing.mobile:userprofile:+'
 }
 apply plugin: 'com.google.gms.google-services'
