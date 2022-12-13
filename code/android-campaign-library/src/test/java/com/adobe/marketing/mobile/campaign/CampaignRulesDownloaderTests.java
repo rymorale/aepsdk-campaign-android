@@ -228,7 +228,7 @@ public class CampaignRulesDownloaderTests {
         // setup
         ArgumentCaptor<NetworkRequest> networkRequestArgumentCaptor = ArgumentCaptor.forClass(NetworkRequest.class);
         // setup cached rules zip
-        when(mockCacheService.get(eq(CampaignConstants.CACHE_BASE_DIR), eq(CampaignConstants.ZIP_HANDLE))).thenReturn(mockCacheResult);
+        when(mockCacheService.get(eq(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER), eq(CampaignConstants.ZIP_HANDLE))).thenReturn(mockCacheResult);
 
         setupServiceProviderMockAndRunTest(false, () -> {
             when(mockHttpConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
@@ -271,7 +271,7 @@ public class CampaignRulesDownloaderTests {
         // setup
         ArgumentCaptor<NetworkRequest> networkRequestArgumentCaptor = ArgumentCaptor.forClass(NetworkRequest.class);
         // setup cached rules zip
-        when(mockCacheService.get(eq(CampaignConstants.CACHE_BASE_DIR), eq(CampaignConstants.ZIP_HANDLE))).thenReturn(mockCacheResult);
+        when(mockCacheService.get(eq(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER), eq(CampaignConstants.ZIP_HANDLE))).thenReturn(mockCacheResult);
         // setup metadata map with weak etag
         metadataMap.put(CampaignConstants.HTTP_HEADER_ETAG, WEAK_ETAG);
 
@@ -360,7 +360,7 @@ public class CampaignRulesDownloaderTests {
         // setup
         ArgumentCaptor<NetworkRequest> networkRequestArgumentCaptor = ArgumentCaptor.forClass(NetworkRequest.class);
         // setup cached rules zip
-        when(mockCacheService.get(eq(CampaignConstants.CACHE_BASE_DIR), eq(CampaignConstants.ZIP_HANDLE))).thenReturn(mockCacheResult);
+        when(mockCacheService.get(eq(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER), eq(CampaignConstants.ZIP_HANDLE))).thenReturn(mockCacheResult);
         // setup encoded linkage fields string
         String linkageFields = "dXNlck5hbWU6dGVzdFVzZXI="; // userName:testUser
 
@@ -406,7 +406,7 @@ public class CampaignRulesDownloaderTests {
         // setup
         ArgumentCaptor<NetworkRequest> networkRequestArgumentCaptor = ArgumentCaptor.forClass(NetworkRequest.class);
         // setup cached rules zip
-        when(mockCacheService.get(eq(CampaignConstants.CACHE_BASE_DIR), eq(CampaignConstants.ZIP_HANDLE))).thenReturn(mockCacheResult);
+        when(mockCacheService.get(eq(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER), eq(CampaignConstants.ZIP_HANDLE))).thenReturn(mockCacheResult);
 
         setupServiceProviderMockAndRunTest(false, () -> {
             when(mockHttpConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_NOT_MODIFIED);
@@ -431,11 +431,11 @@ public class CampaignRulesDownloaderTests {
             // verify no extracted rules json is cached
             verify(mockCacheService, times(0)).set(eq(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER), eq("rules.json"), any(CacheEntry.class));
             // verify cached rules json is retrieved instead
-            verify(mockCacheService, times(1)).get(eq(CampaignConstants.CACHE_BASE_DIR), eq(CampaignConstants.RULES_JSON_FILE_NAME));
+            verify(mockCacheService, times(1)).get(eq(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER), eq(CampaignConstants.RULES_JSON_FILE_NAME));
             // verify rules remote url not added to named collection
             assertEquals("", fakeNamedCollection.getString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY, ""));
-            // verify rules loaded into the rules engine
-            verify(mockRulesEngine, times(1)).replaceRules(any());
+            // verify rules not loaded as they are unmodified
+            verify(mockRulesEngine, times(0)).replaceRules(any());
         });
     }
 

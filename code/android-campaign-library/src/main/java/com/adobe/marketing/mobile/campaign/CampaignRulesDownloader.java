@@ -87,7 +87,7 @@ class CampaignRulesDownloader {
 
         // 304 - Not Modified support
         Map<String, String> requestProperties = new HashMap<>();
-        final CacheResult cachedRules = cacheService.get(CampaignConstants.CACHE_BASE_DIR, CampaignConstants.ZIP_HANDLE);
+        final CacheResult cachedRules = cacheService.get(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER, CampaignConstants.ZIP_HANDLE);
         if (cachedRules != null) {
             requestProperties = Utils.extractHeadersFromCache(cachedRules);
         }
@@ -136,7 +136,7 @@ class CampaignRulesDownloader {
                 }
                 break;
             case HttpURLConnection.HTTP_NOT_MODIFIED:
-                rulesLoadResult = new RulesLoadResult(StreamUtils.readAsString(cacheService.get(CampaignConstants.CACHE_BASE_DIR, CampaignConstants.RULES_JSON_FILE_NAME).getData()), RulesLoadResult.Reason.NOT_MODIFIED);
+                rulesLoadResult = new RulesLoadResult(StreamUtils.readAsString(cacheService.get(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER, CampaignConstants.RULES_JSON_FILE_NAME).getData()), RulesLoadResult.Reason.NOT_MODIFIED);
                 Log.trace(CampaignConstants.LOG_TAG, SELF_TAG, "Rules from %s have not been modified. Will not re-download rules.", url);
                 break;
             case HttpURLConnection.HTTP_NOT_FOUND:
@@ -147,8 +147,8 @@ class CampaignRulesDownloader {
         }
         connection.close();
 
-        // register rules
-        if (rulesLoadResult.getData() != null) {
+        // register new rules
+        if (rulesLoadResult.getData() != null && rulesLoadResult.getReason().equals(RulesLoadResult.Reason.SUCCESS)) {
             final List<LaunchRule> campaignRules = JSONRulesParser.parse(rulesLoadResult.getData(), extensionApi);
             if (campaignRules != null) {
                 Log.trace(CampaignConstants.LOG_TAG, SELF_TAG, "Registering %s Campaign rule(s).", campaignRules.size());
