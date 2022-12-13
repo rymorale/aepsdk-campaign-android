@@ -290,8 +290,13 @@ public class CampaignExtension extends Extension {
             return;
         }
 
-        hasToDownloadRules = false;
         setCampaignState(event);
+        if (!campaignState.canDownloadRulesWithCurrentState()) {
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
+                    "handleHubSharedState -  Campaign extension is not configured to download campaign rules.");
+            return;
+        }
+        hasToDownloadRules = false;
         triggerRulesDownload();
     }
 
@@ -328,11 +333,13 @@ public class CampaignExtension extends Extension {
         }
 
         if (campaignState.canDownloadRulesWithCurrentState()) {
-            hasToDownloadRules = true;
+            hasToDownloadRules = false;
             triggerRulesDownload();
         } else {
             // Cannot download rules now. Most probably because Identity shared state hasn't received yet and we don't have ECID. Will try to download rules after receiving Identity shared state.
-            hasToDownloadRules = false;
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
+                    "processConfigurationResponse -  Campaign extension is not configured to download campaign rules.");
+            hasToDownloadRules = true;
         }
     }
 
@@ -468,7 +475,10 @@ public class CampaignExtension extends Extension {
         final Map<String, Object> lifecycleContextData = DataReader.optTypedMap(Object.class, eventData, CampaignConstants.EventDataKeys.Lifecycle.LIFECYCLE_CONTEXT_DATA, null);
         if (lifecycleContextData != null
                 && !lifecycleContextData.isEmpty()
-                && !(DataReader.optString(lifecycleContextData, CampaignConstants.EventDataKeys.Lifecycle.INSTALL_EVENT, "")).equals(CampaignConstants.EventDataKeys.Lifecycle.INSTALL_EVENT)) {
+                && !(DataReader.optString(lifecycleContextData, CampaignConstants.EventDataKeys.Lifecycle.INSTALL_EVENT, "")).equals(CampaignConstants.EventDataKeys.Lifecycle.INSTALL_EVENT)
+                && campaignState.canDownloadRulesWithCurrentState()) {
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
+                    "processLifecycleUpdate -  Triggering campaign rules download.");
             triggerRulesDownload();
         }
 
@@ -548,10 +558,13 @@ public class CampaignExtension extends Extension {
             return;
         }
 
-        if (campaignState.canDownloadRulesWithCurrentState()) {
-            clearRulesCacheDirectory();
-            triggerRulesDownload();
+        if (!campaignState.canDownloadRulesWithCurrentState()) {
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
+                    "handleLinkageFieldsEvent -  Campaign extension is not configured to download campaign rules.");
+            return;
         }
+        clearRulesCacheDirectory();
+        triggerRulesDownload();
     }
 
     /**

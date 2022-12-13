@@ -333,7 +333,7 @@ class CampaignRulesDownloader {
             campaignNamedCollection.remove(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY);
         } else {
             Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
-                    "updateUrlInDataStore - Persisting remotes URL (%s) in in Campaign Named Collection.", url);
+                    "updateUrlInNamedCollection - Persisting remotes URL (%s) in Campaign Named Collection.", url);
             campaignNamedCollection.setString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY, url);
         }
     }
