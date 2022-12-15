@@ -17,10 +17,6 @@ import com.adobe.marketing.mobile.MobileCore;
 import com.adobe.marketing.mobile.Campaign;
 import com.adobe.marketing.mobile.LoggingMode;
 import com.adobe.marketing.mobile.Signal;
-import com.adobe.marketing.mobile.campaign.CampaignExtension;
-import com.adobe.marketing.mobile.identity.IdentityExtension;
-import com.adobe.marketing.mobile.lifecycle.LifecycleExtension;
-import com.adobe.marketing.mobile.signal.SignalExtension;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.iid.FirebaseInstanceId;
@@ -45,7 +41,7 @@ public class CampaignTestApp extends Application {
 		MobileCore.setLogLevel(LoggingMode.DEBUG);
 
 		// TODO: add userprofile 2.0
-		MobileCore.registerExtensions(Arrays.asList(CampaignExtension.class, LifecycleExtension.class, IdentityExtension.class, SignalExtension.class), o -> {
+		MobileCore.registerExtensions(Arrays.asList(Campaign.EXTENSION, Lifecycle.EXTENSION, Identity.EXTENSION, Signal.EXTENSION), o -> {
 			MobileCore.configureWithAppID("31d8b0ad1f9f/98da4ef07438/launch-b7548c1d44a2-development");
 			try {
 				Thread.sleep(1000);

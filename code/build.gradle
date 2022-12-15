@@ -21,7 +21,7 @@ buildscript {
         maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.2.0'
+        classpath 'com.android.tools.build:gradle:7.2.2'
         classpath 'org.codehaus.groovy:groovy-all:2.4.15'
         classpath 'com.google.gms:google-services:4.3.5'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
@@ -70,5 +70,5 @@ ext {
     buildToolsVersion = "33.0.1"
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     jacocoVersion = "0.8.5"
-    kotlin_version = '1.7.10'
+    kotlin_version = '1.5.21'
 }
