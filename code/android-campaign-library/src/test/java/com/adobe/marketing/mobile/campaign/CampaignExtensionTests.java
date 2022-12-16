@@ -282,7 +282,7 @@ public class CampaignExtensionTests {
         // test
         campaignExtension.onRegistered();
         // verify
-        verify(mockExtensionApi, times(7)).registerEventListener(anyString(), anyString(), any(ExtensionEventListener.class));
+        verify(mockExtensionApi, times(6)).registerEventListener(anyString(), anyString(), any(ExtensionEventListener.class));
     }
 
     // =================================================================================================================
@@ -699,68 +699,6 @@ public class CampaignExtensionTests {
             verify(mockCacheService, times(2)).remove(eq(CampaignConstants.CACHE_BASE_DIR), eq(CampaignConstants.RULES_CACHE_FOLDER));
             verify(mockCampaignRulesDownloader, times(1)).loadRulesFromUrl(eq(expectedRulesDownloadUrl), eq(""));
         }
-    }
-
-    // =================================================================================================================
-    // void handleHubSharedState(Event event)
-    // =================================================================================================================
-    @Test
-    public void test_handleHubSharedState_When_NullEvent() {
-        // test
-        campaignExtension.handleHubSharedState(null);
-
-        // verify
-        verify(mockCampaignRulesDownloader, times(0)).loadRulesFromUrl(anyString(), anyString());
-    }
-
-    @Test
-    public void test_handleHubSharedState_When_NullEventData() {
-        // setup
-        Event testEvent = new Event.Builder("Test event", EventType.HUB, EventSource.SHARED_STATE)
-                .build();
-
-        // test
-        campaignExtension.handleHubSharedState(testEvent);
-
-        // verify
-        verify(mockCampaignRulesDownloader, times(0)).loadRulesFromUrl(anyString(), anyString());
-    }
-
-    @Test
-    public void test_handleHubSharedState_When_NonIdentityEvent() {
-        // setup
-        Map<String, Object> eventData = new HashMap<>();
-        eventData.put(CampaignConstants.EventDataKeys.STATE_OWNER, CampaignConstants.EventDataKeys.Configuration.EXTENSION_NAME);
-        Event testEvent = new Event.Builder("Test event", EventType.HUB, EventSource.SHARED_STATE)
-                .setEventData(eventData)
-                .build();
-
-        // test
-        campaignExtension.handleHubSharedState(testEvent);
-
-        // verify
-        verify(mockCampaignRulesDownloader, times(0)).loadRulesFromUrl(anyString(), anyString());
-    }
-
-    @Test
-    public void test_handleHubSharedState_Happy() {
-        // setup
-        CampaignState campaignState = new CampaignState();
-        campaignState.setState(getConfigurationEventData(new HashMap<>()), getIdentityEventData());
-        campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, campaignState, mockCacheService, mockCampaignRulesDownloader);
-        String expectedRulesDownloadUrl = "https://testMcias/testServer/testPropertyId/testExperienceCloudId/rules.zip";
-
-        Map<String, Object> eventData = new HashMap<>();
-        eventData.put(CampaignConstants.EventDataKeys.STATE_OWNER, CampaignConstants.EventDataKeys.Identity.EXTENSION_NAME);
-        Event testEvent = new Event.Builder("Test event", EventType.HUB, EventSource.SHARED_STATE)
-                .setEventData(eventData)
-                .build();
-
-        // test
-        campaignExtension.handleHubSharedState(testEvent);
-
-        // verify
-        verify(mockCampaignRulesDownloader, times(1)).loadRulesFromUrl(eq(expectedRulesDownloadUrl), eq(null));
     }
 
     // =================================================================================================================

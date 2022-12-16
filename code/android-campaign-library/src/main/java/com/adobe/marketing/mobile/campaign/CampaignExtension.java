@@ -200,15 +200,32 @@ public class CampaignExtension extends Extension {
                 EventSource.WILDCARD,
                 this::handleWildcardEvents
         );
-        getApi().registerEventListener(
-                EventType.HUB,
-                EventSource.SHARED_STATE,
-                this::handleHubSharedState
-        );
     }
 
     @Override
     public boolean readyForEvent(final Event event) {
+        if (event == null) {
+            return false;
+        }
+
+        final Map<String, Object> eventData = event.getEventData();
+        if (eventData == null || eventData.isEmpty()) {
+            return false;
+        }
+
+        final String stateOwner = DataReader.optString(eventData, CampaignConstants.EventDataKeys.STATE_OWNER, "");
+        if (stateOwner.equals(CampaignConstants.EventDataKeys.Identity.EXTENSION_NAME)) {
+            setCampaignState(event);
+
+            if (hasToDownloadRules && campaignState.canDownloadRulesWithCurrentState()) {
+                hasToDownloadRules = false;
+                triggerRulesDownload();
+            } else {
+                Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
+                        "readyForEvent - Campaign extension is not configured to download campaign rules.");
+            }
+        }
+
         return getApi().getSharedState(CampaignConstants.EventDataKeys.Configuration.EXTENSION_NAME,
                 event, false, SharedStateResolution.ANY).getStatus() == SharedStateStatus.SET && getApi().getSharedState(CampaignConstants.EventDataKeys.Identity.EXTENSION_NAME,
                 event, false, SharedStateResolution.ANY).getStatus() == SharedStateStatus.SET;
@@ -267,40 +284,6 @@ public class CampaignExtension extends Extension {
     }
 
     /**
-     * Processes {@code SharedState} update events to handle any update to {@code Identity} extension shared state.
-     *
-     * @param event to be processed
-     */
-    void handleHubSharedState(final Event event) {
-        if (event == null) {
-            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "handleHubSharedState - Unable to process event, event received is null.");
-            return;
-        }
-
-        final Map<String, Object> eventData = event.getEventData();
-        if (eventData == null || eventData.isEmpty()) {
-            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "handleHubSharedState - Shared state update event is null");
-            return;
-        }
-        if (!eventData.get(CampaignConstants.EventDataKeys.STATE_OWNER).equals(CampaignConstants.EventDataKeys.Identity.EXTENSION_NAME)) {
-            return;
-        }
-
-        if (!hasToDownloadRules) {
-            return;
-        }
-
-        setCampaignState(event);
-        if (!campaignState.canDownloadRulesWithCurrentState()) {
-            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
-                    "handleHubSharedState -  Campaign extension is not configured to download campaign rules.");
-            return;
-        }
-        hasToDownloadRules = false;
-        triggerRulesDownload();
-    }
-
-    /**
      * Processes {@code Configuration} response to handle any update to {@code MobilePrivacyStatus}, handle any update
      * to the number of days to delay or pause the sending of the Campaign registration request, and to trigger Campaign rules download.
      * <p>
@@ -332,7 +315,7 @@ public class CampaignExtension extends Extension {
             return;
         }
 
-        if (campaignState.canDownloadRulesWithCurrentState()) {
+        if (hasToDownloadRules && campaignState.canDownloadRulesWithCurrentState()) {
             hasToDownloadRules = false;
             triggerRulesDownload();
         } else {
@@ -463,23 +446,6 @@ public class CampaignExtension extends Extension {
         if (event == null) {
             Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "processLifecycleUpdate - Unable to process event, event received is null.");
             return;
-        }
-
-        final Map<String, Object> eventData = event.getEventData();
-        if (eventData == null || eventData.isEmpty()) {
-            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "processLifecycleUpdate - Ignoring event with null or empty EventData.");
-            return;
-        }
-
-        // trigger rules download on non lifecycle first launch events
-        final Map<String, Object> lifecycleContextData = DataReader.optTypedMap(Object.class, eventData, CampaignConstants.EventDataKeys.Lifecycle.LIFECYCLE_CONTEXT_DATA, null);
-        if (lifecycleContextData != null
-                && !lifecycleContextData.isEmpty()
-                && !(DataReader.optString(lifecycleContextData, CampaignConstants.EventDataKeys.Lifecycle.INSTALL_EVENT, "")).equals(CampaignConstants.EventDataKeys.Lifecycle.INSTALL_EVENT)
-                && campaignState.canDownloadRulesWithCurrentState()) {
-            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
-                    "processLifecycleUpdate -  Triggering campaign rules download.");
-            triggerRulesDownload();
         }
 
         if (!campaignState.canRegisterWithCurrentState()) {

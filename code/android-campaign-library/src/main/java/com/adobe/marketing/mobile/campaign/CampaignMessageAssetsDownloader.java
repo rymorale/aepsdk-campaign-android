@@ -117,7 +117,6 @@ class CampaignMessageAssetsDownloader {
         Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "cacheAssetData - Caching asset %s for message id %s.", key, messageId);
         final Map<String, String> metadata = Utils.extractMetadataFromResponse(connection);
         final String assetStoragePath = CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.MESSAGE_CACHE_DIR + File.separator + messageId;
-        metadata.put(CampaignConstants.METADATA_PATH, assetStoragePath);
         final CacheEntry cacheEntry = new CacheEntry(connection.getInputStream(), CacheExpiry.never(), metadata);
         cacheService.set(assetStoragePath, key, cacheEntry);
     }
