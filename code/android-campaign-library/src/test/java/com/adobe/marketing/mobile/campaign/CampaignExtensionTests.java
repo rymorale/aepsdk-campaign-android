@@ -12,13 +12,16 @@
 package com.adobe.marketing.mobile.campaign;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -84,6 +87,7 @@ public class CampaignExtensionTests {
 
     private static final String messageId = "07a1c997-2450-46f0-a454-537906404124";
     private static final String MESSAGES_CACHE = CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.MESSAGE_CACHE_DIR + File.separator;
+    private static final String expectedRulesDownloadUrl = "https://testMcias/testServer/testPropertyId/testExperienceCloudId/rules.zip";
 
     private HashMap<String, Object> expectedClickedEventMessageData;
     private HashMap<String, Object> expectedViewedEventMessageData;
@@ -174,6 +178,7 @@ public class CampaignExtensionTests {
 
     private SharedStateResult getConfigurationEventData(Map<String, Object> customConfig) {
         Map<String, Object> configData = new HashMap<>();
+        configData.put(CampaignConstants.EventDataKeys.STATE_OWNER, CampaignConstants.EventDataKeys.Configuration.EXTENSION_NAME);
         configData.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_SERVER_KEY, "testServer");
         configData.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_PKEY_KEY, "testPkey");
         configData.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_MCIAS_KEY, "testMcias");
@@ -190,6 +195,7 @@ public class CampaignExtensionTests {
 
     private SharedStateResult getIdentityEventData() {
         Map<String, Object> identityData = new HashMap<>();
+        identityData.put(CampaignConstants.EventDataKeys.STATE_OWNER, CampaignConstants.EventDataKeys.Identity.EXTENSION_NAME);
         identityData.put(CampaignConstants.EventDataKeys.Identity.VISITOR_ID_MID, "testExperienceCloudId");
         SharedStateResult sharedStateResult = new SharedStateResult(SharedStateStatus.SET, identityData);
 
@@ -283,6 +289,107 @@ public class CampaignExtensionTests {
         campaignExtension.onRegistered();
         // verify
         verify(mockExtensionApi, times(6)).registerEventListener(anyString(), anyString(), any(ExtensionEventListener.class));
+    }
+
+    // =================================================================================================================
+    // public boolean readyForEvent(final Event event)
+    // =================================================================================================================
+    @Test
+    public void test_readyForEvent_when_eventReceived_and_configurationAndIdentitySharedStateDataPresent_then_readyForEventTrue() {
+        // setup
+        setupServiceProviderMockAndRunTest(() -> {
+            when(mockExtensionApi.getSharedState(eq("com.adobe.module.configuration"), any(Event.class), anyBoolean(), any(SharedStateResolution.class))).thenReturn(getConfigurationEventData(new HashMap<>()));
+            when(mockExtensionApi.getSharedState(eq("com.adobe.module.identity"), any(Event.class), anyBoolean(), any(SharedStateResolution.class))).thenReturn(getIdentityEventData());
+            campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, new CampaignState(), mockCacheService, mockCampaignRulesDownloader);
+
+            Event testEvent = new Event.Builder("Test event", EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT)
+                    .setEventData(getConfigurationEventData(new HashMap<>()).getValue())
+                    .build();
+
+            // verify
+            assertTrue(campaignExtension.readyForEvent(testEvent));
+        });
+    }
+
+    @Test
+    public void test_readyForEvent_when_nullEventReceived_then_readyForEventIsFalse() {
+        // setup
+        setupServiceProviderMockAndRunTest(() -> {
+            when(mockExtensionApi.getSharedState(eq("com.adobe.module.configuration"), any(Event.class), anyBoolean(), any(SharedStateResolution.class))).thenReturn(getConfigurationEventData(new HashMap<>()));
+            when(mockExtensionApi.getSharedState(eq("com.adobe.module.identity"), any(Event.class), anyBoolean(), any(SharedStateResolution.class))).thenReturn(getIdentityEventData());
+            campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, new CampaignState(), mockCacheService, mockCampaignRulesDownloader);
+
+            // verify
+            assertFalse(campaignExtension.readyForEvent(null));
+        });
+    }
+
+    @Test
+    public void test_readyForEvent_when_eventWithEmptyDataReecevied_then_readyForEventIsFalse() {
+        // setup
+        setupServiceProviderMockAndRunTest(() -> {
+            when(mockExtensionApi.getSharedState(eq("com.adobe.module.configuration"), any(Event.class), anyBoolean(), any(SharedStateResolution.class))).thenReturn(getConfigurationEventData(new HashMap<>()));
+            when(mockExtensionApi.getSharedState(eq("com.adobe.module.identity"), any(Event.class), anyBoolean(), any(SharedStateResolution.class))).thenReturn(getIdentityEventData());
+            campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, new CampaignState(), mockCacheService, mockCampaignRulesDownloader);
+
+            Event testEvent = new Event.Builder("Test event", EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT)
+                    .build();
+
+            // verify
+            assertFalse(campaignExtension.readyForEvent(testEvent));
+        });
+    }
+
+    @Test
+    public void test_readyForEvent_when_eventReceived_and_configurationSharedStateNotReady_then_readyForEventIsFalse() {
+        // setup
+        setupServiceProviderMockAndRunTest(() -> {
+            when(mockExtensionApi.getSharedState(eq("com.adobe.module.configuration"), any(Event.class), anyBoolean(), any(SharedStateResolution.class))).thenReturn(new SharedStateResult(SharedStateStatus.PENDING, new HashMap<>()));
+            when(mockExtensionApi.getSharedState(eq("com.adobe.module.identity"), any(Event.class), anyBoolean(), any(SharedStateResolution.class))).thenReturn(getIdentityEventData());
+            campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, new CampaignState(), mockCacheService, mockCampaignRulesDownloader);
+
+            Event testEvent = new Event.Builder("Test event", EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT)
+                    .setEventData(getConfigurationEventData(new HashMap<>()).getValue())
+                    .build();
+
+            // verify
+            assertFalse(campaignExtension.readyForEvent(testEvent));
+        });
+    }
+
+    @Test
+    public void test_readyForEvent_when_eventReceived_and_identitySharedStateNotReady_then_readyForEventIsFalse() {
+        // setup
+        setupServiceProviderMockAndRunTest(() -> {
+            when(mockExtensionApi.getSharedState(eq("com.adobe.module.configuration"), any(Event.class), anyBoolean(), any(SharedStateResolution.class))).thenReturn(getConfigurationEventData(new HashMap<>()));
+            when(mockExtensionApi.getSharedState(eq("com.adobe.module.identity"), any(Event.class), anyBoolean(), any(SharedStateResolution.class))).thenReturn(new SharedStateResult(SharedStateStatus.PENDING, new HashMap<>()));
+            campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, new CampaignState(), mockCacheService, mockCampaignRulesDownloader);
+
+            Event testEvent = new Event.Builder("Test event", EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT)
+                    .setEventData(getConfigurationEventData(new HashMap<>()).getValue())
+                    .build();
+
+            // verify
+            assertFalse(campaignExtension.readyForEvent(testEvent));
+        });
+    }
+
+    @Test
+    public void test_readyForEvent_when_identityEventReceived_and_configurationAndIdentitySharedStateDataPresent_then_rulesDownloadTriggered_and_readyForEventIsTrue() {
+        // setup
+        setupServiceProviderMockAndRunTest(() -> {
+            when(mockExtensionApi.getSharedState(eq("com.adobe.module.configuration"), any(Event.class), anyBoolean(), any(SharedStateResolution.class))).thenReturn(getConfigurationEventData(new HashMap<>()));
+            when(mockExtensionApi.getSharedState(eq("com.adobe.module.identity"), any(Event.class), anyBoolean(), any(SharedStateResolution.class))).thenReturn(getIdentityEventData());
+            campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, new CampaignState(), mockCacheService, mockCampaignRulesDownloader);
+
+            Event testEvent = new Event.Builder("Test event", EventType.IDENTITY, EventSource.RESPONSE_CONTENT)
+                    .setEventData(getIdentityEventData().getValue())
+                    .build();
+
+            // verify
+            assertTrue(campaignExtension.readyForEvent(testEvent));
+            verify(mockCampaignRulesDownloader, times(1)).loadRulesFromUrl(eq(expectedRulesDownloadUrl), eq(null));
+        });
     }
 
     // =================================================================================================================
@@ -583,7 +690,6 @@ public class CampaignExtensionTests {
             CampaignState campaignState = new CampaignState();
             campaignState.setState(getConfigurationEventData(new HashMap<>()), getIdentityEventData());
             campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, campaignState, mockCacheService, mockCampaignRulesDownloader);
-            String expectedRulesDownloadUrl = "https://testMcias/testServer/testPropertyId/testExperienceCloudId/rules.zip";
             String expectedBase64EncodedLinkageFields = "eyJrZXkxIjoidmFsdWUxIn0=";
             HashMap<String, Object> eventData = new HashMap<>();
             Map<String, String> linkageFields = new HashMap<>();
@@ -639,7 +745,6 @@ public class CampaignExtensionTests {
         CampaignState campaignState = new CampaignState();
         campaignState.setState(getConfigurationEventData(new HashMap<>()), getIdentityEventData());
         campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, campaignState, mockCacheService, mockCampaignRulesDownloader);
-        String expectedRulesDownloadUrl = "https://testMcias/testServer/testPropertyId/testExperienceCloudId/rules.zip";
 
         Event testEvent = new Event.Builder("Test event", EventType.CAMPAIGN, EventSource.REQUEST_RESET)
                 .build();
@@ -659,14 +764,13 @@ public class CampaignExtensionTests {
     public void test_handleResetLinkageFields_when_linkageFieldsSetPreviously() {
         // setup
         try (MockedStatic<Base64> ignored = Mockito.mockStatic(Base64.class)) {
-            Answer<String> stringAnswer = invocation -> "eyJrZXkxIjoidmFsdWUxIn0=";
+            String expectedBase64EncodedLinkageFields = "eyJrZXkxIjoidmFsdWUxIn0=";
+            Answer<String> stringAnswer = invocation -> expectedBase64EncodedLinkageFields;
             when(Base64.encodeToString(any(byte[].class), anyInt())).thenAnswer(stringAnswer);
             CampaignState campaignState = new CampaignState();
             campaignState.setState(getConfigurationEventData(new HashMap<>()), getIdentityEventData());
             campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, campaignState, mockCacheService, mockCampaignRulesDownloader);
 
-            String expectedRulesDownloadUrl = "https://testMcias/testServer/testPropertyId/testExperienceCloudId/rules.zip";
-            String expectedBase64EncodedLinkageFields = "eyJrZXkxIjoidmFsdWUxIn0=";
             HashMap<String, Object> eventData = new HashMap<>();
             Map<String, String> linkageFields = new HashMap<>();
             linkageFields.put("key1", "value1");
@@ -734,7 +838,6 @@ public class CampaignExtensionTests {
         CampaignState campaignState = new CampaignState();
         campaignState.setState(getConfigurationEventData(new HashMap<>()), getIdentityEventData());
         campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, campaignState, mockCacheService, mockCampaignRulesDownloader);
-        String expectedRulesDownloadUrl = "https://testMcias/testServer/testPropertyId/testExperienceCloudId/rules.zip";
 
         HashMap<String, Object> configData = new HashMap<>();
         configData.put(CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY, "optedin");
@@ -1215,7 +1318,7 @@ public class CampaignExtensionTests {
         // setup for second part of test
         // add values to datastore to simulate a previous successful campaign registration request
         // and set registration paused status to true
-        Mockito.reset(mockPersistentHitQueue);
+        reset(mockPersistentHitQueue);
         Map<String, Object> pausedConfig = new HashMap<>();
         pausedConfig.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_REGISTRATION_PAUSED_KEY, true);
         campaignState.setState((getConfigurationEventData(pausedConfig)), getIdentityEventData());
@@ -1259,7 +1362,7 @@ public class CampaignExtensionTests {
 
         // setup for second part of test
         // add values to datastore to simulate a previous successful campaign registration request
-        Mockito.reset(mockPersistentHitQueue);
+        reset(mockPersistentHitQueue);
         fakeNamedCollection.setLong(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY, System.currentTimeMillis());
         fakeNamedCollection.setString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_EXPERIENCE_CLOUD_ID_KEY, "newExperienceCloudId");
 

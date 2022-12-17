@@ -220,9 +220,6 @@ public class CampaignExtension extends Extension {
             if (hasToDownloadRules && campaignState.canDownloadRulesWithCurrentState()) {
                 hasToDownloadRules = false;
                 triggerRulesDownload();
-            } else {
-                Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
-                        "readyForEvent - Campaign extension is not configured to download campaign rules.");
             }
         }
 

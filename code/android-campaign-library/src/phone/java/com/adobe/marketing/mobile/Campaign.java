@@ -11,7 +11,6 @@
 
 package com.adobe.marketing.mobile;
 
-import com.adobe.marketing.mobile.campaign.CampaignConstants;
 import com.adobe.marketing.mobile.campaign.CampaignExtension;
 import com.adobe.marketing.mobile.services.Log;
 
@@ -22,6 +21,9 @@ import java.util.Map;
 
 public class Campaign {
 	private final static String EXTENSION_VERSION = "2.0.0";
+	private static final String LOG_TAG = "Campaign";
+	private static final String LINKAGE_FIELDS = "linkagefields";
+
 	public static final Class<? extends Extension> EXTENSION = CampaignExtension.class;
 
 	private Campaign() {
@@ -45,7 +47,7 @@ public class Campaign {
 			if (extensionError == null) {
 				return;
 			}
-			Log.error(CampaignConstants.LOG_TAG, "registerExtension", "There was an error when registering the Campaign extension: %s",
+			Log.error(LOG_TAG, "registerExtension", "There was an error when registering the Campaign extension: %s",
 					extensionError.getErrorName());
 		});
 	}
@@ -68,13 +70,13 @@ public class Campaign {
 	 */
 	public static void setLinkageFields(@NotNull final Map<String, String> linkageFields) {
 		if (linkageFields == null || linkageFields.isEmpty()) {
-			Log.debug(CampaignConstants.LOG_TAG, "setLinkageFields",
+			Log.debug(LOG_TAG, "setLinkageFields",
 					"setLinkageFields -  Cannot set Linkage Fields, provided linkage fields map is empty. \n For more information: https://aep-sdks.gitbook.io/docs/using-mobile-extensions/adobe-campaign-standard/adobe-campaign-standard-api-reference#set-linkage-fields");
 			return;
 		}
 
 		final Map<String, Object> eventData = new HashMap<>();
-		eventData.put(CampaignConstants.EventDataKeys.Campaign.LINKAGE_FIELDS, linkageFields);
+		eventData.put(LINKAGE_FIELDS, linkageFields);
 
 		final Event event = new Event.Builder("setLinkageFields Event",
 				EventType.CAMPAIGN, EventSource.REQUEST_IDENTITY).setEventData(eventData).build();
