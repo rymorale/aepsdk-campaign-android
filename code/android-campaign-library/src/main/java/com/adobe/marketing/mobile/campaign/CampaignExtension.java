@@ -11,6 +11,8 @@
 
 package com.adobe.marketing.mobile.campaign;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.util.Base64;
 
 import androidx.annotation.VisibleForTesting;
@@ -20,6 +22,7 @@ import com.adobe.marketing.mobile.EventSource;
 import com.adobe.marketing.mobile.EventType;
 import com.adobe.marketing.mobile.Extension;
 import com.adobe.marketing.mobile.ExtensionApi;
+import com.adobe.marketing.mobile.MobileCore;
 import com.adobe.marketing.mobile.MobilePrivacyStatus;
 import com.adobe.marketing.mobile.SharedStateResolution;
 import com.adobe.marketing.mobile.SharedStateResult;
@@ -41,6 +44,7 @@ import com.adobe.marketing.mobile.util.StringUtils;
 
 import org.json.JSONObject;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -93,6 +97,9 @@ public class CampaignExtension extends Extension {
         // retrieve service dependencies
         dataStoreService = ServiceProvider.getInstance().getDataStoreService();
 
+        // migrate ACPCampaign datastore if present
+        migrateFromACPCampaign(getNamedCollection());
+
         // initialize campaign rules engine
         campaignRulesEngine = new LaunchRulesEngine(extensionApi);
 
@@ -112,12 +119,12 @@ public class CampaignExtension extends Extension {
     /**
      * Testing Constructor.
      *
-     * @param extensionApi {@link ExtensionApi} instance
-     * @param persistentHitQueue {@link PersistentHitQueue} instance to use for testing
-     * @param dataStoreService {@link DataStoring} instance to use for testing
-     * @param launchRulesEngine {@link LaunchRulesEngine} instance to use for testing
-     * @param campaignState {@link CampaignState} instance to use for testing
-     * @param cacheService {@link CacheService} instance to use for testing
+     * @param extensionApi            {@link ExtensionApi} instance
+     * @param persistentHitQueue      {@link PersistentHitQueue} instance to use for testing
+     * @param dataStoreService        {@link DataStoring} instance to use for testing
+     * @param launchRulesEngine       {@link LaunchRulesEngine} instance to use for testing
+     * @param campaignState           {@link CampaignState} instance to use for testing
+     * @param cacheService            {@link CacheService} instance to use for testing
      * @param campaignRulesDownloader {@link CampaignRulesDownloader} instance to use for testing
      */
     @VisibleForTesting
@@ -622,6 +629,41 @@ public class CampaignExtension extends Extension {
      */
     private NamedCollection getNamedCollection() {
         return dataStoreService.getNamedCollection(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_NAME);
+    }
+
+    /**
+     * Migrates any datastore entries found in an ACPCampaign datastore to the {@code AEPCampaign} datastore.
+     *
+     * @param aepDatastore the AEPCampaign {@link NamedCollection}
+     */
+    private void migrateFromACPCampaign(final NamedCollection aepDatastore) {
+        SharedPreferences sharedPreferences = null;
+        final Context appContext = MobileCore.getApplication().getApplicationContext();
+        if (appContext != null) {
+            sharedPreferences = appContext.getSharedPreferences(CampaignConstants.CAMPAIGN_DATA_STORE_NAME, 0);
+        }
+
+        if (sharedPreferences != null) {
+            Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
+                    "migrateFromACPCampaign - Campaign preferences found, migrating existing shared preferences.");
+            // start copying values from ACP datastore to the AEP datastore
+            // the key names are the same so we can use the AEP datastore constants
+            aepDatastore.setString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_EXPERIENCE_CLOUD_ID_KEY,
+                    sharedPreferences.getString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_EXPERIENCE_CLOUD_ID_KEY, ""));
+            aepDatastore.setString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY,
+                    sharedPreferences.getString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY, ""));
+            aepDatastore.setLong(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY,
+                    sharedPreferences.getLong(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY, -1L));
+
+            // delete the ACP datastore at com.app.package.name/shared_prefs/CampaignDatastore.xml
+            final File applicationBaseDir = ServiceProvider.getInstance().getDeviceInfoService().getApplicationBaseDir();
+            final File acpDatastore = new File(applicationBaseDir.getPath() + File.separator + "shared_prefs" + File.separator + CampaignConstants.CAMPAIGN_DATA_STORE_NAME + ".xml");
+            if (acpDatastore.exists()) {
+                Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
+                        "migrateFromACPCampaign - Deleting migrated shared preferences file (%s).", acpDatastore.getName());
+                FileUtils.deleteFile(acpDatastore, false);
+            }
+        }
     }
 
     /**

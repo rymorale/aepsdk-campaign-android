@@ -19,6 +19,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.reset;
@@ -26,6 +27,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import android.app.Application;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.util.Base64;
 
 import com.adobe.marketing.mobile.Event;
@@ -33,6 +37,7 @@ import com.adobe.marketing.mobile.EventSource;
 import com.adobe.marketing.mobile.EventType;
 import com.adobe.marketing.mobile.ExtensionApi;
 import com.adobe.marketing.mobile.ExtensionEventListener;
+import com.adobe.marketing.mobile.MobileCore;
 import com.adobe.marketing.mobile.MobilePrivacyStatus;
 import com.adobe.marketing.mobile.SharedStateResolution;
 import com.adobe.marketing.mobile.SharedStateResult;
@@ -125,6 +130,12 @@ public class CampaignExtensionTests {
     Evaluable mockEvaluable;
     @Mock
     CampaignState mockCampaignState;
+    @Mock
+    Application mockApplication;
+    @Mock
+    Context mockContext;
+    @Mock
+    SharedPreferences mockSharedPreferences;
 
     @Before()
     public void setup() {
@@ -164,6 +175,7 @@ public class CampaignExtensionTests {
             when(mockServiceProvider.getDataQueueService()).thenReturn(mockDataQueueService);
             when(mockDataStoreService.getNamedCollection(anyString())).thenReturn(mockNamedCollection);
             when(mockDeviceInfoService.getApplicationCacheDir()).thenReturn(cacheDir);
+            when(mockDeviceInfoService.getApplicationBaseDir()).thenReturn(cacheDir);
             when(mockDataQueueService.getDataQueue(anyString())).thenReturn(mockDataQueue);
             testRunnable.run();
         } catch (FileNotFoundException exception) {
@@ -249,7 +261,7 @@ public class CampaignExtensionTests {
         // setup
         setupServiceProviderMockAndRunTest(() -> {
             // test
-            campaignExtension = new CampaignExtension(mockExtensionApi);
+            campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, mockCampaignState, mockCacheService, mockCampaignRulesDownloader);
 
             // verify
             assertNotNull(campaignExtension);
@@ -1635,5 +1647,47 @@ public class CampaignExtensionTests {
             // verify
             verify(mockExtensionApi, times(0)).dispatch(eventArgumentCaptor.capture());
         });
+    }
+
+    // =================================================================================================================
+    // void migrateFromACPCampaign(final NamedCollection namedCollection)
+    // =================================================================================================================
+    @Test
+    public void testACPDatastoreMigratedToAEPNamedCollection() throws Exception {
+        FakeNamedCollection testNamedCollection = new FakeNamedCollection();
+        when(mockDataStoreService.getNamedCollection(eq(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_NAME))).thenReturn(testNamedCollection);
+        File testDatastore = TestUtils.getResource("CampaignDatastore.xml");
+        File testSharedPrefsFile = new File(cacheDir + File.separator + "shared_prefs" + File.separator + "CampaignDatastore.xml");
+        TestFileUtils.copyFile(testDatastore, testSharedPrefsFile);
+
+        try (MockedStatic<ServiceProvider> serviceProviderMockedStatic = Mockito.mockStatic(ServiceProvider.class)) {
+            serviceProviderMockedStatic.when(ServiceProvider::getInstance).thenReturn(mockServiceProvider);
+            when(mockServiceProvider.getDeviceInfoService()).thenReturn(mockDeviceInfoService);
+            when(mockServiceProvider.getDataStoreService()).thenReturn(mockDataStoreService);
+            when(mockDataStoreService.getNamedCollection(anyString())).thenReturn(testNamedCollection);
+            when(mockDeviceInfoService.getApplicationCacheDir()).thenReturn(cacheDir);
+            when(mockDeviceInfoService.getApplicationBaseDir()).thenReturn(cacheDir);
+            when(mockServiceProvider.getDataQueueService()).thenReturn(mockDataQueueService);
+            when(mockDataQueueService.getDataQueue(anyString())).thenReturn(mockDataQueue);
+
+            try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class)) {
+                mobileCoreMockedStatic.when(MobileCore::getApplication).thenReturn(mockApplication);
+                when(mockApplication.getApplicationContext()).thenReturn(mockContext);
+                when(mockContext.getSharedPreferences(anyString(), anyInt())).thenReturn(mockSharedPreferences);
+                when(mockSharedPreferences.getString(eq(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY), anyString())).thenReturn(expectedRulesDownloadUrl);
+                when(mockSharedPreferences.getString(eq(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_EXPERIENCE_CLOUD_ID_KEY), anyString())).thenReturn("testEcid");
+                when(mockSharedPreferences.getLong(eq(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY), anyLong())).thenReturn(1671470288599L);
+
+                // test
+                campaignExtension = new CampaignExtension(mockExtensionApi);
+
+                // verify
+                assertEquals(expectedRulesDownloadUrl, testNamedCollection.getString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY, ""));
+                assertEquals("testEcid", testNamedCollection.getString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_EXPERIENCE_CLOUD_ID_KEY, ""));
+                assertEquals(1671470288599L, testNamedCollection.getLong(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY, -1L));
+                // verify copied acp datastore is cleaned after it is migrated
+                assertFalse(testSharedPrefsFile.exists());
+            }
+        };
     }
 }
