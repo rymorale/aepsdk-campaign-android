@@ -1,0 +1,117 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "condition": {
+        "type": "group",
+        "definition": {
+          "logic": "and",
+          "conditions": [
+            {
+              "definition": {
+                "key": "action",
+                "matcher": "eq",
+                "values": [
+                  "localImpression"
+                ]
+              },
+              "type": "matcher"
+            },
+            {
+              "type": "matcher",
+              "definition": {
+                "key": "~timestampu",
+                "matcher": "ge",
+                "values": [
+                  1557126000
+                ]
+              }
+            },
+            {
+              "type": "matcher",
+              "definition": {
+                "key": "~timestampu",
+                "matcher": "le",
+                "values": [
+                  2590908400
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "consequences": [
+        {
+          "id": "11956458",
+          "type": "iam",
+          "detail": {
+            "userData": {
+              "broadlogId": "h153d80",
+              "deliveryId": "b670ea"
+            },
+            "wait": 10,
+            "content": "Local Notification",
+            "title": "in-App - Local Notification",
+            "template": "local"
+          }
+        }
+      ]
+    },
+    {
+      "condition": {
+        "type": "group",
+        "definition": {
+          "logic": "and",
+          "conditions": [
+            {
+              "definition": {
+                "key": "action",
+                "matcher": "eq",
+                "values": [
+                  "shoppingCart"
+                ]
+              },
+              "type": "matcher"
+            },
+            {
+              "type": "matcher",
+              "definition": {
+                "key": "~timestampu",
+                "matcher": "ge",
+                "values": [
+                  1556866800
+                ]
+              }
+            },
+            {
+              "type": "matcher",
+              "definition": {
+                "key": "~timestampu",
+                "matcher": "le",
+                "values": [
+                  1572505200
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "consequences": [
+        {
+          "id": "11822924",
+          "type": "iam",
+          "detail": {
+            "userData": {
+              "broadlogId": "h1531c8",
+              "deliveryId": "b4674c"
+            },
+            "adb_deeplink": "https://deeplink/ShoppingActivity",
+            "content": "Test Content",
+            "title": "Test Titile",
+            "template": "local"
+          }
+        }
+      ]
+    }
+  ]
+}

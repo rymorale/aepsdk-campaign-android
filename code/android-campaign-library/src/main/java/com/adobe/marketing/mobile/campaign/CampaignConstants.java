@@ -20,9 +20,9 @@ import java.util.Arrays;
  * <p>
  * This class is not instantiable.
  */
-public final class CampaignConstants {
+final class CampaignConstants {
 
-    public static final String LOG_TAG = "Campaign";
+    static final String LOG_TAG = "Campaign";
     static final String EXTENSION_NAME = "com.adobe.module.campaign";
     static final String FRIENDLY_NAME = "Campaign";
 
@@ -31,6 +31,7 @@ public final class CampaignConstants {
     static final String CAMPAIGN_NAMED_COLLECTION_EXPERIENCE_CLOUD_ID_KEY = "ExperienceCloudId";
     static final String CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY = "CampaignRegistrationTimestamp";
 
+    static final String AEPSDK_CACHE_BASE_DIR = "aepsdkcache";
     static final String CACHE_BASE_DIR = "campaign";
     static final String MESSAGE_CACHE_DIR = "messages";
     static final String ZIP_HANDLE = "campaign_rules.zip";
@@ -100,7 +101,7 @@ public final class CampaignConstants {
     /**
      * Context data keys
      */
-    public static final class ContextDataKeys {
+    static final class ContextDataKeys {
         // in-app constants for message tracking
         static final String MESSAGE_TRIGGERED = "a.message.triggered";
         static final String MESSAGE_CLICKED = "a.message.clicked";
@@ -111,7 +112,7 @@ public final class CampaignConstants {
         }
     }
 
-    public static final class CampaignHit {
+    static final class CampaignHit {
         static final String URL = "url";
         static final String PAYLOAD = "payload";
         static final String TIMEOUT = "timeout";
@@ -120,16 +121,16 @@ public final class CampaignConstants {
         }
     }
 
-    public static final class Notification {
-        public static final String CONTENT_KEY = "NOTIFICATION_CONTENT";
-        public static final String USER_INFO_KEY = "NOTIFICATION_USER_INFO";
-        public static final String IDENTIFIER_KEY = "NOTIFICATION_IDENTIFIER";
-        public static final String DEEPLINK_KEY = "NOTIFICATION_DEEPLINK";
-        public static final String SOUND_KEY = "NOTIFICATION_SOUND";
-        public static final String SENDER_CODE_KEY = "NOTIFICATION_SENDER_CODE";
-        public static final int SENDER_CODE = 750183;
-        public static final String REQUEST_CODE_KEY = "NOTIFICATION_REQUEST_CODE";
-        public static final String TITLE = "NOTIFICATION_TITLE";
+    static final class Notification {
+        static final String CONTENT_KEY = "NOTIFICATION_CONTENT";
+        static final String USER_INFO_KEY = "NOTIFICATION_USER_INFO";
+        static final String IDENTIFIER_KEY = "NOTIFICATION_IDENTIFIER";
+        static final String DEEPLINK_KEY = "NOTIFICATION_DEEPLINK";
+        static final String SOUND_KEY = "NOTIFICATION_SOUND";
+        static final String SENDER_CODE_KEY = "NOTIFICATION_SENDER_CODE";
+        static final int SENDER_CODE = 750183;
+        static final String REQUEST_CODE_KEY = "NOTIFICATION_REQUEST_CODE";
+        static final String TITLE = "NOTIFICATION_TITLE";
 
         private Notification() {
         }
@@ -138,14 +139,14 @@ public final class CampaignConstants {
     /*
         EventDataKeys
      */
-    public static final class EventDataKeys {
+    static final class EventDataKeys {
         static final String STATE_OWNER = "stateowner";
 
         private EventDataKeys() {
         }
 
-        public static final class Campaign {
-            public static final String LINKAGE_FIELDS = "linkagefields";
+        static final class Campaign {
+            static final String LINKAGE_FIELDS = "linkagefields";
             static final String TRACK_INFO_KEY_BROADLOG_ID = "broadlogId";
             static final String TRACK_INFO_KEY_DELIVERY_ID = "deliveryId";
             static final String TRACK_INFO_KEY_ACTION = "action";
@@ -154,7 +155,7 @@ public final class CampaignConstants {
             }
         }
 
-        public static final class Configuration {
+        static final class Configuration {
             static final String EXTENSION_NAME = "com.adobe.module.configuration";
 
             // config response keys
@@ -171,7 +172,7 @@ public final class CampaignConstants {
             }
         }
 
-        public static final class RuleEngine {
+        static final class RuleEngine {
             static final String CONSEQUENCE_TRIGGERED = "triggeredconsequence";
 
             // root message consequence keys
@@ -207,7 +208,7 @@ public final class CampaignConstants {
             }
         }
 
-        public static final class Identity {
+        static final class Identity {
             static final String EXTENSION_NAME = "com.adobe.module.identity";
             static final String VISITOR_ID_MID = "mid";
 
@@ -215,7 +216,7 @@ public final class CampaignConstants {
             }
         }
 
-        public static final class Lifecycle {
+        static final class Lifecycle {
             static final String EXTENSION_NAME = "com.adobe.module.lifecycle";
             static final String LAUNCH_EVENT = "launchevent";
             static final String INSTALL_EVENT = "installevent";

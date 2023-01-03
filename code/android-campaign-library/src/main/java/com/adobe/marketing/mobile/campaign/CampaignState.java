@@ -22,7 +22,6 @@ import java.util.Map;
 final class CampaignState {
     private final String SELF_TAG = "CampaignState";
     // ----------- Configuration properties -----------
-    private boolean configStateSet = false;
     private String campaignServer;
     private String campaignPkey;
     private String campaignMcias;
@@ -30,11 +29,10 @@ final class CampaignState {
     private String propertyId;
     private int timeout;
     private int campaignRegistrationDelayDays;
-    private boolean campaignRegistrationPaused;
+    private boolean campaignRegistrationPaused = false;
 
 
     // ----------- Identity properties -----------
-    private boolean identityStateSet = false;
     private String experienceCloudId;
 
     // ========================================================================
@@ -136,10 +134,9 @@ final class CampaignState {
         if (configSharedStateResult != null && configSharedStateResult.getValue() != null) {
             setConfiguration(configSharedStateResult.getValue());
         }
-//		if (identitySharedStateResult != null && identitySharedStateResult.getValue() != null) {
-//			setIdentity(identitySharedStateResult.getValue());
-//		}
-        setIdentity(null);
+		if (identitySharedStateResult != null && identitySharedStateResult.getValue() != null) {
+			setIdentity(identitySharedStateResult.getValue());
+		}
     }
 
     /**
@@ -199,12 +196,6 @@ final class CampaignState {
      * @param configState {@link Map<String, Object>} representing {@code Configuration} shared state
      */
     private void setConfiguration(final Map<String, Object> configState) {
-        if (configState == null || configState.isEmpty()) {
-            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
-                    "setConfiguration -  Cannot set Configuration properties, provided config data is null.");
-            return;
-        }
-
         this.campaignServer = DataReader.optString(configState, CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_SERVER_KEY, "");
         this.campaignPkey = DataReader.optString(configState, CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_PKEY_KEY, "");
         this.campaignMcias = DataReader.optString(configState, CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_MCIAS_KEY, "");
@@ -213,7 +204,6 @@ final class CampaignState {
         this.timeout = DataReader.optInt(configState, CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_TIMEOUT, CampaignConstants.CAMPAIGN_TIMEOUT_DEFAULT);
         this.campaignRegistrationDelayDays = DataReader.optInt(configState, CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_REGISTRATION_DELAY_KEY, CampaignConstants.DEFAULT_REGISTRATION_DELAY_DAYS);
         this.campaignRegistrationPaused = DataReader.optBoolean(configState, CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_REGISTRATION_PAUSED_KEY, false);
-        configStateSet = true;
     }
 
     /**
@@ -222,14 +212,7 @@ final class CampaignState {
      * @param identityState {@link Map<String, Object>} representing {@code Identity} shared state
      */
     private void setIdentity(final Map<String, Object> identityState) {
-//		if (identityState == null || identityState.isEmpty()) {
-//			Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "setIdentity - Cannot set Identity properties, provided identity data is null.");
-//			return;
-//		}
-//
-//		this.experienceCloudId = DataReader.optString(identityState, CampaignConstants.EventDataKeys.Identity.VISITOR_ID_MID, "");
-        this.experienceCloudId = "mockEcid";
-        identityStateSet = true;
+		this.experienceCloudId = DataReader.optString(identityState, CampaignConstants.EventDataKeys.Identity.VISITOR_ID_MID, "");
     }
 
 }

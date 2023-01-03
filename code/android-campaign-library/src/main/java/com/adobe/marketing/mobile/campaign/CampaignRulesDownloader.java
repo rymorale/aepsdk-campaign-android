@@ -42,7 +42,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 class CampaignRulesDownloader {
     private final static String SELF_TAG = "CampaignRulesDownloader";
@@ -88,7 +87,7 @@ class CampaignRulesDownloader {
 
         // 304 - Not Modified support
         Map<String, String> requestProperties = new HashMap<>();
-        final CacheResult cachedRules = cacheService.get(CampaignConstants.CACHE_BASE_DIR, CampaignConstants.ZIP_HANDLE);
+        final CacheResult cachedRules = cacheService.get(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER, CampaignConstants.ZIP_HANDLE);
         if (cachedRules != null) {
             requestProperties = Utils.extractHeadersFromCache(cachedRules);
         }
@@ -132,10 +131,12 @@ class CampaignRulesDownloader {
             case HttpURLConnection.HTTP_OK:
                 rulesLoadResult = extractRules(url, connection.getInputStream(), Utils.extractMetadataFromResponse(connection));
                 // save remotes url in Campaign Named Collection
-                updateUrlInNamedCollection(url);
+                if (rulesLoadResult.getReason() == RulesLoadResult.Reason.SUCCESS) {
+                    updateUrlInNamedCollection(url);
+                }
                 break;
             case HttpURLConnection.HTTP_NOT_MODIFIED:
-                rulesLoadResult = new RulesLoadResult(StreamUtils.readAsString(cacheService.get(CampaignConstants.CACHE_BASE_DIR, CampaignConstants.RULES_JSON_FILE_NAME).getData()), RulesLoadResult.Reason.NOT_MODIFIED);
+                rulesLoadResult = new RulesLoadResult(StreamUtils.readAsString(cacheService.get(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER, CampaignConstants.RULES_JSON_FILE_NAME).getData()), RulesLoadResult.Reason.NOT_MODIFIED);
                 Log.trace(CampaignConstants.LOG_TAG, SELF_TAG, "Rules from %s have not been modified. Will not re-download rules.", url);
                 break;
             case HttpURLConnection.HTTP_NOT_FOUND:
@@ -146,15 +147,16 @@ class CampaignRulesDownloader {
         }
         connection.close();
 
-        // register rules
-        final List<LaunchRule> campaignRules = JSONRulesParser.parse(Objects.requireNonNull(rulesLoadResult.getData()), extensionApi);
-        if (campaignRules != null) {
-            Log.trace(CampaignConstants.LOG_TAG, SELF_TAG, "Registering %s Campaign rule(s).", campaignRules.size());
-            campaignRulesEngine.replaceRules(campaignRules);
+        // register new rules
+        if (rulesLoadResult.getData() != null && rulesLoadResult.getReason().equals(RulesLoadResult.Reason.SUCCESS)) {
+            final List<LaunchRule> campaignRules = JSONRulesParser.parse(rulesLoadResult.getData(), extensionApi);
+            if (campaignRules != null) {
+                Log.trace(CampaignConstants.LOG_TAG, SELF_TAG, "Registering %s Campaign rule(s).", campaignRules.size());
+                campaignRulesEngine.replaceRules(campaignRules);
+                // cache any image assets present in each rule consequence
+                cacheRemoteAssets(campaignRules);
+            }
         }
-
-        // cache any image assets present in each rule consequence
-        cacheRemoteAssets(campaignRules);
     }
 
     /**
@@ -259,7 +261,7 @@ class CampaignRulesDownloader {
         // Delete the temporary directory created for processing
         deleteTemporaryDirectory(key);
 
-        final CacheResult cachedRulesJson = cacheService.get(CampaignConstants.CACHE_BASE_DIR, CampaignConstants.RULES_JSON_FILE_NAME);
+        final CacheResult cachedRulesJson = cacheService.get(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER, CampaignConstants.RULES_JSON_FILE_NAME);
         final String rulesJsonString = StreamUtils.readAsString(cachedRulesJson.getData());
         return new RulesLoadResult(rulesJsonString, RulesLoadResult.Reason.SUCCESS);
     }
@@ -301,7 +303,7 @@ class CampaignRulesDownloader {
                 try {
                     final String fileName = fileEntry.getName();
                     Log.trace(CampaignConstants.LOG_TAG, SELF_TAG, "Caching file (%s)", fileName);
-                    cacheService.set(CampaignConstants.CACHE_BASE_DIR, fileName, new CacheEntry(new FileInputStream(fileEntry), CacheExpiry.never(), metadata));
+                    cacheService.set(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER, fileName, new CacheEntry(new FileInputStream(fileEntry), CacheExpiry.never(), metadata));
                 } catch (final FileNotFoundException exception) {
                     return false;
                 }
@@ -331,7 +333,7 @@ class CampaignRulesDownloader {
             campaignNamedCollection.remove(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY);
         } else {
             Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
-                    "updateUrlInDataStore - Persisting remotes URL (%s) in in Campaign Named Collection.", url);
+                    "updateUrlInNamedCollection - Persisting remotes URL (%s) in Campaign Named Collection.", url);
             campaignNamedCollection.setString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY, url);
         }
     }
