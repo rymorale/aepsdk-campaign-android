@@ -13,6 +13,7 @@ package com.adobe.marketing.mobile.campaign;
 
 import android.util.Base64;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.VisibleForTesting;
 
 import com.adobe.marketing.mobile.Event;
@@ -203,16 +204,8 @@ public class CampaignExtension extends Extension {
     }
 
     @Override
-    public boolean readyForEvent(final Event event) {
-        if (event == null) {
-            return false;
-        }
-
+    public boolean readyForEvent(final @NonNull Event event) {
         final Map<String, Object> eventData = event.getEventData();
-        if (eventData == null || eventData.isEmpty()) {
-            return false;
-        }
-
         final String stateOwner = DataReader.optString(eventData, CampaignConstants.EventDataKeys.STATE_OWNER, "");
         if (stateOwner.equals(CampaignConstants.EventDataKeys.Identity.EXTENSION_NAME)) {
             setCampaignState(event);
