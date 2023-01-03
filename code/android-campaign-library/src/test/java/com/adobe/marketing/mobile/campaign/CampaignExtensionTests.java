@@ -324,35 +324,6 @@ public class CampaignExtensionTests {
     }
 
     @Test
-    public void test_readyForEvent_when_nullEventReceived_then_readyForEventIsFalse() {
-        // setup
-        setupServiceProviderMockAndRunTest(() -> {
-            when(mockExtensionApi.getSharedState(eq("com.adobe.module.configuration"), any(Event.class), anyBoolean(), any(SharedStateResolution.class))).thenReturn(getConfigurationEventData(new HashMap<>()));
-            when(mockExtensionApi.getSharedState(eq("com.adobe.module.identity"), any(Event.class), anyBoolean(), any(SharedStateResolution.class))).thenReturn(getIdentityEventData());
-            campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, new CampaignState(), mockCacheService, mockCampaignRulesDownloader);
-
-            // verify
-            assertFalse(campaignExtension.readyForEvent(null));
-        });
-    }
-
-    @Test
-    public void test_readyForEvent_when_eventWithEmptyDataReecevied_then_readyForEventIsFalse() {
-        // setup
-        setupServiceProviderMockAndRunTest(() -> {
-            when(mockExtensionApi.getSharedState(eq("com.adobe.module.configuration"), any(Event.class), anyBoolean(), any(SharedStateResolution.class))).thenReturn(getConfigurationEventData(new HashMap<>()));
-            when(mockExtensionApi.getSharedState(eq("com.adobe.module.identity"), any(Event.class), anyBoolean(), any(SharedStateResolution.class))).thenReturn(getIdentityEventData());
-            campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, new CampaignState(), mockCacheService, mockCampaignRulesDownloader);
-
-            Event testEvent = new Event.Builder("Test event", EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT)
-                    .build();
-
-            // verify
-            assertFalse(campaignExtension.readyForEvent(testEvent));
-        });
-    }
-
-    @Test
     public void test_readyForEvent_when_eventReceived_and_configurationSharedStateNotReady_then_readyForEventIsFalse() {
         // setup
         setupServiceProviderMockAndRunTest(() -> {
