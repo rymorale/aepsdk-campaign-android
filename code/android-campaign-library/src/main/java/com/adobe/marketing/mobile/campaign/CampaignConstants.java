@@ -32,7 +32,7 @@ final class CampaignConstants {
     static final String CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY = "CampaignRegistrationTimestamp";
 
     // acp campaign datastore file
-    static final String CAMPAIGN_DATA_STORE_NAME = "CampaignDataStore";
+    static final String ACP_CAMPAIGN_DATASTORE_NAME = "CampaignDataStore";
 
     static final String AEPSDK_CACHE_BASE_DIR = "aepsdkcache";
     static final String CACHE_BASE_DIR = "campaign";

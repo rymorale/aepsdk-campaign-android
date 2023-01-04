@@ -639,7 +639,7 @@ public class CampaignExtension extends Extension {
         SharedPreferences sharedPreferences = null;
         final Context appContext = MobileCore.getApplication().getApplicationContext();
         if (appContext != null) {
-            sharedPreferences = appContext.getSharedPreferences(CampaignConstants.CAMPAIGN_DATA_STORE_NAME, 0);
+            sharedPreferences = appContext.getSharedPreferences(CampaignConstants.ACP_CAMPAIGN_DATASTORE_NAME, 0);
         }
 
         if (sharedPreferences == null) {
@@ -660,7 +660,7 @@ public class CampaignExtension extends Extension {
 
         // delete the ACP datastore at com.app.package.name/shared_prefs/CampaignDatastore.xml
         final File applicationBaseDir = ServiceProvider.getInstance().getDeviceInfoService().getApplicationBaseDir();
-        final File acpDatastore = new File(applicationBaseDir.getPath() + File.separator + "shared_prefs" + File.separator + CampaignConstants.CAMPAIGN_DATA_STORE_NAME + ".xml");
+        final File acpDatastore = new File(applicationBaseDir.getPath() + File.separator + "shared_prefs" + File.separator + CampaignConstants.ACP_CAMPAIGN_DATASTORE_NAME + ".xml");
         if (acpDatastore.exists()) {
             Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
                         "migrateFromACPCampaign - Deleting migrated shared preferences file (%s).", acpDatastore.getName());
