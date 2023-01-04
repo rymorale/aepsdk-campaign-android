@@ -630,32 +630,41 @@ public class CampaignExtension extends Extension {
      * @param aepDatastore the AEPCampaign {@link NamedCollection}
      */
     private void migrateFromACPCampaign(final NamedCollection aepDatastore) {
+        if (aepDatastore == null) {
+            Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
+                    "migrateFromACPCampaign - Will not perform migration, provided datastore is null.");
+            return;
+        }
+
         SharedPreferences sharedPreferences = null;
         final Context appContext = MobileCore.getApplication().getApplicationContext();
         if (appContext != null) {
             sharedPreferences = appContext.getSharedPreferences(CampaignConstants.CAMPAIGN_DATA_STORE_NAME, 0);
         }
 
-        if (sharedPreferences != null) {
+        if (sharedPreferences == null) {
             Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
-                    "migrateFromACPCampaign - Campaign preferences found, migrating existing shared preferences.");
-            // start copying values from ACP datastore to the AEP datastore
-            // the key names are the same so we can use the AEP datastore constants
-            aepDatastore.setString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_EXPERIENCE_CLOUD_ID_KEY,
-                    sharedPreferences.getString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_EXPERIENCE_CLOUD_ID_KEY, ""));
-            aepDatastore.setString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY,
-                    sharedPreferences.getString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY, ""));
-            aepDatastore.setLong(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY,
-                    sharedPreferences.getLong(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY, -1L));
+                    "migrateFromACPCampaign - Will not perform migration, existing shared preferences not found.");
+            return;
+        }
 
-            // delete the ACP datastore at com.app.package.name/shared_prefs/CampaignDatastore.xml
-            final File applicationBaseDir = ServiceProvider.getInstance().getDeviceInfoService().getApplicationBaseDir();
-            final File acpDatastore = new File(applicationBaseDir.getPath() + File.separator + "shared_prefs" + File.separator + CampaignConstants.CAMPAIGN_DATA_STORE_NAME + ".xml");
-            if (acpDatastore.exists()) {
-                Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
+        Log.trace(CampaignConstants.LOG_TAG, SELF_TAG, "migrateFromACPCampaign - Campaign preferences found, migrating existing shared preferences.");
+        // start copying values from ACP datastore to the AEP datastore
+        // the key names are the same so we can use the AEP datastore constants
+        aepDatastore.setString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_EXPERIENCE_CLOUD_ID_KEY,
+                sharedPreferences.getString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_EXPERIENCE_CLOUD_ID_KEY, ""));
+        aepDatastore.setString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY,
+                sharedPreferences.getString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY, ""));
+        aepDatastore.setLong(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY,
+                sharedPreferences.getLong(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY, -1L));
+
+        // delete the ACP datastore at com.app.package.name/shared_prefs/CampaignDatastore.xml
+        final File applicationBaseDir = ServiceProvider.getInstance().getDeviceInfoService().getApplicationBaseDir();
+        final File acpDatastore = new File(applicationBaseDir.getPath() + File.separator + "shared_prefs" + File.separator + CampaignConstants.CAMPAIGN_DATA_STORE_NAME + ".xml");
+        if (acpDatastore.exists()) {
+            Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
                         "migrateFromACPCampaign - Deleting migrated shared preferences file (%s).", acpDatastore.getName());
-                FileUtils.deleteFile(acpDatastore, false);
-            }
+            FileUtils.deleteFile(acpDatastore, false);
         }
     }
 

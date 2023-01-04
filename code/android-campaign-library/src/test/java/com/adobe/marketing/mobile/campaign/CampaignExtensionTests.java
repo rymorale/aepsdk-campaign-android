@@ -1625,10 +1625,10 @@ public class CampaignExtensionTests {
     // =================================================================================================================
     @Test
     public void testACPDatastoreMigratedToAEPNamedCollection() throws Exception {
-        FakeNamedCollection testNamedCollection = new FakeNamedCollection();
+        final FakeNamedCollection testNamedCollection = new FakeNamedCollection();
         when(mockDataStoreService.getNamedCollection(eq(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_NAME))).thenReturn(testNamedCollection);
-        File testDatastore = TestUtils.getResource("CampaignDatastore.xml");
-        File testSharedPrefsFile = new File(cacheDir + File.separator + "shared_prefs" + File.separator + "CampaignDatastore.xml");
+        final File testDatastore = TestUtils.getResource("CampaignDatastore.xml");
+        final File testSharedPrefsFile = new File(cacheDir + File.separator + "shared_prefs" + File.separator + "CampaignDatastore.xml");
         TestFileUtils.copyFile(testDatastore, testSharedPrefsFile);
 
         try (MockedStatic<ServiceProvider> serviceProviderMockedStatic = Mockito.mockStatic(ServiceProvider.class)) {
