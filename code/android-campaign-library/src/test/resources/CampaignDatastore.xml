@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <string name="CampaignRemoteUrl">https://testMcias/testServer/testPropertyId/testExperienceCloudId/rules.zip</string>
+    <string name="ExperienceCloudId">testEcid</string>
+    <long name="CampaignRegistrationTimestamp" value="1671469889000" />
+</map>
