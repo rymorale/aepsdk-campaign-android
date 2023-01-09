@@ -1,4 +1,4 @@
-EXTENSION-LIBRARY-FOLDER-NAME = campaign
+EXTENSION-LIBRARY-FOLDER-NAME = android-campaign-library
 
 BUILD-ASSEMBLE-LOCATION = ./ci/assemble
 ROOT_DIR=$(shell git rev-parse --show-toplevel)
