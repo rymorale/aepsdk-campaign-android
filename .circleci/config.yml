@@ -44,7 +44,7 @@ jobs:
           name: Run Unit Tests
           command: make unit-test-coverage
       - store_test_results:
-          path: code/android-campaign-library/build/test-results/testPhoneDebugUnitTest
+          path: code/campaign/build/test-results/testPhoneDebugUnitTest
       - run:
           name: Upload Core unit test coverage
           command: |
@@ -76,4 +76,4 @@ jobs:
               shasum -a $i -c --ignore-missing <(curl -s "https://raw.githubusercontent.com/codecov/codecov-bash/${VERSION}/SHA${i}SUM") ||
               shasum -a $i -c <(curl -s "https://raw.githubusercontent.com/codecov/codecov-bash/${VERSION}/SHA${i}SUM" | grep -w "codecov")
             done
-            bash ./codecov -v -X s3 -c -D "./code/android-campaign-library/build/reports/coverage/androidTest/phone/debug" -F functional-tests
+            bash ./codecov -v -X s3 -c -D "./code/campaign/build/reports/coverage/androidTest/phone/debug" -F functional-tests
