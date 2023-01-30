@@ -39,11 +39,12 @@ The request timeout is the time in seconds to wait for a response from the in-ap
 
 ## Add the Campaign Standard extension to your app
 
-1. Add the Campaign Standard, Mobile Core, Lifecycle, Signal, and Profile extensions to your project using the app's Gradle file.
+1. Add the Campaign Standard, Mobile Core, Identity, Lifecycle, Signal, and Profile extensions to your project using the app's Gradle file.
 
 ```java
 implementation 'com.adobe.marketing.mobile:campaign:2.+'
 implementation 'com.adobe.marketing.mobile:core:2.+'
+implementation 'com.adobe.marketing.mobile:identity:2.+'
 implementation 'com.adobe.marketing.mobile:lifecycle:2.+'
 implementation 'com.adobe.marketing.mobile:signal:2.+'
 implementation 'com.adobe.marketing.mobile:userprofile:2.+'
@@ -97,6 +98,7 @@ public class MainApp extends Application {
 
         List<Class<? extends Extension>> extensions = new ArrayList<>();
         extensions.add(Campaign.EXTENSION);
+        extensions.add(Identity.EXTENSION);
         extensions.add(Lifecycle.EXTENSION);
         extensions.add(Signal.EXTENSION);
         extensions.add(UserProfile.EXTENSION);
@@ -118,7 +120,7 @@ class MyApp : Application() {
         MobileCore.setApplication(this)
         MobileCore.configureWithAppID("YOUR_APP_ID")
 
-        val extensions = listOf(Campaign.EXTENSION, Lifecycle.EXTENSION, Signal.EXTENSION, UserProfile.EXTENSION)
+        val extensions = listOf(Campaign.EXTENSION, Identity.EXTENSION, Lifecycle.EXTENSION, Signal.EXTENSION, UserProfile.EXTENSION)
         MobileCore.registerExtensions(extensions) {
             Log.d(LOG_TAG, "AEP Mobile SDK is initialized")
         }
