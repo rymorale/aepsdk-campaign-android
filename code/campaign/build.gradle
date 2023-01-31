@@ -249,7 +249,7 @@ dependencies {
     androidTestImplementation "com.adobe.marketing.mobile:lifecycle:$rootProject.mavenLifecycleVersion"
     androidTestImplementation "com.adobe.marketing.mobile:identity:$rootProject.mavenIdentityVersion"
     androidTestImplementation "com.adobe.marketing.mobile:signal:$rootProject.mavenSignalVersion"
-    androidTestImplementation "com.adobe.marketing.mobile:userprofile:$rootProject.mavenUserProfileVersion"
+    //androidTestImplementation "com.adobe.marketing.mobile:userprofile:$rootProject.mavenUserProfileVersion"
 
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
