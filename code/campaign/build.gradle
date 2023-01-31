@@ -131,7 +131,7 @@ publishing {
             pom {
                 name = mavenRepoName
                 description = mavenRepoDescription
-                url = 'https://aep-sdks.gitbook.io'
+                url = 'https://developer.adobe.com/client-sdks/documentation/'
                 licenses {
                     license {
                         name = 'Adobe Proprietary'
@@ -145,9 +145,9 @@ publishing {
                     }
                 }
                 scm {
-                    connection = 'scm:git:github.com//Adobe-Marketing-Cloud/acp-sdks.git'
-                    developerConnection = 'scm:git:ssh://github.com//Adobe-Marketing-Cloud/acp-sdks.git'
-                    url = 'https://github.com/Adobe-Marketing-Cloud/acp-sdks'
+                    connection = 'scm:git:github.com//adobe/aepsdk-campaign-android.git'
+                    developerConnection = 'scm:git:ssh://github.com//adobe/aepsdk-campaign-android.git'
+                    url = 'https://github.com/adobe/aepsdk-campaign-android'
                 }
                 withXml {
                     def dependenciesNode = asNode().appendNode('dependencies')
@@ -156,6 +156,26 @@ publishing {
                     coreDependencyNode.appendNode('groupId', 'com.adobe.marketing.mobile')
                     coreDependencyNode.appendNode('artifactId', 'core')
                     coreDependencyNode.appendNode('version', mavenCoreVersion)
+
+                    def identityDependencyNode = dependenciesNode.appendNode('dependency')
+                    identityDependencyNode.appendNode('groupId', 'com.adobe.marketing.mobile')
+                    identityDependencyNode.appendNode('artifactId', 'identity')
+                    identityDependencyNode.appendNode('version', mavenIdentityVersion)
+
+                    def lifecycleDependencyNode = dependenciesNode.appendNode('dependency')
+                    lifecycleDependencyNode.appendNode('groupId', 'com.adobe.marketing.mobile')
+                    lifecycleDependencyNode.appendNode('artifactId', 'lifecycle')
+                    lifecycleDependencyNode.appendNode('version', mavenLifecycleVersion)
+
+                    def signalDependencyNode = dependenciesNode.appendNode('dependency')
+                    signalDependencyNode.appendNode('groupId', 'com.adobe.marketing.mobile')
+                    signalDependencyNode.appendNode('artifactId', 'signal')
+                    signalDependencyNode.appendNode('version', mavenSignalVersion)
+
+                    def userProfileDependencyNode = dependenciesNode.appendNode('dependency')
+                    userProfileDependencyNode.appendNode('groupId', 'com.adobe.marketing.mobile')
+                    userProfileDependencyNode.appendNode('artifactId', 'userprofile')
+                    userProfileDependencyNode.appendNode('version', mavenUserProfileVersion)
                 }
             }
         }
@@ -223,10 +243,16 @@ task platformFunctionalTestJacocoReport(type: JacocoReport, dependsOn: "createPh
 apply from: 'checkstyle.gradle'
 
 dependencies {
+    // adobe sdk dependencies
+    implementation "com.adobe.marketing.mobile:core:$rootProject.mavenCoreVersion"
+    // functional test dependencies
+    androidTestImplementation "com.adobe.marketing.mobile:lifecycle:$rootProject.mavenLifecycleVersion"
+    androidTestImplementation "com.adobe.marketing.mobile:identity:$rootProject.mavenIdentityVersion"
+    androidTestImplementation "com.adobe.marketing.mobile:signal:$rootProject.mavenSignalVersion"
+    //androidTestImplementation "com.adobe.marketing.mobile:userprofile:$rootProject.mavenUserProfileVersion"
+
+
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    implementation ('com.github.adobe.aepsdk-core-android:core:dev-v2.0.0-SNAPSHOT') {
-        transitive(true)
-    }
 
     // Firebase sdk compile only
     compileOnly "com.google.firebase:firebase-messaging:23.1.1"
@@ -241,17 +267,6 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:${junitVersion}"
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.0'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.4.2'
-
-    // functional test dependencies
-    androidTestImplementation ('com.github.adobe.aepsdk-core-android:lifecycle:dev-v2.0.0-SNAPSHOT') {
-        transitive(false)
-    }
-    androidTestImplementation ('com.github.adobe.aepsdk-core-android:identity:dev-v2.0.0-SNAPSHOT') {
-        transitive(false)
-    }
-    androidTestImplementation ('com.github.adobe.aepsdk-core-android:signal:dev-v2.0.0-SNAPSHOT') {
-        transitive(false)
-    }
 }
 
 tasks.withType(Test) {
