@@ -13,12 +13,33 @@ package com.adobe.marketing.mobile.campaign
 
 import com.adobe.marketing.mobile.campaign.CampaignConstants.LOG_TAG
 import com.adobe.marketing.mobile.services.Log
+import com.adobe.marketing.mobile.services.ServiceProvider
+import com.adobe.marketing.mobile.util.StringUtils
 import java.io.*
 import java.util.zip.ZipInputStream
 
 internal object FileUtils {
     const val TAG = "FileUtils"
     private const val MAX_BUFFER_SIZE = 4096
+
+    /**
+     * Deletes the obsolete ACPCampaign 1.x hit database
+     */
+    @JvmStatic
+    fun deleteFileFromCacheDir(fileName: String): Boolean {
+        return try {
+            val cacheDir = ServiceProvider.getInstance().deviceInfoService.applicationCacheDir
+            if (cacheDir != null && !StringUtils.isNullOrEmpty(fileName)) {
+                val filePath = File(cacheDir, fileName)
+                if (filePath.exists()) filePath.delete() else false
+            } else {
+                false
+            }
+        } catch (exception: java.lang.Exception) {
+            Log.debug("MobileCore", "FileUtils", "Failed to delete (%s) in cache folder.", fileName)
+            false
+        }
+    }
 
     /**
      * Reads the content of [inputStream] into [file].

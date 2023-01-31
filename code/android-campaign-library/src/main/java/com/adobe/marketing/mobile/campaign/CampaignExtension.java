@@ -208,6 +208,8 @@ public class CampaignExtension extends Extension {
                 EventSource.WILDCARD,
                 this::handleWildcardEvents
         );
+
+        FileUtils.deleteFileFromCacheDir(CampaignConstants.DEPRECATED_1X_HIT_DATABASE_FILENAME);
     }
 
     @Override

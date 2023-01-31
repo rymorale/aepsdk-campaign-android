@@ -17,6 +17,7 @@ import com.adobe.marketing.mobile.MobileCore;
 import com.adobe.marketing.mobile.Campaign;
 import com.adobe.marketing.mobile.LoggingMode;
 import com.adobe.marketing.mobile.Signal;
+import com.adobe.marketing.mobile.UserProfile;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.iid.FirebaseInstanceId;
@@ -40,8 +41,7 @@ public class CampaignTestApp extends Application {
 		MobileCore.setApplication(this);
 		MobileCore.setLogLevel(LoggingMode.DEBUG);
 
-		// TODO: add userprofile 2.0
-		MobileCore.registerExtensions(Arrays.asList(Campaign.EXTENSION, Lifecycle.EXTENSION, Identity.EXTENSION, Signal.EXTENSION), o -> {
+		MobileCore.registerExtensions(Arrays.asList(Campaign.EXTENSION, Lifecycle.EXTENSION, Identity.EXTENSION, Signal.EXTENSION, UserProfile.extension), o -> {
 			MobileCore.configureWithAppID("31d8b0ad1f9f/98da4ef07438/launch-b7548c1d44a2-development");
 			try {
 				Thread.sleep(1000);
@@ -73,7 +73,7 @@ public class CampaignTestApp extends Application {
 		// compare to latest versions at https://bintray.com/eaps/mobileservicesdk
 		Log.d("Core version ", MobileCore.extensionVersion());
 		Log.d("Campaign version ", Campaign.extensionVersion());
-//		Log.d("UserProfile version ", UserProfile.extensionVersion());
+		Log.d("UserProfile version ", UserProfile.extensionVersion());
 		Log.d("Identity version ", Identity.extensionVersion());
 		Log.d("Lifecycle version ", Lifecycle.extensionVersion());
 		Log.d("Signal version ", Signal.extensionVersion());
