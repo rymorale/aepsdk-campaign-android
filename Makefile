@@ -1,4 +1,4 @@
-EXTENSION-LIBRARY-FOLDER-NAME = android-campaign-library
+EXTENSION-LIBRARY-FOLDER-NAME = campaign
 
 BUILD-ASSEMBLE-LOCATION = ./ci/assemble
 ROOT_DIR=$(shell git rev-parse --show-toplevel)
@@ -11,7 +11,7 @@ SOURCE_FILE_DIR =  $(ROOT_DIR)/code/$(PROJECT_NAME)
 AAR_FILE_DIR =  $(ROOT_DIR)/code/$(PROJECT_NAME)/build/outputs/aar
 
 checkstyle:
-		(./code/gradlew -info -p code/android-campaign-library checkstyle)
+		(./code/gradlew -info -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) checkstyle)
 
 create-ci: clean
 	(mkdir -p ci)
