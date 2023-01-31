@@ -230,6 +230,8 @@ apply from: 'checkstyle.gradle'
 dependencies {
     // adobe sdk dependencies
     implementation "com.adobe.marketing.mobile:core:$rootProject.mavenCoreVersion"
+    testImplementation "com.adobe.marketing.mobile:core:$rootProject.mavenCoreVersion"
+
     // functional test dependencies
     androidTestImplementation "com.adobe.marketing.mobile:lifecycle:$rootProject.mavenLifecycleVersion"
     androidTestImplementation "com.adobe.marketing.mobile:identity:$rootProject.mavenIdentityVersion"
