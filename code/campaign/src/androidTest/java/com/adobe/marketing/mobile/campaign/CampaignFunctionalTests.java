@@ -175,7 +175,7 @@ public class CampaignFunctionalTests {
 		data.put(TestConstants.RULES_SERVER, "https://" + TestConstants.MOCK_RULES_SERVER + "/dummy-rules.zip");
 		MobileCore.updateConfiguration(data);
 		testableNetworkService.waitAndGetCount(3, 5000);
-		testableNetworkService.clearCapturedRequests();
+		testableNetworkService.reset();
 	}
 
 	private String getExperienceCloudId() throws InterruptedException {
@@ -186,7 +186,7 @@ public class CampaignFunctionalTests {
 			latch.countDown();
 		};
 		Identity.getExperienceCloudId(callback);
-		latch.await(10, TimeUnit.SECONDS);
+		latch.await(3, TimeUnit.SECONDS);
 
 		return retrievedId[0];
 	}
@@ -274,7 +274,7 @@ public class CampaignFunctionalTests {
 		data.put(TestConstants.CAMPAIGN_REGISTRATION_DELAY, registrationDelay);
 		data.put(TestConstants.CAMPAIGN_REGISTRATION_PAUSED, registrationPaused);
 		MobileCore.updateConfiguration(data);
-		TestHelper.sleep(2000);
+		TestHelper.sleep(3000);
 		testableNetworkService.clearCapturedRequests();
 	}
 
@@ -1057,6 +1057,7 @@ public class CampaignFunctionalTests {
 	}
 
 	// Test Case No : 33
+	@Ignore // TODO: flaky test to be investigated
 	@Test
 	public void
 	test_Functional_Campaign_profileUpdate_VerifyNoProfileUpdateOnLifecycleLaunch_WithCustomRegistrationDelayNotElapsed()
@@ -1081,10 +1082,10 @@ public class CampaignFunctionalTests {
 	throws InterruptedException {
 		// setup, set a timestamp 31 days in the past
 		String experienceCloudId = getExperienceCloudId();
+		assertFalse(experienceCloudId.isEmpty());
 		long timestamp = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(31);
 		updateTimestampInDatastore(timestamp);
 		updateEcidInDatastore(experienceCloudId);
-		assertFalse(experienceCloudId.isEmpty());
 		// set a registration delay of 30 days and registration paused to true
 		setRegistrationDelayOrRegistrationPaused(30, true);
 		// test

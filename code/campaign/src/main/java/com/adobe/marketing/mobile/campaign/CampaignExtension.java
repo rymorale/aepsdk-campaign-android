@@ -214,6 +214,16 @@ public class CampaignExtension extends Extension {
         );
 
         FileUtils.deleteFileFromCacheDir(CampaignConstants.DEPRECATED_1X_HIT_DATABASE_FILENAME);
+
+        // attempt to load cached rules on app launch
+        if (!hasCachedRulesLoaded) {
+            final CacheResult cachedRulesZip = cacheService.get(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER, CampaignConstants.ZIP_HANDLE);
+            if (cachedRulesZip != null) {
+                final RulesLoadResult cachedRules = new RulesLoadResult(StreamUtils.readAsString(cacheService.get(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER, CampaignConstants.RULES_JSON_FILE_NAME).getData()), RulesLoadResult.Reason.SUCCESS);
+                campaignRulesDownloader.registerRules(cachedRules);
+                hasCachedRulesLoaded = true;
+            }
+        }
     }
 
     @Override
@@ -309,16 +319,6 @@ public class CampaignExtension extends Extension {
         }
 
         setCampaignState(event);
-
-        // attempt to load cached rules on the first configuration event received
-        if (!hasCachedRulesLoaded) {
-            final CacheResult cachedRulesZip = cacheService.get(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER, CampaignConstants.ZIP_HANDLE);
-            if (cachedRulesZip != null) {
-                final RulesLoadResult cachedRules = new RulesLoadResult(StreamUtils.readAsString(cacheService.get(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER, CampaignConstants.RULES_JSON_FILE_NAME).getData()), RulesLoadResult.Reason.SUCCESS);
-                campaignRulesDownloader.registerRules(cachedRules);
-                hasCachedRulesLoaded = true;
-            }
-        }
 
         final MobilePrivacyStatus privacyStatus = campaignState.getMobilePrivacyStatus();
         // notify campaign persistent hit queue of any privacy status changes
