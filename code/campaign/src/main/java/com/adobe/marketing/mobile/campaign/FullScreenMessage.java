@@ -164,7 +164,7 @@ class FullScreenMessage extends CampaignMessage {
             return;
         }
 
-        final CacheResult cacheResult = cacheService.get(CampaignConstants.CACHE_BASE_DIR, html);
+        final CacheResult cacheResult = cacheService.get(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER, html);
         if (cacheResult == null) {
             Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
                     "showMessage - Unable to find cached html content for fullscreen message with ID %s", messageId);
@@ -198,7 +198,7 @@ class FullScreenMessage extends CampaignMessage {
 
         if (fullscreenMessage != null) {
             fullscreenMessage.setLocalAssetsMap(cachedResourcesMap);
-            fullscreenMessage.show();
+            fullscreenMessage.show(false);
         }
     }
 

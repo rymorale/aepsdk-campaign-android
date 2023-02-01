@@ -72,6 +72,20 @@ class Utils {
     }
 
     /**
+     * Recursively deletes cached html file and rules within the given directory
+     *
+     * @param file {@link File} containing the campaign rules directory
+     */
+    static void cleanDirectory(final File file) {
+        if (file.isDirectory()) {
+            for (final File child : file.listFiles()) {
+                cleanDirectory(child);
+            }
+        }
+        file.delete();
+    }
+
+    /**
      * Extracts the response properties (like {@code HTTP_HEADER_ETAG} , {@code HTTP_HEADER_LAST_MODIFIED}
      * that are useful as cache metadata.
      *

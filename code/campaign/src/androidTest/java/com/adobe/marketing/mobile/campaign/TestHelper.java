@@ -23,25 +23,17 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.adobe.marketing.mobile.AdobeCallbackWithError;
 import com.adobe.marketing.mobile.AdobeError;
 import com.adobe.marketing.mobile.Event;
-import com.adobe.marketing.mobile.ExtensionError;
-import com.adobe.marketing.mobile.ExtensionErrorCallback;
 import com.adobe.marketing.mobile.LoggingMode;
 import com.adobe.marketing.mobile.MobileCore;
-import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.caching.CacheEntry;
 import com.adobe.marketing.mobile.services.caching.CacheExpiry;
-import com.adobe.marketing.mobile.services.caching.CacheService;
-import com.adobe.marketing.mobile.util.JSONUtils;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.ValueNode;
 
-import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.rules.TestRule;
@@ -50,10 +42,8 @@ import org.junit.runners.model.Statement;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -65,8 +55,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -76,8 +64,6 @@ public class TestHelper {
     private static final String LOG_TAG = "TestHelper";
     static final int WAIT_TIMEOUT_MS = 1000;
     static final int WAIT_EVENT_TIMEOUT_MS = 2000;
-    private static final String REMOTE_URL = "https://www.adobe.com/adobe.png";
-    private static final int STREAM_WRITE_BUFFER_SIZE = 4096;
     private static final String CHARSET_UTF_8 = "UTF-8";
     private static final int STREAM_READ_BUFFER_SIZE = 1024;
     // List of threads to wait for after test execution
@@ -382,31 +368,6 @@ public class TestHelper {
     }
 
     /**
-     * Serialize the given {@code map} to a JSON Object, then flattens to {@code Map<String, String>}.
-     * For example, a JSON such as "{xdm: {stitchId: myID, eventType: myType}}" is flattened
-     * to two map elements "xdm.stitchId" = "myID" and "xdm.eventType" = "myType".
-     *
-     * @param map map with JSON structure to flatten
-     * @return new map with flattened structure
-     */
-    static Map<String, String> flattenMap(final Map<String, Object> map) {
-        if (map == null || map.isEmpty()) {
-            return Collections.emptyMap();
-        }
-
-        try {
-            JSONObject jsonObject = new JSONObject(map);
-            Map<String, String> payloadMap = new HashMap<>();
-            addKeys("", new ObjectMapper().readTree(jsonObject.toString()), payloadMap);
-            return payloadMap;
-        } catch (IOException e) {
-            Log.error(LOG_TAG, LOG_TAG, "Failed to parse JSON object to tree structure.");
-        }
-
-        return Collections.emptyMap();
-    }
-
-    /**
      * Deserialize {@code JsonNode} and flatten to provided {@code map}.
      * For example, a JSON such as "{xdm: {stitchId: myID, eventType: myType}}" is flattened
      * to two map elements "xdm.stitchId" = "myID" and "xdm.eventType" = "myType".
@@ -442,22 +403,6 @@ public class TestHelper {
     }
 
     /**
-     * Converts a file containing a JSON into a {@link Map<String, Object>}.
-     *
-     * @param fileName the {@code String} name of a file located in the resource directory
-     * @return a {@code Map<String, Object>} containing the file's contents
-     */
-    static Map<String, Object> getMapFromFile(final String fileName) {
-        try {
-            final JSONObject json = new JSONObject(loadStringFromFile(fileName));
-            return JSONUtils.toMap(json);
-        } catch (final JSONException jsonException) {
-            Log.warning(LOG_TAG, "getMapFromFile() - Exception occurred when creating the JSONObject: %s", jsonException.getMessage());
-            return null;
-        }
-    }
-
-    /**
      * Converts a file into a {@code String}.
      *
      * @param fileName the {@code String} name of a file located in the resource directory
@@ -483,23 +428,13 @@ public class TestHelper {
     }
 
     /**
-     * Cleans Messaging extension payload and image asset cache files.
+     * Adds a zip file to the Campaign extension rules cache.
      */
-    static void cleanCache() {
-        final CacheService cacheService = ServiceProvider.getInstance().getCacheService();
-        cacheService.remove(CampaignConstants.CACHE_BASE_DIR, CampaignConstants.RULES_CACHE_FOLDER);
-        cacheService.remove(CampaignConstants.CACHE_BASE_DIR, CampaignConstants.MESSAGE_CACHE_DIR);
-    }
-
-    /**
-     * Adds a test image to the Messaging extension image asset cache.
-     */
-    static void addImageAssetToCache() {
-        final File assetDir = new File(ServiceProvider.getInstance().getDeviceInfoService().getApplicationCacheDir() + File.separator + CampaignConstants.AEPSDK_CACHE_BASE_DIR + File.separator + CampaignConstants.CACHE_BASE_DIR + File.separator
-                + CampaignConstants.MESSAGE_CACHE_DIR);
-        final InputStream adobePng = convertResourceFileToInputStream("adobe.png");
-        final CacheEntry mockCachedImage = new CacheEntry(adobePng, CacheExpiry.never(), null);
-        ServiceProvider.getInstance().getCacheService().set(assetDir.getAbsolutePath(), REMOTE_URL, mockCachedImage);
+    static void addRulesZipToCache(final Map<String, String> metaData) {
+        final File assetDir = new File(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER);
+        final InputStream zipFile = convertResourceFileToInputStream("rules-broadcast.zip");
+        final CacheEntry mockCachedZip = new CacheEntry(zipFile, CacheExpiry.never(), metaData);
+        ServiceProvider.getInstance().getCacheService().set(assetDir.getAbsolutePath(), CampaignConstants.ZIP_HANDLE, mockCachedZip);
     }
 
     /**
@@ -510,57 +445,6 @@ public class TestHelper {
      */
     static InputStream convertResourceFileToInputStream(final String filename) {
         return TestHelper.class.getClassLoader().getResourceAsStream(filename);
-    }
-
-    /**
-     * Writes the contents of an {@link InputStream} into a file.
-     *
-     * @param cachedFile  the {@code File} to be written to
-     * @param inputStream a {@code InputStream} containing the data to be written
-     * @return a {@code boolean} if the write to file was successful
-     */
-    static boolean writeInputStreamIntoFile(final File cachedFile, final InputStream inputStream, final boolean append) {
-        boolean result = false;
-
-        if (cachedFile == null || inputStream == null) {
-            if (inputStream != null) {
-                try {
-                    inputStream.close();
-                } catch (final IOException ioException) {
-                    Log.debug(LOG_TAG, "Exception occurred when closing input stream: %s", ioException.getMessage());
-                }
-            }
-            return result;
-        }
-
-        FileOutputStream outputStream = null;
-
-        try {
-            outputStream = new FileOutputStream(cachedFile, append);
-            final byte[] data = new byte[STREAM_WRITE_BUFFER_SIZE];
-            int count;
-
-            while ((count = inputStream.read(data)) != -1) {
-                outputStream.write(data, 0, count);
-                outputStream.flush();
-            }
-            result = true;
-        } catch (final IOException e) {
-            Log.error(LOG_TAG, LOG_TAG, "IOException while attempting to write to file (%s)", e.getLocalizedMessage());
-        } catch (final Exception e) {
-            Log.error(LOG_TAG, LOG_TAG, "Unexpected exception while attempting to write to file (%s)", e.getLocalizedMessage());
-        } finally {
-            try {
-                if (outputStream != null) {
-                    outputStream.close();
-                }
-
-            } catch (final Exception e) {
-                Log.error(LOG_TAG, LOG_TAG, "Unable to close the OutputStream (%s) ", e.getLocalizedMessage());
-            }
-        }
-
-        return result;
     }
 
     /**

@@ -32,10 +32,8 @@ import java.util.concurrent.TimeUnit;
 
 public class TestableNetworkService implements Networking {
     static final String ETAG_HEADER = "ETag";
-    static final String ETAG = "\"SOME-ETAG-12345\"";
-    static final String WEAK_ETAG = "W/\"SOME-WEAK-ETAG-12345\"";
     static final String LAST_MODIFIED_HEADER_KEY = "Last-Modified";
-    static String lastModified = null;
+    static String lastModified = "Tue, 31 Jan 2023 09:31:46 GMT";
     private CountUpLatch countUpLatch = new CountUpLatch();
 
     private final Map<String, NetworkRequest> capturedRequests = new HashMap<>();

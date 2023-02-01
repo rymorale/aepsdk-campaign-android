@@ -39,6 +39,7 @@ import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.services.PersistentHitQueue;
 import com.adobe.marketing.mobile.services.ServiceProvider;
+import com.adobe.marketing.mobile.services.caching.CacheResult;
 import com.adobe.marketing.mobile.services.caching.CacheService;
 import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.StringUtils;
@@ -218,11 +219,6 @@ public class CampaignExtension extends Extension {
         final String stateOwner = DataReader.optString(eventData, CampaignConstants.EventDataKeys.STATE_OWNER, "");
         if (stateOwner.equals(CampaignConstants.EventDataKeys.Identity.EXTENSION_NAME)) {
             setCampaignState(event);
-
-            if (hasToDownloadRules && campaignState.canDownloadRulesWithCurrentState()) {
-                hasToDownloadRules = false;
-                triggerRulesDownload();
-            }
         }
 
         return getApi().getSharedState(CampaignConstants.EventDataKeys.Configuration.EXTENSION_NAME,
@@ -534,14 +530,16 @@ public class CampaignExtension extends Extension {
 
     /**
      * Clears the rules cache directory.
-     * <p>
-     * Creates a {@link CacheService} instance and invokes method on it to perform delete operation on
-     * {@value CampaignConstants#RULES_CACHE_FOLDER} directory.
      */
     void clearRulesCacheDirectory() {
-        if (cacheService != null) {
-            cacheService.remove(CampaignConstants.CACHE_BASE_DIR, CampaignConstants.RULES_CACHE_FOLDER);
-        }
+        final File rulesCacheDir = new File(ServiceProvider.getInstance().getDeviceInfoService().getApplicationCacheDir()
+                + File.separator
+                + CampaignConstants.AEPSDK_CACHE_BASE_DIR
+                + File.separator
+                + CampaignConstants.CACHE_BASE_DIR
+                + File.separator
+                + CampaignConstants.RULES_CACHE_FOLDER);
+        Utils.cleanDirectory(rulesCacheDir);
     }
 
     /**
@@ -608,7 +606,7 @@ public class CampaignExtension extends Extension {
     private void handleResetLinkageFields() {
         linkageFields = "";
 
-        campaignRulesEngine.replaceRules(null);
+        campaignRulesEngine.replaceRules(new ArrayList<>());
 
         clearRulesCacheDirectory();
 
@@ -723,6 +721,7 @@ public class CampaignExtension extends Extension {
         final DataEntity dataEntity = new DataEntity(campaignHit.toString());
         Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "processRequest - Campaign Request Queued with url (%s) and body (%s)", url, payload);
         campaignPersistentHitQueue.queue(dataEntity);
+        campaignPersistentHitQueue.beginProcessing();
     }
 
     /**
