@@ -36,7 +36,7 @@ internal object FileUtils {
                 false
             }
         } catch (exception: java.lang.Exception) {
-            Log.debug("MobileCore", "FileUtils", "Failed to delete (%s) in cache folder.", fileName)
+            Log.debug(LOG_TAG, TAG, "Failed to delete (%s) in cache folder.", fileName)
             false
         }
     }
