@@ -31,6 +31,8 @@ import com.adobe.marketing.mobile.SharedStateStatus;
 import com.adobe.marketing.mobile.launch.rulesengine.LaunchRule;
 import com.adobe.marketing.mobile.launch.rulesengine.LaunchRulesEngine;
 import com.adobe.marketing.mobile.launch.rulesengine.RuleConsequence;
+import com.adobe.marketing.mobile.launch.rulesengine.download.RulesLoadResult;
+import com.adobe.marketing.mobile.launch.rulesengine.json.JSONRulesParser;
 import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.DataQueue;
 import com.adobe.marketing.mobile.services.DataQueuing;
@@ -42,6 +44,7 @@ import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.caching.CacheResult;
 import com.adobe.marketing.mobile.services.caching.CacheService;
 import com.adobe.marketing.mobile.util.DataReader;
+import com.adobe.marketing.mobile.util.StreamUtils;
 import com.adobe.marketing.mobile.util.StringUtils;
 
 import org.json.JSONObject;
@@ -85,6 +88,7 @@ public class CampaignExtension extends Extension {
     private final CampaignState campaignState;
     private final DataStoring dataStoreService;
     private String linkageFields;
+    private boolean hasCachedRulesLoaded = false;
     private boolean hasToDownloadRules = true;
 
     /**
@@ -219,6 +223,11 @@ public class CampaignExtension extends Extension {
         final String stateOwner = DataReader.optString(eventData, CampaignConstants.EventDataKeys.STATE_OWNER, "");
         if (stateOwner.equals(CampaignConstants.EventDataKeys.Identity.EXTENSION_NAME)) {
             setCampaignState(event);
+
+            if (hasToDownloadRules && campaignState.canDownloadRulesWithCurrentState()) {
+                hasToDownloadRules = false;
+                triggerRulesDownload();
+            }
         }
 
         return getApi().getSharedState(CampaignConstants.EventDataKeys.Configuration.EXTENSION_NAME,
@@ -302,6 +311,16 @@ public class CampaignExtension extends Extension {
 
         setCampaignState(event);
 
+        // attempt to load cached rules on the first configuration event received
+        if (!hasCachedRulesLoaded) {
+            final CacheResult cachedRulesZip = cacheService.get(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER, CampaignConstants.ZIP_HANDLE);
+            if (cachedRulesZip != null) {
+                final RulesLoadResult cachedRules = new RulesLoadResult(StreamUtils.readAsString(cacheService.get(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER, CampaignConstants.RULES_JSON_FILE_NAME).getData()), RulesLoadResult.Reason.SUCCESS);
+                campaignRulesDownloader.registerRules(cachedRules);
+                hasCachedRulesLoaded = true;
+            }
+        }
+
         final MobilePrivacyStatus privacyStatus = campaignState.getMobilePrivacyStatus();
         // notify campaign persistent hit queue of any privacy status changes
         campaignPersistentHitQueue.handlePrivacyChange(privacyStatus);
@@ -328,7 +347,7 @@ public class CampaignExtension extends Extension {
      *     <li>Clears stored {@link #linkageFields}.</li>
      *     <li>Unregisters previously registered rules.</li>
      *     <li>Clears directory containing any previously cached rules.</li>
-     *     <li>Clears {@value CampaignConstants#CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY} in Campaign data store.</li>
+     *     <li>Clears the Campaign data store.</li>
      * </ul>
      */
     void processPrivacyOptOut() {
@@ -342,7 +361,7 @@ public class CampaignExtension extends Extension {
         // clear cached rules
         clearRulesCacheDirectory();
 
-        // clear all keys in the Campaign Named Collection
+        // clear the datastore
         clearCampaignNamedCollection();
     }
 
@@ -721,11 +740,10 @@ public class CampaignExtension extends Extension {
         final DataEntity dataEntity = new DataEntity(campaignHit.toString());
         Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "processRequest - Campaign Request Queued with url (%s) and body (%s)", url, payload);
         campaignPersistentHitQueue.queue(dataEntity);
-        campaignPersistentHitQueue.beginProcessing();
     }
 
     /**
-     * Clears all the keys stored in the {@code CampaignExtension}'s {@link NamedCollection}.
+     * Clears the {@code CampaignExtension}'s {@link NamedCollection}.
      */
     private void clearCampaignNamedCollection() {
         final NamedCollection campaignNamedCollection = getNamedCollection();

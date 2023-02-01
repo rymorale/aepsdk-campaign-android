@@ -434,8 +434,8 @@ public class CampaignRulesDownloaderTests {
             verify(mockCacheService, times(1)).get(eq(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER), eq(CampaignConstants.RULES_JSON_FILE_NAME));
             // verify rules remote url not added to named collection
             assertEquals("", fakeNamedCollection.getString(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY, ""));
-            // verify rules loaded
-            verify(mockRulesEngine, times(1)).replaceRules(any());
+            // verify rules not loaded
+            verify(mockRulesEngine, times(0)).replaceRules(any());
         });
     }
 

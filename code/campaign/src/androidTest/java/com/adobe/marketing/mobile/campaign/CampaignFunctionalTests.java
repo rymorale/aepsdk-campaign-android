@@ -121,6 +121,7 @@ public class CampaignFunctionalTests {
 	@Before
 	public void setup() {
 		MobileCore.setApplication(TestHelper.defaultApplication);
+		MobileCore.clearUpdatedConfiguration();
 		testableNetworkService = new TestableNetworkService();
 		ServiceProvider.getInstance().getDataQueueService().getDataQueue(CampaignConstants.FRIENDLY_NAME).clear();
 
@@ -144,7 +145,6 @@ public class CampaignFunctionalTests {
 		ServiceProvider.getInstance().getDataStoreService().getNamedCollection(CAMPAIGN_DATASTORE).removeAll();
 		SDKHelper.resetSDK();
 		cleanCache(TestHelper.defaultApplication.getApplicationContext());
-		testableNetworkService.reset();
 	}
 
 	private void setupProgrammaticConfig() {
@@ -498,7 +498,7 @@ public class CampaignFunctionalTests {
 		String expectedUrl = "https://" + TestConstants.MOCK_IDENTITY_SERVER + "/demoptout.jpg?d_mid=" + experienceCloudId + "&d_orgid=B1F855165B4C9EA50A495E06%40AdobeOrg";
 		// test
 		MobileCore.setPrivacyStatus(MobilePrivacyStatus.OPT_OUT);
-		// verifu
+		// verify
 		testableNetworkService.waitForRequest(expectedUrl);
 		NetworkRequest optOutRequest = testableNetworkService.getRequest(expectedUrl);
 		assertNotNull(optOutRequest);
@@ -1068,6 +1068,7 @@ public class CampaignFunctionalTests {
 		long timestamp = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(31);
 		updateTimestampInDatastore(timestamp);
 		updateEcidInDatastore(experienceCloudId);
+		testableNetworkService.clearCapturedRequests();
 		// set a registration delay of 100 days
 		setRegistrationDelayOrRegistrationPaused(100, false);
 		// test
@@ -1095,7 +1096,7 @@ public class CampaignFunctionalTests {
 	}
 
 	// Test Case No : 35
-	@Ignore // TODO: second profile request queued but not sent. to be investigated.
+	@Ignore // TODO: second profile request queued but not sent when under test. to be investigated.
 	@Test
 	public void
 	test_Functional_Campaign_profileUpdate_VerifyProfileUpdateOnSecondLifecycleLaunch_WhenRegistrationDelaySetToZero()

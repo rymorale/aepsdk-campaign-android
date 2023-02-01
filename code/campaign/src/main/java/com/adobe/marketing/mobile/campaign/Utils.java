@@ -72,7 +72,7 @@ class Utils {
     }
 
     /**
-     * Recursively deletes cached html file and rules within the given directory
+     * Recursively deletes cached html files and rules within the given directory
      *
      * @param file {@link File} containing the campaign rules directory
      */

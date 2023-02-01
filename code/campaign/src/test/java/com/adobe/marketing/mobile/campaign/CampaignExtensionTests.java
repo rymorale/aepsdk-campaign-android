@@ -357,6 +357,24 @@ public class CampaignExtensionTests {
         });
     }
 
+    @Test
+    public void test_readyForEvent_when_identityEventReceived_and_configurationAndIdentitySharedStateDataPresent_then_rulesDownloadTriggered_and_readyForEventIsTrue() {
+        // setup
+        setupServiceProviderMockAndRunTest(() -> {
+            when(mockExtensionApi.getSharedState(eq("com.adobe.module.configuration"), any(Event.class), anyBoolean(), any(SharedStateResolution.class))).thenReturn(getConfigurationEventData(new HashMap<>()));
+            when(mockExtensionApi.getSharedState(eq("com.adobe.module.identity"), any(Event.class), anyBoolean(), any(SharedStateResolution.class))).thenReturn(getIdentityEventData());
+            campaignExtension = new CampaignExtension(mockExtensionApi, mockPersistentHitQueue, mockDataStoreService, mockRulesEngine, new CampaignState(), mockCacheService, mockCampaignRulesDownloader);
+
+            Event testEvent = new Event.Builder("Test event", EventType.IDENTITY, EventSource.RESPONSE_CONTENT)
+                    .setEventData(getIdentityEventData().getValue())
+                    .build();
+
+            // verify
+            assertTrue(campaignExtension.readyForEvent(testEvent));
+            verify(mockCampaignRulesDownloader, times(1)).loadRulesFromUrl(eq(expectedRulesDownloadUrl), eq(null));
+        });
+    }
+
     // =================================================================================================================
     // void handleWildcardEvents(Event event)
     // =================================================================================================================
