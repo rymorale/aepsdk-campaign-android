@@ -11,8 +11,6 @@
 
 package com.adobe.marketing.mobile.campaign;
 
-import static org.junit.Assert.assertTrue;
-
 import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
@@ -20,19 +18,11 @@ import android.content.SharedPreferences;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.adobe.marketing.mobile.AdobeCallbackWithError;
-import com.adobe.marketing.mobile.AdobeError;
-import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.LoggingMode;
 import com.adobe.marketing.mobile.MobileCore;
-import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.caching.CacheEntry;
 import com.adobe.marketing.mobile.services.caching.CacheExpiry;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.ValueNode;
 
 import org.json.JSONObject;
 import org.junit.Assert;
@@ -40,32 +30,23 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Test helper for functional testing to read, write, reset and assert against eventhub events, shared states and persistence data.
  */
 public class TestHelper {
     private static final String LOG_TAG = "TestHelper";
-    static final int WAIT_TIMEOUT_MS = 1000;
-    static final int WAIT_EVENT_TIMEOUT_MS = 2000;
-    private static final String CHARSET_UTF_8 = "UTF-8";
-    private static final int STREAM_READ_BUFFER_SIZE = 1024;
     // List of threads to wait for after test execution
     private static final List<String> knownThreads = new ArrayList<String>();
     static Application defaultApplication;
@@ -171,101 +152,9 @@ public class TestHelper {
         return false;
     }
 
-    /**
-     * Resets the network and event test expectations.
-     */
-    public static void resetTestExpectations() {
-        MobileCore.log(LoggingMode.DEBUG, LOG_TAG, "Resetting functional test expectations for events");
-        MonitorExtension.reset();
-    }
-
-    /**
-     * Returns the {@code Event}(s) dispatched through the Event Hub, or empty if none was found.
-     *
-     * @param type   the event type as in the expectation
-     * @param source the event source as in the expectation
-     * @return list of events with the provided {@code type} and {@code source}, or empty if none was dispatched
-     * @throws InterruptedException
-     * @throws IllegalArgumentException if {@code type} or {@code source} are null or empty strings
-     */
-    public static List<Event> getDispatchedEventsWith(final String type, final String source) throws InterruptedException {
-        return getDispatchedEventsWith(type, source, WAIT_EVENT_TIMEOUT_MS);
-    }
-
-    /**
-     * Returns the {@code Event}(s) dispatched through the Event Hub, or empty if none was found.
-     *
-     * @param source  the event source as in the expectation
-     * @param timeout how long should this method wait for the expected event, in milliseconds.
-     * @return list of events with the provided {@code type} and {@code source}, or empty if none was dispatched
-     * @throws InterruptedException
-     * @throws IllegalArgumentException if {@code type} or {@code source} are null or empty strings
-     */
-    public static List<Event> getDispatchedEventsWith(final String type, final String source,
-                                                      int timeout) throws InterruptedException {
-        MonitorExtension.EventSpec eventSpec = new MonitorExtension.EventSpec(source, type);
-
-        Map<MonitorExtension.EventSpec, List<Event>> receivedEvents = MonitorExtension.getReceivedEvents();
-        Map<MonitorExtension.EventSpec, ADBCountDownLatch> expectedEvents = MonitorExtension.getExpectedEvents();
-
-        ADBCountDownLatch expectedEventLatch = expectedEvents.get(eventSpec);
-
-        if (expectedEventLatch != null) {
-            boolean awaitResult = expectedEventLatch.await(timeout, TimeUnit.MILLISECONDS);
-            assertTrue("Timed out waiting for event type " + eventSpec.type + " and source " + eventSpec.source, awaitResult);
-        } else {
-            sleep(WAIT_TIMEOUT_MS);
-        }
-
-        return receivedEvents.containsKey(eventSpec) ? receivedEvents.get(eventSpec) : Collections.emptyList();
-    }
-
     // ---------------------------------------------------------------------------------------------
     // Event Test Helpers
     // ---------------------------------------------------------------------------------------------
-
-    /**
-     * Synchronous call to get the shared state for the specified {@code stateOwner}.
-     * This API throws an assertion failure in case of timeout.
-     *
-     * @param stateOwner the owner extension of the shared state (typically the name of the extension)
-     * @param timeout    how long should this method wait for the requested shared state, in milliseconds
-     * @return latest shared state of the given {@code stateOwner} or null if no shared state was found
-     * @throws InterruptedException
-     */
-    public static Map<String, Object> getSharedStateFor(final String stateOwner, int timeout) throws InterruptedException {
-        Event event = new Event.Builder("Get Shared State Request", TestConstants.EventType.MONITOR,
-                TestConstants.EventSource.SHARED_STATE_REQUEST)
-                .setEventData(new HashMap<String, Object>() {
-                    {
-                        put(TestConstants.EventDataKey.STATE_OWNER, stateOwner);
-                    }
-                })
-                .build();
-
-        final ADBCountDownLatch latch = new ADBCountDownLatch(1);
-        final Map<String, Object> sharedState = new HashMap<>();
-        MobileCore.dispatchEventWithResponseCallback(event,
-                (long) timeout,
-                new AdobeCallbackWithError<Event>() {
-                    @Override
-                    public void fail(AdobeError adobeError) {
-                        MobileCore.log(LoggingMode.ERROR, LOG_TAG, "Failed to get shared state for " + stateOwner + ": " + adobeError);
-                        latch.countDown();
-                    }
-
-                    @Override
-                    public void call(Event event) {
-                        if (event.getEventData() != null) {
-                            sharedState.putAll(event.getEventData());
-                            latch.countDown();
-                        }
-                    }
-                });
-
-        latch.await(timeout, TimeUnit.MILLISECONDS);
-        return sharedState.isEmpty() ? null : sharedState;
-    }
 
     /**
      * Pause test execution for the given {@code milliseconds}
@@ -314,38 +203,6 @@ public class TestHelper {
                         // After test execution
                         MobileCore.log(LoggingMode.DEBUG, "SetupCoreRule", "Finished '" + description.getMethodName() + "'");
                         waitForThreads(5000); // wait to allow thread to run after test execution
-                        resetTestExpectations();
-                    }
-                }
-            };
-        }
-    }
-
-    /**
-     * {@code TestRule} which registers the {@code MonitorExtension}, allowing test cases to assert
-     * events passing through the {@code EventHub}. This {@code TestRule} must be applied after
-     * the {@link SetupCoreRule} to ensure the {@code MobileCore} is setup for testing first.
-     * <p>
-     * To use, add the following to your test class:
-     * <pre>
-     *  @Rule
-     *    public RuleChain rule = RuleChain.outerRule(new SetupCoreRule())
-     * 							.around(new RegisterMonitorExtensionRule());
-     * </pre>
-     */
-    public static class RegisterMonitorExtensionRule implements TestRule {
-
-        @Override
-        public Statement apply(final Statement base, final Description description) {
-            return new Statement() {
-                @Override
-                public void evaluate() throws Throwable {
-                    MonitorExtension.registerExtension();
-
-                    try {
-                        base.evaluate();
-                    } finally {
-                        MonitorExtension.reset();
                     }
                 }
             };
@@ -365,66 +222,6 @@ public class TestHelper {
         final SimpleDateFormat rfc2822formatter = new SimpleDateFormat(pattern, Locale.US);
         rfc2822formatter.setTimeZone(TimeZone.getTimeZone("GMT"));
         return rfc2822formatter;
-    }
-
-    /**
-     * Deserialize {@code JsonNode} and flatten to provided {@code map}.
-     * For example, a JSON such as "{xdm: {stitchId: myID, eventType: myType}}" is flattened
-     * to two map elements "xdm.stitchId" = "myID" and "xdm.eventType" = "myType".
-     * <p>
-     * Method is called recursively. To use, call with an empty path such as
-     * {@code addKeys("", new ObjectMapper().readTree(JsonNodeAsString), map);}
-     *
-     * @param currentPath the path in {@code JsonNode} to process
-     * @param jsonNode    {@link JsonNode} to deserialize
-     * @param map         {@code Map<String, String>} instance to store flattened JSON result
-     * @see <a href="https://stackoverflow.com/a/24150263">Stack Overflow post</a>
-     */
-    private static void addKeys(String currentPath, JsonNode jsonNode, Map<String, String> map) {
-        if (jsonNode.isObject()) {
-            ObjectNode objectNode = (ObjectNode) jsonNode;
-            Iterator<Map.Entry<String, JsonNode>> iter = objectNode.fields();
-            String pathPrefix = currentPath.isEmpty() ? "" : currentPath + ".";
-
-            while (iter.hasNext()) {
-                Map.Entry<String, JsonNode> entry = iter.next();
-                addKeys(pathPrefix + entry.getKey(), entry.getValue(), map);
-            }
-        } else if (jsonNode.isArray()) {
-            ArrayNode arrayNode = (ArrayNode) jsonNode;
-
-            for (int i = 0; i < arrayNode.size(); i++) {
-                addKeys(currentPath + "[" + i + "]", arrayNode.get(i), map);
-            }
-        } else if (jsonNode.isValueNode()) {
-            ValueNode valueNode = (ValueNode) jsonNode;
-            map.put(currentPath, valueNode.asText());
-        }
-    }
-
-    /**
-     * Converts a file into a {@code String}.
-     *
-     * @param fileName the {@code String} name of a file located in the resource directory
-     * @return a {@code String} containing the file's contents
-     */
-    public static String loadStringFromFile(final String fileName) {
-        final InputStream inputStream = convertResourceFileToInputStream(fileName);
-        try {
-            if (inputStream != null) {
-                final String streamContents = streamToString(inputStream);
-                return streamContents;
-            } else {
-                return null;
-            }
-        } finally {
-            try {
-                inputStream.close();
-            } catch (final IOException ioException) {
-                Log.warning(LOG_TAG, "Exception occurred when closing the input stream: %s", ioException.getMessage());
-                return null;
-            }
-        }
     }
 
     /**
@@ -505,26 +302,4 @@ public class TestHelper {
 
         return xdmMap;
     }
-
-    static String streamToString(final InputStream inputStream) {
-        if (inputStream == null) {
-            return null;
-        }
-
-        final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        final byte[] data = new byte[STREAM_READ_BUFFER_SIZE];
-        int bytesRead;
-
-        try {
-            while ((bytesRead = inputStream.read(data, 0, data.length)) != -1) {
-                buffer.write(data, 0, bytesRead);
-            }
-
-            return buffer.toString(CHARSET_UTF_8);
-        } catch (final IOException ex) {
-            Log.debug(LOG_TAG, LOG_TAG, "Unable to convert InputStream to String, %s", ex.getLocalizedMessage());
-            return null;
-        }
-    }
-
 }

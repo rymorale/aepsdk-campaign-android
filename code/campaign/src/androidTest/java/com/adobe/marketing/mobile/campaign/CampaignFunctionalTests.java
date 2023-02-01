@@ -11,8 +11,6 @@
 
 package com.adobe.marketing.mobile.campaign;
 
-import static com.adobe.marketing.mobile.campaign.TestHelper.resetTestExpectations;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -96,8 +94,7 @@ class Retry implements TestRule {
 public class CampaignFunctionalTests {
 
 	@Rule
-	public RuleChain rule = RuleChain.outerRule(new com.adobe.marketing.mobile.campaign.TestHelper.SetupCoreRule())
-			.around(new com.adobe.marketing.mobile.campaign.TestHelper.RegisterMonitorExtensionRule());
+	public RuleChain rule = RuleChain.outerRule(new com.adobe.marketing.mobile.campaign.TestHelper.SetupCoreRule());
 
 	// A test will be run at most 3 times
 	@Rule
@@ -136,7 +133,6 @@ public class CampaignFunctionalTests {
 		MobileCore.start((AdobeCallback) o -> {});
 
 		setupProgrammaticConfig();
-		resetTestExpectations();
 	}
 
 	@After
