@@ -197,6 +197,7 @@ public class CampaignFunctionalTests {
 		data.put(TestConstants.CAMPAIGN_SERVER, TestConstants.MOCK_CAMPAIGN_SERVER + "/" + buildEnvironment);
 		MobileCore.updateConfiguration(data);
 		TestHelper.sleep(2000);
+		testableNetworkService.clearCapturedRequests();
 	}
 
 	private String decodeBase64(final String encodedString) {
