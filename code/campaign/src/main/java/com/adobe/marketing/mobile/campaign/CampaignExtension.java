@@ -114,7 +114,7 @@ public class CampaignExtension extends Extension {
 
         // setup persistent hit queue
         final DataQueuing campaignDataQueueService = ServiceProvider.getInstance().getDataQueueService();
-        final DataQueue campaignDataQueue = campaignDataQueueService.getDataQueue(CampaignConstants.FRIENDLY_NAME);
+        final DataQueue campaignDataQueue = campaignDataQueueService.getDataQueue(CampaignConstants.EXTENSION_NAME);
         campaignPersistentHitQueue = new PersistentHitQueue(campaignDataQueue, new CampaignHitProcessor());
 
         // initialize the campaign state

@@ -120,7 +120,7 @@ public class CampaignFunctionalTests {
 		MobileCore.setApplication(TestHelper.defaultApplication);
 		MobileCore.clearUpdatedConfiguration();
 		testableNetworkService = new TestableNetworkService();
-		ServiceProvider.getInstance().getDataQueueService().getDataQueue(CampaignConstants.FRIENDLY_NAME).clear();
+		ServiceProvider.getInstance().getDataQueueService().getDataQueue(CampaignConstants.EXTENSION_NAME).clear();
 
 		// set fake network service for testing
 		ServiceProvider.getInstance().setNetworkService(testableNetworkService);
@@ -268,7 +268,7 @@ public class CampaignFunctionalTests {
 	}
 
 	private void setRegistrationDelayOrRegistrationPaused(final int registrationDelay, final boolean registrationPaused) {
-		HashMap<String, Object> data = new HashMap<String, Object>();
+		HashMap<String, Object> data = new HashMap<>();
 		data.put(TestConstants.CAMPAIGN_REGISTRATION_DELAY, registrationDelay);
 		data.put(TestConstants.CAMPAIGN_REGISTRATION_PAUSED, registrationPaused);
 		MobileCore.updateConfiguration(data);
@@ -1064,7 +1064,6 @@ public class CampaignFunctionalTests {
 		long timestamp = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(31);
 		updateTimestampInDatastore(timestamp);
 		updateEcidInDatastore(experienceCloudId);
-		testableNetworkService.clearCapturedRequests();
 		// set a registration delay of 100 days
 		setRegistrationDelayOrRegistrationPaused(100, false);
 		// test
