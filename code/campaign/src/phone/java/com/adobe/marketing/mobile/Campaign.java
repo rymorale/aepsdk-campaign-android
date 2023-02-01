@@ -11,10 +11,10 @@
 
 package com.adobe.marketing.mobile;
 
+import androidx.annotation.NonNull;
+
 import com.adobe.marketing.mobile.campaign.CampaignExtension;
 import com.adobe.marketing.mobile.services.Log;
-
-import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -34,6 +34,7 @@ public class Campaign {
 	 *
 	 * @return The version as {@code String}
 	 */
+	@NonNull
 	public static String extensionVersion() {
 		return EXTENSION_VERSION;
 	}
@@ -68,7 +69,7 @@ public class Campaign {
 	 *
 	 * @param linkageFields {@code Map<String, String>} containing the linkage fields key-value pairs
 	 */
-	public static void setLinkageFields(@NotNull final Map<String, String> linkageFields) {
+	public static void setLinkageFields(@NonNull final Map<String, String> linkageFields) {
 		if (linkageFields == null || linkageFields.isEmpty()) {
 			Log.debug(LOG_TAG, "setLinkageFields",
 					"setLinkageFields -  Cannot set Linkage Fields, provided linkage fields map is empty. \n For more information: https://aep-sdks.gitbook.io/docs/using-mobile-extensions/adobe-campaign-standard/adobe-campaign-standard-api-reference#set-linkage-fields");

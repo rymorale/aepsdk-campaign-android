@@ -31,6 +31,7 @@ import com.adobe.marketing.mobile.SharedStateStatus;
 import com.adobe.marketing.mobile.launch.rulesengine.LaunchRule;
 import com.adobe.marketing.mobile.launch.rulesengine.LaunchRulesEngine;
 import com.adobe.marketing.mobile.launch.rulesengine.RuleConsequence;
+import com.adobe.marketing.mobile.launch.rulesengine.download.RulesLoadResult;
 import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.DataQueue;
 import com.adobe.marketing.mobile.services.DataQueuing;
@@ -39,8 +40,10 @@ import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.services.PersistentHitQueue;
 import com.adobe.marketing.mobile.services.ServiceProvider;
+import com.adobe.marketing.mobile.services.caching.CacheResult;
 import com.adobe.marketing.mobile.services.caching.CacheService;
 import com.adobe.marketing.mobile.util.DataReader;
+import com.adobe.marketing.mobile.util.StreamUtils;
 import com.adobe.marketing.mobile.util.StringUtils;
 
 import org.json.JSONObject;
@@ -84,6 +87,7 @@ public class CampaignExtension extends Extension {
     private final CampaignState campaignState;
     private final DataStoring dataStoreService;
     private String linkageFields;
+    private boolean hasCachedRulesLoaded = false;
     private boolean hasToDownloadRules = true;
 
     /**
@@ -110,7 +114,7 @@ public class CampaignExtension extends Extension {
 
         // setup persistent hit queue
         final DataQueuing campaignDataQueueService = ServiceProvider.getInstance().getDataQueueService();
-        final DataQueue campaignDataQueue = campaignDataQueueService.getDataQueue(CampaignConstants.FRIENDLY_NAME);
+        final DataQueue campaignDataQueue = campaignDataQueueService.getDataQueue(CampaignConstants.EXTENSION_NAME);
         campaignPersistentHitQueue = new PersistentHitQueue(campaignDataQueue, new CampaignHitProcessor());
 
         // initialize the campaign state
@@ -208,6 +212,8 @@ public class CampaignExtension extends Extension {
                 EventSource.WILDCARD,
                 this::handleWildcardEvents
         );
+
+        FileUtils.deleteFileFromCacheDir(CampaignConstants.DEPRECATED_1X_HIT_DATABASE_FILENAME);
     }
 
     @Override
@@ -304,6 +310,16 @@ public class CampaignExtension extends Extension {
 
         setCampaignState(event);
 
+        // attempt to load cached rules on the first configuration event received
+        if (!hasCachedRulesLoaded) {
+            final CacheResult cachedRulesZip = cacheService.get(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER, CampaignConstants.ZIP_HANDLE);
+            if (cachedRulesZip != null) {
+                final RulesLoadResult cachedRules = new RulesLoadResult(StreamUtils.readAsString(cacheService.get(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER, CampaignConstants.RULES_JSON_FILE_NAME).getData()), RulesLoadResult.Reason.SUCCESS);
+                campaignRulesDownloader.registerRules(cachedRules);
+                hasCachedRulesLoaded = true;
+            }
+        }
+
         final MobilePrivacyStatus privacyStatus = campaignState.getMobilePrivacyStatus();
         // notify campaign persistent hit queue of any privacy status changes
         campaignPersistentHitQueue.handlePrivacyChange(privacyStatus);
@@ -330,7 +346,7 @@ public class CampaignExtension extends Extension {
      *     <li>Clears stored {@link #linkageFields}.</li>
      *     <li>Unregisters previously registered rules.</li>
      *     <li>Clears directory containing any previously cached rules.</li>
-     *     <li>Clears {@value CampaignConstants#CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY} in Campaign data store.</li>
+     *     <li>Clears the Campaign data store.</li>
      * </ul>
      */
     void processPrivacyOptOut() {
@@ -344,7 +360,7 @@ public class CampaignExtension extends Extension {
         // clear cached rules
         clearRulesCacheDirectory();
 
-        // clear all keys in the Campaign Named Collection
+        // clear the datastore
         clearCampaignNamedCollection();
     }
 
@@ -532,14 +548,16 @@ public class CampaignExtension extends Extension {
 
     /**
      * Clears the rules cache directory.
-     * <p>
-     * Creates a {@link CacheService} instance and invokes method on it to perform delete operation on
-     * {@value CampaignConstants#RULES_CACHE_FOLDER} directory.
      */
     void clearRulesCacheDirectory() {
-        if (cacheService != null) {
-            cacheService.remove(CampaignConstants.CACHE_BASE_DIR, CampaignConstants.RULES_CACHE_FOLDER);
-        }
+        final File rulesCacheDir = new File(ServiceProvider.getInstance().getDeviceInfoService().getApplicationCacheDir()
+                + File.separator
+                + CampaignConstants.AEPSDK_CACHE_BASE_DIR
+                + File.separator
+                + CampaignConstants.CACHE_BASE_DIR
+                + File.separator
+                + CampaignConstants.RULES_CACHE_FOLDER);
+        Utils.cleanDirectory(rulesCacheDir);
     }
 
     /**
@@ -606,7 +624,7 @@ public class CampaignExtension extends Extension {
     private void handleResetLinkageFields() {
         linkageFields = "";
 
-        campaignRulesEngine.replaceRules(null);
+        campaignRulesEngine.replaceRules(new ArrayList<>());
 
         clearRulesCacheDirectory();
 
@@ -724,7 +742,7 @@ public class CampaignExtension extends Extension {
     }
 
     /**
-     * Clears all the keys stored in the {@code CampaignExtension}'s {@link NamedCollection}.
+     * Clears the {@code CampaignExtension}'s {@link NamedCollection}.
      */
     private void clearCampaignNamedCollection() {
         final NamedCollection campaignNamedCollection = getNamedCollection();
