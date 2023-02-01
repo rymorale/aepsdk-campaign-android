@@ -13,7 +13,6 @@ package com.adobe.marketing.mobile.campaign;
 
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.Log;
-import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.services.NetworkCallback;
 import com.adobe.marketing.mobile.services.NetworkRequest;
 import com.adobe.marketing.mobile.services.Networking;
@@ -31,9 +30,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 public class TestableNetworkService implements Networking {
-    static final String ETAG_HEADER = "ETag";
-    static final String LAST_MODIFIED_HEADER_KEY = "Last-Modified";
-    static String lastModified = "Tue, 31 Jan 2023 09:31:46 GMT";
+    private static final String ETAG_HEADER = "ETag";
+    private static final String LAST_MODIFIED_HEADER_KEY = "Last-Modified";
+    private static String lastModified;
     private CountUpLatch countUpLatch = new CountUpLatch();
 
     private final Map<String, NetworkRequest> capturedRequests = new HashMap<>();
@@ -48,7 +47,6 @@ public class TestableNetworkService implements Networking {
             }
         }
         countUpLatch.countUp();
-        return;
     }
 
     /**
