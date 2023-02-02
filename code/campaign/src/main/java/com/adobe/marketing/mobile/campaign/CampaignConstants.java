@@ -25,6 +25,7 @@ final class CampaignConstants {
     static final String LOG_TAG = "Campaign";
     static final String EXTENSION_NAME = "com.adobe.module.campaign";
     static final String FRIENDLY_NAME = "Campaign";
+    static final String DEPRECATED_1X_HIT_DATABASE_FILENAME = "ADBMobileCampaign.sqlite";
 
     static final String CAMPAIGN_NAMED_COLLECTION_NAME = "CampaignCollection";
     static final String CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY = "CampaignRemoteUrl";

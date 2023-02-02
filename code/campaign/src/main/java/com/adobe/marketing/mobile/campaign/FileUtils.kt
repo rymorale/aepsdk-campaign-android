@@ -11,14 +11,35 @@
 
 package com.adobe.marketing.mobile.campaign
 
+import android.database.sqlite.SQLiteDatabase
 import com.adobe.marketing.mobile.campaign.CampaignConstants.LOG_TAG
 import com.adobe.marketing.mobile.services.Log
+import com.adobe.marketing.mobile.services.ServiceProvider
+import com.adobe.marketing.mobile.util.StringUtils
 import java.io.*
 import java.util.zip.ZipInputStream
 
 internal object FileUtils {
-    const val TAG = "FileUtils"
+    private const val TAG = "FileUtils"
     private const val MAX_BUFFER_SIZE = 4096
+
+    /**
+     * Helper method to delete the obsolete ACPCampaign 1.x hit database
+     */
+    @JvmStatic
+    fun deleteDatabaseFromCacheDir(fileName: String?): Boolean {
+        return try {
+            val cacheDir = ServiceProvider.getInstance().deviceInfoService.applicationCacheDir
+            if (cacheDir == null || StringUtils.isNullOrEmpty(fileName)) {
+                return false
+            }
+            val databaseFile = File(cacheDir, fileName)
+            SQLiteDatabase.deleteDatabase(databaseFile)
+        } catch (e: java.lang.Exception) {
+            Log.debug(LOG_TAG, TAG, "Failed to delete (%s) in cache folder, exception occurred: (%s)", fileName, e.localizedMessage)
+            false
+        }
+    }
 
     /**
      * Reads the content of [inputStream] into [file].

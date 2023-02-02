@@ -147,8 +147,13 @@ class CampaignRulesDownloader {
         }
         connection.close();
 
-        // register new rules
-        if (rulesLoadResult.getData() != null && rulesLoadResult.getReason().equals(RulesLoadResult.Reason.SUCCESS)) {
+        // register rules
+        registerRules(rulesLoadResult);
+    }
+
+    void registerRules(final RulesLoadResult rulesLoadResult) {
+        // register rules
+        if (rulesLoadResult.getData() != null && rulesLoadResult.getReason() != RulesLoadResult.Reason.NOT_MODIFIED) {
             final List<LaunchRule> campaignRules = JSONRulesParser.parse(rulesLoadResult.getData(), extensionApi);
             if (campaignRules != null) {
                 Log.trace(CampaignConstants.LOG_TAG, SELF_TAG, "Registering %s Campaign rule(s).", campaignRules.size());
