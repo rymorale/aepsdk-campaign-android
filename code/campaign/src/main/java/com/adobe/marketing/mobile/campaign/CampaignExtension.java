@@ -76,6 +76,7 @@ import java.util.concurrent.TimeUnit;
 public class CampaignExtension extends Extension {
     private static final String DATA_FOR_MESSAGE_REQUEST_EVENT_NAME = "DataForMessageRequest";
     private static final String INTERNAL_GENERIC_DATA_EVENT_NAME = "InternalGenericDataEvent";
+    private static final String CAMPAIGN_RULES_RESPONSE_EVENT = "CampaignRulesResponseEvent";
     private static final String CLICKED_STRING_VALUE = "2";
     private static final String VIEWED_STRING_VALUE = "1";
     private final String SELF_TAG = "CampaignExtension";
@@ -259,6 +260,19 @@ public class CampaignExtension extends Extension {
 
         if (consequences.isEmpty()) {
             return;
+        }
+
+        // dispatch a rule response event if we have matched rules that are not of type IAM. these are profile rules.
+        if (!consequences.get(0).getType().equals(CampaignConstants.MESSAGE_CONSEQUENCE_MESSAGE_TYPE)) {
+            final RuleConsequence consequence = consequences.get(0);
+            final Map<String, Object> triggeredConsequence = new HashMap<>();
+            triggeredConsequence.put(CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_ID, consequence.getId());
+            triggeredConsequence.put(CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_TYPE, consequence.getType());
+            triggeredConsequence.put(CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL, consequence.getDetail());
+            final Map<String, Object> eventData = new HashMap<>();
+            eventData.put(CampaignConstants.EventDataKeys.RuleEngine.CONSEQUENCE_TRIGGERED, triggeredConsequence);
+            final Event rulesResponseEvent = new Event.Builder(CAMPAIGN_RULES_RESPONSE_EVENT, EventType.RULES_ENGINE, EventSource.RESPONSE_CONTENT).setEventData(eventData).build();
+            extensionApi.dispatch(rulesResponseEvent);
         }
 
         try {
