@@ -273,6 +273,7 @@ public class CampaignExtension extends Extension {
             eventData.put(CampaignConstants.EventDataKeys.RuleEngine.CONSEQUENCE_TRIGGERED, triggeredConsequence);
             final Event rulesResponseEvent = new Event.Builder(CAMPAIGN_RULES_RESPONSE_EVENT, EventType.RULES_ENGINE, EventSource.RESPONSE_CONTENT).setEventData(eventData).build();
             extensionApi.dispatch(rulesResponseEvent);
+            return;
         }
 
         try {
