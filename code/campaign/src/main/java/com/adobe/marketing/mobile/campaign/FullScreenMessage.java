@@ -16,6 +16,8 @@ import androidx.annotation.VisibleForTesting;
 import com.adobe.marketing.mobile.launch.rulesengine.RuleConsequence;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.ServiceProvider;
+import com.adobe.marketing.mobile.services.caching.CacheEntry;
+import com.adobe.marketing.mobile.services.caching.CacheExpiry;
 import com.adobe.marketing.mobile.services.caching.CacheResult;
 import com.adobe.marketing.mobile.services.caching.CacheService;
 import com.adobe.marketing.mobile.services.ui.FullscreenMessage;
@@ -28,6 +30,8 @@ import com.adobe.marketing.mobile.util.StringUtils;
 import com.adobe.marketing.mobile.util.UrlUtils;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -229,52 +233,59 @@ class FullScreenMessage extends CampaignMessage {
     private Map<String, String> createCachedResourcesMap() {
         // early bail if we don't have assets or if cache service is unavailable
         if (assets == null || assets.isEmpty()) {
-            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "createCachedResourcesMap - No cached assets found, cannot expand URLs in the HTML.");
-            return Collections.emptyMap();
-        }
-
-        if (cacheService == null) {
-            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
-                    "createCachedResourcesMap - No cache service found, cannot generate local resource mapping.");
+            Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "createCachedResourcesMap - No valid remote asset list found for message with id %s.", messageId);
             return Collections.emptyMap();
         }
 
         final Map<String, String> cachedImagesMap = new HashMap<>();
         final Map<String, String> fallbackImagesMap = new HashMap<>();
+        final String cacheName = MESSAGES_CACHE + messageId;
 
         for (final List<String> currentAssetArray : assets) {
             if (currentAssetArray.isEmpty()) {
                 continue;
             }
 
-            final String assetUrl = currentAssetArray.get(0);
+            final String remoteAssetUrl = currentAssetArray.get(0);
             final int currentAssetArrayCount = currentAssetArray.size();
-            String assetValue = null;
+            String assetCacheLocation = null;
             int currentAssetNumber = 0;
 
             // loop through our assets to see if we have any of them in cache
             while (currentAssetNumber < currentAssetArrayCount) {
                 final String currentAsset = currentAssetArray.get(currentAssetNumber);
-                final CacheResult assetValueFile = cacheService.get(MESSAGES_CACHE + messageId, currentAsset);
+                final CacheResult assetValueFile = cacheService.get(cacheName, currentAsset);
 
                 if (assetValueFile != null) {
-                    assetValue = assetValueFile.getMetadata().get(CampaignConstants.METADATA_PATH);
+                    assetCacheLocation = cacheName;
                     break;
                 }
 
                 currentAssetNumber++;
             }
 
-            // if assetValue is still null, none of our urls have been cached, so we check for a bundled asset
-            if (StringUtils.isNullOrEmpty(assetValue)) {
-                assetValue = currentAssetArray.get(currentAssetArrayCount - 1);
-                boolean isLocalImage = !UrlUtils.isValidUrl(assetValue);
+            // if the asset cache location is still null then the specified remote url was not present in the cache.
+            // if a bundled asset is available, use it as a fallback by caching it for use later when the message is displayed.
+            if (StringUtils.isNullOrEmpty(assetCacheLocation)) {
+                final String bundledFileName = currentAssetArray.get(currentAssetArrayCount - 1);
+                boolean isLocalImage = !UrlUtils.isValidUrl(bundledFileName);
 
                 if (isLocalImage) {
-                    fallbackImagesMap.put(assetUrl, assetValue);
+                    try {
+                        final InputStream bundledFile = ServiceProvider.getInstance().getAppContextService().getApplicationContext().getAssets().open(bundledFileName);
+                        // if the remote asset url is a non valid url then we have a local asset which needs the local file system uri appended
+                        final String finalizedAssetUrl = !UrlUtils.isValidUrl(remoteAssetUrl) ? CampaignConstants.LOCAL_ASSET_URI + remoteAssetUrl : remoteAssetUrl;
+                        cacheService.set(cacheName, finalizedAssetUrl, new CacheEntry(bundledFile, CacheExpiry.never(), null));
+                        fallbackImagesMap.put(finalizedAssetUrl, cacheName);
+                        bundledFile.close();
+                    } catch (final IOException exception) {
+                        Log.debug(CampaignConstants.LOG_TAG, SELF_TAG,
+                                "createCachedResourcesMap - Exception occurred reading bundled asset: %s.", exception.getMessage());
+                    }
+
                 }
             } else {
-                cachedImagesMap.put(assetUrl, assetValue);
+                cachedImagesMap.put(remoteAssetUrl, assetCacheLocation);
             }
         }
         cachedImagesMap.putAll(fallbackImagesMap);
