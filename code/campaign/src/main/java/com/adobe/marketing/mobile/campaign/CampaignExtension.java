@@ -41,7 +41,9 @@ import com.adobe.marketing.mobile.services.PersistentHitQueue;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.caching.CacheResult;
 import com.adobe.marketing.mobile.services.caching.CacheService;
+import com.adobe.marketing.mobile.util.CloneFailedException;
 import com.adobe.marketing.mobile.util.DataReader;
+import com.adobe.marketing.mobile.util.EventDataUtils;
 import com.adobe.marketing.mobile.util.MapUtils;
 import com.adobe.marketing.mobile.util.StreamUtils;
 import com.adobe.marketing.mobile.util.StringUtils;
@@ -267,11 +269,19 @@ public class CampaignExtension extends Extension {
 
         final String id = DataReader.optString(consequenceMap, CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_ID, "");
         final String type = DataReader.optString(consequenceMap, CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_TYPE, "");
-        final Map<String, Object> detail = DataReader.optTypedMap(Object.class, consequenceMap, CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL, null);
-
+        final Map<String, Object> unmodifiableDetailMap = DataReader.optTypedMap(Object.class, consequenceMap, CampaignConstants.EventDataKeys.RuleEngine.MESSAGE_CONSEQUENCE_DETAIL, null);
         // detail is required
-        if (MapUtils.isNullOrEmpty(detail)) {
+        if (MapUtils.isNullOrEmpty(unmodifiableDetailMap)) {
             Log.trace(CampaignConstants.LOG_TAG, SELF_TAG, "handleRulesResponseEvents - null or empty consequence details found. Will not handle rules response event.");
+            return;
+        }
+
+        final Map<String, Object> detail;
+        try {
+           detail = new HashMap<>(EventDataUtils.clone(unmodifiableDetailMap));
+        } catch (final CloneFailedException exception) {
+            Log.trace(CampaignConstants.LOG_TAG, SELF_TAG,
+                    "handleRulesResponseEvents - Failed to clone the detail map present in the rule consequence due to an exception: %s", exception.getLocalizedMessage());
             return;
         }
 
