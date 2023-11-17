@@ -13,6 +13,7 @@ package com.adobe.marketing.mobile;
 
 import androidx.annotation.NonNull;
 
+import com.adobe.marketing.mobile.campaign.AppResourceStore;
 import com.adobe.marketing.mobile.campaign.CampaignExtension;
 import com.adobe.marketing.mobile.services.Log;
 
@@ -37,20 +38,6 @@ public class Campaign {
 	@NonNull
 	public static String extensionVersion() {
 		return EXTENSION_VERSION;
-	}
-
-	/**
-	 * Registers the extension with the Mobile SDK. This method should be called only once in your application class.
-	 */
-	@Deprecated
-	public static void registerExtension() {
-		MobileCore.registerExtension(CampaignExtension.class, extensionError -> {
-			if (extensionError == null) {
-				return;
-			}
-			Log.error(LOG_TAG, "registerExtension", "There was an error when registering the Campaign extension: %s",
-					extensionError.getErrorName());
-		});
 	}
 
 	/**
@@ -103,6 +90,42 @@ public class Campaign {
 
 		// dispatch event
 		MobileCore.dispatchEvent(event);
+	}
+
+	/**
+	 * Sets the resource Id for small icon.
+	 *
+	 * @param resourceID the resource Id of the icon
+	 */
+	public static void setSmallIconResourceID(final int resourceID) {
+		AppResourceStore.setSmallIconResourceID(resourceID);
+	}
+
+	/**
+	 * Returns the resource Id for small icon if it was set by `setSmallIconResourceID`.
+	 *
+	 * @return a `int` value if it has been set, otherwise -1
+	 */
+	public static int getSmallIconResourceID() {
+		return AppResourceStore.getSmallIconResourceID();
+	}
+
+	/**
+	 * Sets the resource Id for large icon.
+	 *
+	 * @param resourceID the resource Id of the icon
+	 */
+	public static void setLargeIconResourceID(final int resourceID) {
+		AppResourceStore.setLargeIconResourceID(resourceID);
+	}
+
+	/**
+	 * Returns the resource Id for large icon if it was set by `setLargeIconResourceID`.
+	 *
+	 * @return a `int` value if it has been set, otherwise -1
+	 */
+	public static int getLargeIconResourceID() {
+		return AppResourceStore.getLargeIconResourceID();
 	}
 
 }
