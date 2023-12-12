@@ -14,7 +14,6 @@ package com.adobe.marketing.mobile.campaign;
 import com.adobe.marketing.mobile.launch.rulesengine.RuleConsequence;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.ServiceProvider;
-import com.adobe.marketing.mobile.services.ui.UIService;
 import com.adobe.marketing.mobile.services.uri.UriOpening;
 import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.StringUtils;

@@ -20,9 +20,9 @@ public class AppResourceStore {
     private static volatile int smallIconResourceID = -1;
     private static volatile int largeIconResourceID = -1;
 
-     public static void setSmallIconResourceID(int resourceID) {
+     public static void setSmallIconResourceID(final int resourceID) {
         smallIconResourceID = resourceID;
-        NamedCollection dataStore = ServiceProvider.getInstance().getDataStoreService().getNamedCollection("ADOBE_MOBILE_APP_STATE");
+        final NamedCollection dataStore = ServiceProvider.getInstance().getDataStoreService().getNamedCollection("ADOBE_MOBILE_APP_STATE");
         if (dataStore != null) {
             dataStore.setInt("SMALL_ICON_RESOURCE_ID", smallIconResourceID);
         }
@@ -30,7 +30,7 @@ public class AppResourceStore {
 
     public static int getSmallIconResourceID() {
         if (smallIconResourceID == -1) {
-            NamedCollection dataStore = ServiceProvider.getInstance().getDataStoreService().getNamedCollection("ADOBE_MOBILE_APP_STATE");
+            final NamedCollection dataStore = ServiceProvider.getInstance().getDataStoreService().getNamedCollection("ADOBE_MOBILE_APP_STATE");
             if (dataStore != null) {
                 smallIconResourceID = dataStore.getInt("SMALL_ICON_RESOURCE_ID", -1);
             }
@@ -38,9 +38,9 @@ public class AppResourceStore {
         return smallIconResourceID;
     }
 
-    public static void setLargeIconResourceID(int resourceID) {
+    public static void setLargeIconResourceID(final int resourceID) {
         largeIconResourceID = resourceID;
-        NamedCollection dataStore = ServiceProvider.getInstance().getDataStoreService().getNamedCollection("ADOBE_MOBILE_APP_STATE");
+        final NamedCollection dataStore = ServiceProvider.getInstance().getDataStoreService().getNamedCollection("ADOBE_MOBILE_APP_STATE");
         if (dataStore != null) {
             dataStore.setInt("LARGE_ICON_RESOURCE_ID", largeIconResourceID);
         }
@@ -48,7 +48,7 @@ public class AppResourceStore {
 
     public static int getLargeIconResourceID() {
         if (largeIconResourceID == -1) {
-             NamedCollection dataStore = ServiceProvider.getInstance().getDataStoreService().getNamedCollection("ADOBE_MOBILE_APP_STATE");
+             final NamedCollection dataStore = ServiceProvider.getInstance().getDataStoreService().getNamedCollection("ADOBE_MOBILE_APP_STATE");
             if (dataStore != null) {
                 largeIconResourceID = dataStore.getInt("LARGE_ICON_RESOURCE_ID", -1);
             }

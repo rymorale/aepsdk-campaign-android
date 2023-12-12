@@ -367,7 +367,7 @@ class FullScreenMessage extends CampaignMessage {
          * @param presentable the {@link Presentable<InAppMessage>} being displayed
          */
         @Override
-        public void onShow(@NonNull Presentable<InAppMessage> presentable) {
+        public void onShow(final @NonNull Presentable<InAppMessage> presentable) {
             Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "Fullscreen on show callback received.");
             triggered();
         }
@@ -380,23 +380,23 @@ class FullScreenMessage extends CampaignMessage {
          * @param presentable the {@link Presentable<InAppMessage>} being dismissed
          */
         @Override
-        public void onDismiss(@NonNull Presentable<InAppMessage> presentable) {
+        public void onDismiss(final @NonNull Presentable<InAppMessage> presentable) {
             Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "Fullscreen on dismiss callback received.");
             viewed();
         }
 
         @Override
-        public void onError(@NonNull Presentable<InAppMessage> presentable, @NonNull PresentationError presentationError) {
+        public void onError(final @NonNull Presentable<InAppMessage> presentable, final @NonNull PresentationError presentationError) {
             Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "onShowFailure -  Fullscreen message failed to show.");
         }
 
         @Override
-        public void onHide(@NonNull Presentable<InAppMessage> presentable) {
+        public void onHide(final @NonNull Presentable<InAppMessage> presentable) {
 
         }
 
         @Override
-        public void onBackPressed(@NonNull Presentable<InAppMessage> presentable) {
+        public void onBackPressed(final @NonNull Presentable<InAppMessage> presentable) {
 
         }
 
@@ -422,7 +422,7 @@ class FullScreenMessage extends CampaignMessage {
          * @see #processMessageInteraction(Map)
          */
         @Override
-        public boolean onUrlLoading(@NonNull Presentable<InAppMessage> inAppMessagePresentable, @NonNull String urlString) {
+        public boolean onUrlLoading(final @NonNull Presentable<InAppMessage> inAppMessagePresentable, final @NonNull String urlString) {
 
             Log.trace(CampaignConstants.LOG_TAG, "Fullscreen overrideUrlLoad callback received with url (%s)", urlString);
 

@@ -61,7 +61,7 @@ class AlertMessage extends CampaignMessage {
          * If a url is not present then call the {@link #clickedThrough()} method implemented in the parent class {@link CampaignMessage}.
          */
         @Override
-        public void onPositiveResponse(@NonNull Presentable<Alert> presentable) {
+        public void onPositiveResponse(final @NonNull Presentable<Alert> presentable) {
             viewed();
 
             if (!StringUtils.isNullOrEmpty(url)) {
@@ -79,7 +79,7 @@ class AlertMessage extends CampaignMessage {
          * Calls the {@link #viewed()} method implemented in the parent class {@link CampaignMessage}.
          */
         @Override
-        public void onNegativeResponse(@NonNull Presentable<Alert> presentable) {
+        public void onNegativeResponse(final @NonNull Presentable<Alert> presentable) {
             viewed();
         }
 
@@ -89,7 +89,7 @@ class AlertMessage extends CampaignMessage {
          * Calls the {@link #triggered()} method implemented in the parent class {@link CampaignMessage}.
          */
         @Override
-        public void onShow(@NonNull Presentable<Alert> presentable) {
+        public void onShow(final @NonNull Presentable<Alert> presentable) {
             triggered();
         }
 
@@ -99,19 +99,19 @@ class AlertMessage extends CampaignMessage {
          * Calls the {@link #viewed()} method implemented in the parent class {@link CampaignMessage}.
          */
         @Override
-        public void onDismiss(@NonNull Presentable<Alert> presentable) {
+        public void onDismiss(final @NonNull Presentable<Alert> presentable) {
             viewed();
         }
 
         @Override
-        public void onHide(@NonNull Presentable<Alert> presentable) {}
+        public void onHide(final @NonNull Presentable<Alert> presentable) {}
 
         /**
          * Invoked when an error occurs when showing the alert.
          * <p>
          */
         @Override
-        public void onError(@NonNull Presentable<Alert> presentable, @NonNull PresentationError presentationError) {
+        public void onError(final @NonNull Presentable<Alert> presentable, final @NonNull PresentationError presentationError) {
             Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "Error occurred when attempting to display the alert message");
         }
     }
