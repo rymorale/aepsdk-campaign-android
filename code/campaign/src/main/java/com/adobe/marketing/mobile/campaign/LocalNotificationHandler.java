@@ -32,6 +32,7 @@ import android.os.Bundle;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 
+import com.adobe.marketing.mobile.MobileCore;
 import com.adobe.marketing.mobile.services.DeviceInforming;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.ServiceProvider;
@@ -224,8 +225,8 @@ public class LocalNotificationHandler extends BroadcastReceiver {
     }
 
     private int getSmallIcon() {
-        return AppResourceStore.getSmallIconResourceID() != -1
-                ? AppResourceStore.getSmallIconResourceID()
+        return MobileCore.getSmallIconResourceID() != -1
+                ? MobileCore.getSmallIconResourceID()
                 : android.R.drawable.sym_def_app_icon;
     }
 
@@ -236,7 +237,7 @@ public class LocalNotificationHandler extends BroadcastReceiver {
 
         Drawable iconDrawable = null;
         // first see if we have a user defined one
-        final int largeIconResourceId = AppResourceStore.getLargeIconResourceID();
+        final int largeIconResourceId = MobileCore.getLargeIconResourceID();
 
         if (largeIconResourceId != -1) {
             iconDrawable = ContextCompat.getDrawable(appContext, largeIconResourceId);
