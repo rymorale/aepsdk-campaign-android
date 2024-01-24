@@ -26,15 +26,15 @@ import java.util.HashMap;
 class LocalNotificationService {
     private static final String LOG_TAG = "Campaign";
     private static final String SELF_TAG = "LocalNotificationService";
-    public static final String NOTIFICATION_CONTENT_KEY = "NOTIFICATION_CONTENT";
-    public static final String NOTIFICATION_USER_INFO_KEY = "NOTIFICATION_USER_INFO";
-    public static final String NOTIFICATION_IDENTIFIER_KEY = "NOTIFICATION_IDENTIFIER";
-    public static final String NOTIFICATION_DEEPLINK_KEY = "NOTIFICATION_DEEPLINK";
-    public static final String NOTIFICATION_SOUND_KEY = "NOTIFICATION_SOUND";
-    public static final String NOTIFICATION_SENDER_CODE_KEY = "NOTIFICATION_SENDER_CODE";
-    public static final int NOTIFICATION_SENDER_CODE = 750183;
-    public static final String NOTIFICATION_REQUEST_CODE_KEY = "NOTIFICATION_REQUEST_CODE";
-    public static final String NOTIFICATION_TITLE = "NOTIFICATION_TITLE";
+    private static final String NOTIFICATION_CONTENT_KEY = "NOTIFICATION_CONTENT";
+    private static final String NOTIFICATION_USER_INFO_KEY = "NOTIFICATION_USER_INFO";
+    private static final String NOTIFICATION_IDENTIFIER_KEY = "NOTIFICATION_IDENTIFIER";
+    private static final String NOTIFICATION_DEEPLINK_KEY = "NOTIFICATION_DEEPLINK";
+    private static final String NOTIFICATION_SOUND_KEY = "NOTIFICATION_SOUND";
+    private static final String NOTIFICATION_SENDER_CODE_KEY = "NOTIFICATION_SENDER_CODE";
+    private static final int NOTIFICATION_SENDER_CODE = 750183;
+    private static final String NOTIFICATION_REQUEST_CODE_KEY = "NOTIFICATION_REQUEST_CODE";
+    private static final String NOTIFICATION_TITLE = "NOTIFICATION_TITLE";
 
     static void showLocalNotification(final Context appContext, final NotificationSetting notificationSetting) {
         if (appContext == null) {
@@ -45,7 +45,7 @@ class LocalNotificationService {
         final int requestCode = new SecureRandom().nextInt();
 
         // prefer a specified fireDate, otherwise use delaySeconds
-        Calendar calendar = Calendar.getInstance();
+        final Calendar calendar = Calendar.getInstance();
 
         if (notificationSetting.getFireDate() > 0) {
             // do math to calculate number of seconds to add, because android api for
@@ -99,7 +99,7 @@ class LocalNotificationService {
             if (alarmManager != null) {
                 alarmManager.set(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), sender);
             }
-        } catch (Exception e) {
+        } catch (final Exception e) {
             Log.warning(LOG_TAG,
                     LOG_TAG,
                     String.format(

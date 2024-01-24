@@ -48,7 +48,7 @@ public final class NotificationSetting {
             final Map<String, Object> userInfo,
             final String sound,
             final String title) {
-        NotificationSetting notificationSetting = new NotificationSetting();
+        final NotificationSetting notificationSetting = new NotificationSetting();
         notificationSetting.identifier = identifier;
         notificationSetting.content = content;
         notificationSetting.fireDate = fireDate;

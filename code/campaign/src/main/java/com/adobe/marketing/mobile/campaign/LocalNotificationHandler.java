@@ -58,11 +58,12 @@ public class LocalNotificationHandler extends BroadcastReceiver {
     private static final int NOTIFICATION_SENDER_CODE = 750183;
     private static final String NOTIFICATION_REQUEST_CODE_KEY = "NOTIFICATION_REQUEST_CODE";
     private static final String NOTIFICATION_TITLE = "NOTIFICATION_TITLE";
+    private static final int DEFAULT_ICON_RESOURCE_ID = -1;
 
     @Override
     public void onReceive(final Context context, final Intent intent) {
         // get message and request code from previous context
-        Bundle bundle = intent.getExtras();
+        final Bundle bundle = intent.getExtras();
 
         if (bundle == null) {
             Log.debug(LOG_TAG,
@@ -71,32 +72,19 @@ public class LocalNotificationHandler extends BroadcastReceiver {
             return;
         }
 
-        Context appContext = context.getApplicationContext();
-        String message;
-        String messageID;
-        String deeplink;
-        HashMap<String, Object> userInfo;
-        String sound;
-        int requestCode;
-        int senderCode;
-        String title;
-
-        try {
-            message = bundle.getString(NOTIFICATION_CONTENT_KEY);
-            requestCode = bundle.getInt(NOTIFICATION_REQUEST_CODE_KEY);
-            senderCode = bundle.getInt(NOTIFICATION_SENDER_CODE_KEY);
-            messageID = bundle.getString(NOTIFICATION_IDENTIFIER_KEY);
-            deeplink = bundle.getString(NOTIFICATION_DEEPLINK_KEY);
-            sound = bundle.getString(NOTIFICATION_SOUND_KEY);
-            userInfo = (HashMap<String, Object>) bundle.getSerializable(NOTIFICATION_USER_INFO_KEY);
-            title = bundle.getString(NOTIFICATION_TITLE);
-        } catch (Exception e) {
-            Log.debug(LOG_TAG, SELF_TAG, "Failed to process bundle (%s)", e);
-            return;
-        }
+        final Context appContext = context.getApplicationContext();
+        final String message = bundle.getString(NOTIFICATION_CONTENT_KEY);
+        final int requestCode = bundle.getInt(NOTIFICATION_REQUEST_CODE_KEY);
+        final int senderCode = bundle.getInt(NOTIFICATION_SENDER_CODE_KEY);
+        final String messageID = bundle.getString(NOTIFICATION_IDENTIFIER_KEY);
+        final String deeplink = bundle.getString(NOTIFICATION_DEEPLINK_KEY);
+        final String sound = bundle.getString(NOTIFICATION_SOUND_KEY);
+        final HashMap<String, Object> userInfo = (HashMap<String, Object>) bundle.getSerializable(NOTIFICATION_USER_INFO_KEY);
+        final String title = bundle.getString(NOTIFICATION_TITLE);
 
         // if our request codes are not matching, we don't care about this intent
         if (senderCode != NOTIFICATION_SENDER_CODE) {
+            Log.trace(LOG_TAG, SELF_TAG, "Request code does not match");
             return;
         }
 
@@ -106,7 +94,7 @@ public class LocalNotificationHandler extends BroadcastReceiver {
             return;
         }
 
-        Activity currentActivity =
+        final Activity currentActivity =
                 ServiceProvider.getInstance().getAppContextService().getCurrentActivity();
         Intent resumeIntent;
 
@@ -126,7 +114,7 @@ public class LocalNotificationHandler extends BroadcastReceiver {
         resumeIntent.putExtra(NOTIFICATION_USER_INFO_KEY, userInfo);
 
         final int buildVersion = Build.VERSION.SDK_INT;
-        NotificationManager notificationManager =
+        final NotificationManager notificationManager =
                 (NotificationManager) appContext.getSystemService(Context.NOTIFICATION_SERVICE);
 
         try {
@@ -159,32 +147,32 @@ public class LocalNotificationHandler extends BroadcastReceiver {
             // Todo: This seems redundant as the App is first launched before handling Broadcast
             // intent
             // App.INSTANCE.setAppContext(context.getApplicationContext());
-            DeviceInforming systemInfoService =
+            final DeviceInforming systemInfoService =
                     ServiceProvider.getInstance().getDeviceInfoService();
-            String appName = systemInfoService.getApplicationName();
+            final String appName = systemInfoService.getApplicationName();
 
             // notification channels are required if api level is 26 or higher
             if (buildVersion >= Build.VERSION_CODES.O) {
-                final NotificationChannel notificationChannel = new NotificationChannel(NOTIFICATION_CHANNEL_ID,
-                        NOTIFICATION_CHANNEL_NAME,
-                        NotificationManager.IMPORTANCE_HIGH);
-                notificationChannel.setDescription(NOTIFICATION_CHANNEL_DESCRIPTION);
-                notificationManager.createNotificationChannel((NotificationChannel) notificationChannel);
-
+                if (notificationManager.getNotificationChannel(NOTIFICATION_CHANNEL_ID) == null) {
+                    final NotificationChannel notificationChannel = new NotificationChannel(NOTIFICATION_CHANNEL_ID,
+                            NOTIFICATION_CHANNEL_NAME,
+                            NotificationManager.IMPORTANCE_HIGH);
+                    notificationChannel.setDescription(NOTIFICATION_CHANNEL_DESCRIPTION);
+                    notificationManager.createNotificationChannel(notificationChannel);
+                }
                 // TODO: handle setting of sound...the previous method got deprecated in API 26
-
             }
 
             // set all the notification properties (small icon, content title, and content text are
             // all required)
             // small icon shows up in the status bar
-            NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID);
-            notificationBuilder.setStyle(new NotificationCompat.BigTextStyle());
-            notificationBuilder.setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
-            notificationBuilder.setPriority(Notification.PRIORITY_HIGH);
-            notificationBuilder.setStyle(new NotificationCompat.BigTextStyle());
-            notificationBuilder.setSmallIcon(getSmallIcon());
-            Bitmap largeIcon = getLargeIcon(context);
+            final NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
+                    .setStyle(new NotificationCompat.BigTextStyle())
+                    .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
+                    .setPriority(Notification.PRIORITY_HIGH)
+                    .setStyle(new NotificationCompat.BigTextStyle())
+                    .setSmallIcon(getSmallIcon());
+            final Bitmap largeIcon = getLargeIcon(context);
             if (largeIcon != null) {
                 notificationBuilder.setLargeIcon(largeIcon);
             }
@@ -197,7 +185,7 @@ public class LocalNotificationHandler extends BroadcastReceiver {
             notificationBuilder.setContentIntent(sender);
 
             // Setting the delete intent for tracking click on deletion.
-            Intent deleteIntent = new Intent(appContext, NotificationDismissalHandler.class);
+            final Intent deleteIntent = new Intent(appContext, NotificationDismissalHandler.class);
             deleteIntent.putExtra(NOTIFICATION_USER_INFO_KEY, userInfo);
             PendingIntent pendingIntent;
             if (buildVersion >= Build.VERSION_CODES.M) {
@@ -216,7 +204,7 @@ public class LocalNotificationHandler extends BroadcastReceiver {
             // this causes the notification to automatically go away when it is touched
             notificationBuilder.setAutoCancel(true);
             notificationManager.notify(new SecureRandom().nextInt(), (Notification) notificationBuilder.build());
-        } catch (Exception e) {
+        } catch (final Exception e) {
             Log.warning(LOG_TAG,
                     SELF_TAG,
                     "unexpected error posting notification (%s)",
@@ -225,7 +213,7 @@ public class LocalNotificationHandler extends BroadcastReceiver {
     }
 
     private int getSmallIcon() {
-        return MobileCore.getSmallIconResourceID() != -1
+        return MobileCore.getSmallIconResourceID() != DEFAULT_ICON_RESOURCE_ID
                 ? MobileCore.getSmallIconResourceID()
                 : android.R.drawable.sym_def_app_icon;
     }
@@ -239,15 +227,15 @@ public class LocalNotificationHandler extends BroadcastReceiver {
         // first see if we have a user defined one
         final int largeIconResourceId = MobileCore.getLargeIconResourceID();
 
-        if (largeIconResourceId != -1) {
+        if (largeIconResourceId != DEFAULT_ICON_RESOURCE_ID) {
             iconDrawable = ContextCompat.getDrawable(appContext, largeIconResourceId);
         }
         // no user defined icon, try to get one from package manager
         else {
-            ApplicationInfo applicationInfo = appContext.getApplicationInfo();
+            final ApplicationInfo applicationInfo = appContext.getApplicationInfo();
 
             if (applicationInfo != null && appContext.getPackageManager() != null) {
-                PackageManager packageManager = appContext.getPackageManager();
+                final PackageManager packageManager = appContext.getPackageManager();
                 iconDrawable = packageManager.getApplicationIcon(applicationInfo);
             }
         }
@@ -269,8 +257,8 @@ public class LocalNotificationHandler extends BroadcastReceiver {
     /**
      * Draws the drawable provided into a new Bitmap
      *
-     * @param drawable The drawable that needs to be extracted into a Bitmap
-     * @return The Bitmap drawn from the drawable.
+     * @param drawable The {@link Drawable} that needs to be extracted into a Bitmap
+     * @return The {@link Bitmap} drawn from the drawable.
      */
     private Bitmap getBitmapFromDrawable(final Drawable drawable) {
         final Bitmap bmp =

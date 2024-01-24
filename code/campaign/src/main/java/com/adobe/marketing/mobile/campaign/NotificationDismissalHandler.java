@@ -37,7 +37,7 @@ public final class NotificationDismissalHandler extends BroadcastReceiver {
     public void onReceive(final Context context, final Intent intent) {
         if (intent.hasExtra(NOTIFICATION_USER_INFO_KEY)) {
             Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "Notification dismissed");
-            final  Map<String, Object> notificationData =
+            final Map<String, Object> notificationData =
                     (Map<String, Object>) intent.getSerializableExtra(NOTIFICATION_USER_INFO_KEY);
 
             if (notificationData != null) {

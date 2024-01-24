@@ -194,10 +194,16 @@ class FullScreenMessage extends CampaignMessage {
         // ACS fullscreen messages are displayed at 100% scale
         final InAppMessageSettings messageSettings = new InAppMessageSettings.Builder()
                 .content(htmlContent)
+                .height(FILL_DEVICE_DISPLAY)
+                .width(FILL_DEVICE_DISPLAY)
+                .verticalAlignment(InAppMessageSettings.MessageAlignment.TOP)
+                .horizontalAlignment(InAppMessageSettings.MessageAlignment.CENTER)
                 .displayAnimation(InAppMessageSettings.MessageAnimation.BOTTOM)
                 .dismissAnimation(InAppMessageSettings.MessageAnimation.BOTTOM)
                 .backgroundColor("#FFFFFF")
+                .backdropOpacity(0.0f)
                 .assetMap(cachedResourcesMap)
+                .shouldTakeOverUi(true)
                 .build();
 
 
