@@ -12,7 +12,7 @@ package com.adobe.marketing.mobile.campaign;
 
 import java.util.Map;
 
-public final class NotificationSetting {
+final class NotificationSetting {
 
     private String identifier;
     private String content;

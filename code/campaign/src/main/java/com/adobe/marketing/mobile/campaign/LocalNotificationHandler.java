@@ -41,7 +41,7 @@ import java.security.SecureRandom;
 import java.util.HashMap;
 
 @SuppressWarnings("unchecked")
-public class LocalNotificationHandler extends BroadcastReceiver {
+class LocalNotificationHandler extends BroadcastReceiver {
 
     private static final String LOG_TAG = "Campaign";
     private static final String SELF_TAG = "LocalNotificationHandler";
@@ -119,24 +119,15 @@ public class LocalNotificationHandler extends BroadcastReceiver {
 
         try {
             // if we have an activity for this notification, use it
-            PendingIntent sender;
+            final int flags = (buildVersion >= Build.VERSION_CODES.M)
+                    ? (PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE)
+                    : PendingIntent.FLAG_UPDATE_CURRENT;
 
-            if (buildVersion >= Build.VERSION_CODES.M) {
-                sender =
-                        PendingIntent.getActivity(
+            final PendingIntent sender = PendingIntent.getActivity(
                                 appContext,
                                 senderCode,
                                 resumeIntent,
-                                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-            } else {
-                sender =
-                        PendingIntent.getActivity(
-                                appContext,
-                                senderCode,
-                                resumeIntent,
-                                PendingIntent.FLAG_UPDATE_CURRENT);
-            }
-
+                                flags);
             if (sender == null) {
                 Log.debug(LOG_TAG,
                         SELF_TAG,
@@ -187,18 +178,10 @@ public class LocalNotificationHandler extends BroadcastReceiver {
             // Setting the delete intent for tracking click on deletion.
             final Intent deleteIntent = new Intent(appContext, NotificationDismissalHandler.class);
             deleteIntent.putExtra(NOTIFICATION_USER_INFO_KEY, userInfo);
-            PendingIntent pendingIntent;
-            if (buildVersion >= Build.VERSION_CODES.M) {
-                pendingIntent = PendingIntent.getBroadcast(appContext,
+            final PendingIntent pendingIntent =  PendingIntent.getBroadcast(appContext,
                         senderCode,
                         deleteIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-            } else {
-                pendingIntent = PendingIntent.getBroadcast(appContext,
-                        senderCode,
-                        deleteIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT);
-            }
+                        flags);
             notificationBuilder.setDeleteIntent(pendingIntent);
 
             // this causes the notification to automatically go away when it is touched

@@ -78,20 +78,15 @@ class LocalNotificationService {
         intent.putExtra(NOTIFICATION_TITLE, notificationSetting.getTitle());
 
         try {
-            PendingIntent sender;
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) { // 23
-                sender =
+            final int flags = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+                    ? PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                    : PendingIntent.FLAG_UPDATE_CURRENT;
+            final PendingIntent sender =
                         PendingIntent.getBroadcast(
                                 appContext,
                                 requestCode,
                                 intent,
-                                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-            } else {
-                sender =
-                        PendingIntent.getBroadcast(
-                                appContext, requestCode, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-            }
+                                flags);
 
             final AlarmManager alarmManager =
                     (AlarmManager) appContext.getSystemService(Context.ALARM_SERVICE);
