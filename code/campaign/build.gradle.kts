@@ -14,9 +14,11 @@ plugins {
 }
 
 val mavenCoreVersion: String by project
+val mavenIdentityVersion: String by project
+val mavenLifecycleVersion: String by project
 
 aepLibrary {
-    enableSpotlessPrettierForJava = true
+    namespace = "com.adobe.marketing.mobile"
     enableSpotless = true
     enableCheckStyle = true
 
@@ -33,5 +35,6 @@ dependencies {
     // MOCKITO_CORE, MOCKITO_INLINE, JSON
 
     // androidTestImplementation dependencies provided by aep-library:
-    // ANDROIDX_TEST_EXT_JUNIT, ESPRESSO_CORE
+    androidTestImplementation("com.adobe.marketing.mobile:identity:$mavenIdentityVersion-SNAPSHOT")
+    androidTestImplementation("com.adobe.marketing.mobile:lifecycle:$mavenLifecycleVersion-SNAPSHOT")
 }

@@ -356,7 +356,7 @@ public class CampaignFunctionalTests {
 		assertTrue(payload.contains(String.format(PAYLOAD_STRING, experienceCloudId, PUSH_PLATFORM)));
 		testableNetworkService.clearCapturedRequests();
 		testableNetworkService.setNetworkResponse(expectedUrl, "OK", 200);
-		TestHelper.sleep(31000);
+		TestHelper.sleep(3100);
 		// verify request retried
 		testableNetworkService.waitForRequest(expectedUrl);
 		profileUpdateRequest = testableNetworkService.getRequest(expectedUrl);
@@ -366,7 +366,7 @@ public class CampaignFunctionalTests {
 		assertTrue(payload.contains(String.format(PAYLOAD_STRING, experienceCloudId, PUSH_PLATFORM)));
 		testableNetworkService.clearCapturedRequests();
 		// verify no more retried requests due to 200 response
-		TestHelper.sleep(31000);
+		TestHelper.sleep(3100);
 		assertEquals(0, testableNetworkService.waitAndGetCount(0));
 	}
 

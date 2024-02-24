@@ -31,6 +31,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "aepsdk-campaign-android"
 include (
-         ":testapp",
          ":campaign"
 )
