@@ -174,7 +174,7 @@ public class CampaignExtension extends Extension {
 
     @Override
     protected String getVersion() {
-        return BuildConfig.LIB_VERSION;
+        return CampaignConstants.EXTENSION_VERSION;
     }
 
     @Override
