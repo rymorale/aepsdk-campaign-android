@@ -1,5 +1,5 @@
 EXTENSION-LIBRARY-FOLDER-NAME = campaign
-TEST-APP-FOLDER-NAME = testapp
+TEST-APP-FOLDER-NAME = testapps/kotlin_test_app/
 
 init:
 	git config core.hooksPath .githooks
