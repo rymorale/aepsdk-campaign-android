@@ -29,11 +29,11 @@ class PushNotificationService : FirebaseMessagingService() {
         const val channelId = "campaign_notification_channel"
     }
 
-    override fun onNewToken(token: String?) {
+    override fun onNewToken(token: String) {
         MobileCore.setPushIdentifier(token)
     }
 
-    override fun onMessageReceived(message: RemoteMessage?) {
+    override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
         print("Push notification received")
 

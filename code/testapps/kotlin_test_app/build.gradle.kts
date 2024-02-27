@@ -13,13 +13,14 @@ import com.adobe.marketing.mobile.gradle.BuildConstants
 
 plugins {
     id("com.android.application")
+    id("org.jetbrains.kotlin.android")
 }
 
 android {
-      namespace = "com.adobe.placestestapp"
+      namespace = "com.example.campaign_push_notification_test_app"
 
     defaultConfig {
-        applicationId = "com.adobe.placestestapp"
+        applicationId = "com.example.campaign_push_notification_test_app"
         compileSdk = BuildConstants.Versions.COMPILE_SDK_VERSION
         minSdk = BuildConstants.Versions.MIN_SDK_VERSION
         targetSdk = BuildConstants.Versions.TARGET_SDK_VERSION
@@ -27,22 +28,35 @@ android {
         versionName = BuildConstants.Versions.VERSION_NAME
     }
 
+    kotlinOptions {
+        jvmTarget = BuildConstants.Versions.KOTLIN_JVM_TARGET
+        languageVersion = BuildConstants.Versions.KOTLIN_LANGUAGE_VERSION
+        apiVersion = BuildConstants.Versions.KOTLIN_API_VERSION
+    }
+
     buildTypes {
         getByName(BuildConstants.BuildTypes.RELEASE)  {
             isMinifyEnabled = false
         }
     }
+
+    buildFeatures {
+        dataBinding = true
+    }
 }
 
+apply(plugin = "com.google.gms.google-services")
+
 dependencies {
-    implementation(project(":places"))
+    implementation(project(":campaign"))
     implementation("com.adobe.marketing.mobile:core:2.+")
     implementation("com.adobe.marketing.mobile:assurance:2.+")
-    implementation("com.adobe.marketing.mobile:edge:2.+")
 
-    implementation("com.google.android.gms:play-services-location:21.1.0")
-    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation(fileTree("libs").matching { include("*.jar") })
+    implementation("androidx.recyclerview:recyclerview:1.2.1")
+    implementation("androidx.preference:preference:1.2.1")
+    implementation("com.google.android.material:material:1.6.1")
 
-    implementation("androidx.appcompat:appcompat:1.5.1")
-    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    implementation("com.google.firebase:firebase-messaging:22.0.0")
+
 }

@@ -15,21 +15,14 @@ import android.app.Application
 import android.util.Log
 import androidx.annotation.NonNull
 import com.adobe.marketing.mobile.*
-import com.google.android.gms.common.ConnectionResult
-import com.google.android.gms.common.GoogleApiAvailability
-import com.google.android.gms.tasks.OnCompleteListener
 import com.google.android.gms.tasks.Task
-import com.google.firebase.iid.FirebaseInstanceId
-import com.google.firebase.iid.InstanceIdResult
+import com.google.firebase.messaging.FirebaseMessaging
 
 class PushNotificationApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
 
-        if(GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this) == ConnectionResult.SUCCESS){
-            print("--->>>> Available play services")
-        }
 
         MobileCore.setApplication(this)
         MobileCore.setLogLevel(LoggingMode.VERBOSE)
@@ -51,25 +44,20 @@ class PushNotificationApplication : Application() {
 //            e.printStackTrace()
 //        }
 
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (!task.isSuccessful) {
+                Log.w("CampaignTestApp", "getInstanceId failed", task.exception)
+                return@addOnCompleteListener
+            }
 
-        FirebaseInstanceId.getInstance().instanceId
-            .addOnCompleteListener(object : OnCompleteListener<InstanceIdResult> {
-                override fun onComplete(@NonNull task: Task<InstanceIdResult>) {
-                    if (!task.isSuccessful) {
-                        Log.w("CampaignTestApp", "getInstanceId failed", task.exception)
-                        return
-                    }
+            // Get new FCM registration token
+            val token = task.result
 
-                    // Get new Instance ID token
-                    val token = task.result?.token ?: ""
+            // Log and toast
+            println("CampaignTestApp token: $token")
+            MobileCore.setPushIdentifier(token)
+        }
 
-                    // Log and toast
-                    println("CampaignTestApp token: $token")
-
-
-                    MobileCore.setPushIdentifier(token)
-                }
-            })
         // compare to latest versions at https://bintray.com/eaps/mobileservicesdk
         Log.d("Core version ", MobileCore.extensionVersion())
         Log.d("Campaign version ", Campaign.extensionVersion())

@@ -36,10 +36,15 @@ android {
 
 dependencies {
     implementation(project(":campaign"))
-    implementation("com.adobe.marketing.mobile:core:2.+")
-    implementation("com.adobe.marketing.mobile:assurance:2.+")
-    implementation("com.adobe.marketing.mobile:edge:2.+")
+    implementation("com.adobe.marketing.mobile:core:2+")
+    implementation("com.adobe.marketing.mobile:lifecycle:2.+")
+    implementation("com.adobe.marketing.mobile:identity:2.+")
+    implementation("com.adobe.marketing.mobile:signal:2.+")
+    implementation("com.adobe.marketing.mobile:userprofile:2.+")
 
+    implementation("com.google.firebase:firebase-messaging:22.0.0")
     implementation("androidx.appcompat:appcompat:1.5.1")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
 }
+
+apply(plugin = "com.google.gms.google-services")

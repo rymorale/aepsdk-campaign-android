@@ -31,5 +31,9 @@ dependencyResolutionManagement {
 
 rootProject.name = "aepsdk-campaign-android"
 include (
-         ":campaign"
+         ":campaign",
+         ":testapp",
+         ":kotlin_test_app"
 )
+project(":testapp").projectDir = File("Testapps/testapp")
+project(":kotlin_test_app").projectDir = File("Testapps/kotlin_test_app")
