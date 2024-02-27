@@ -35,5 +35,5 @@ include (
          ":testapp",
          ":kotlin_test_app"
 )
-project(":testapp").projectDir = File("Testapps/testapp")
-project(":kotlin_test_app").projectDir = File("Testapps/kotlin_test_app")
+project(":testapp").projectDir = File("testapps/testapp")
+project(":kotlin_test_app").projectDir = File("testapps/kotlin_test_app")
