@@ -14,8 +14,8 @@ plugins {
 }
 
 val mavenCoreVersion: String by project
-val mavenIdentityVersion: String by project
-val mavenLifecycleVersion: String by project
+val functionalTestIdentityVersion: String by project
+val functionalTestLifecycleVersion: String by project
 
 aepLibrary {
     namespace = "com.adobe.marketing.mobile"
@@ -35,6 +35,6 @@ dependencies {
     // MOCKITO_CORE, MOCKITO_INLINE, JSON
 
     // androidTestImplementation dependencies provided by aep-library:
-    androidTestImplementation("com.adobe.marketing.mobile:identity:$mavenIdentityVersion-SNAPSHOT")
-    androidTestImplementation("com.adobe.marketing.mobile:lifecycle:$mavenLifecycleVersion-SNAPSHOT")
+    androidTestImplementation("com.adobe.marketing.mobile:identity:$functionalTestIdentityVersion-SNAPSHOT")
+    androidTestImplementation("com.adobe.marketing.mobile:lifecycle:$functionalTestLifecycleVersion-SNAPSHOT")
 }
