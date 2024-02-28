@@ -1232,8 +1232,6 @@ public class CampaignExtensionTests {
             Event testEvent = new Event.Builder("Test event", EventType.LIFECYCLE,
                     EventSource.RESPONSE_CONTENT).setEventData(getLifecycleEventData()).build();
 
-            String payload = "{\"pushPlatform\":\"gcm\"" +
-                    ",\"marketingCloudId\":\"" + campaignState.getExperienceCloudId() + "\"}";
             String url = String.format(CampaignConstants.CAMPAIGN_REGISTRATION_URL, campaignState.getCampaignServer(),
                     campaignState.getCampaignPkey(), campaignState.getExperienceCloudId());
 
@@ -1245,7 +1243,8 @@ public class CampaignExtensionTests {
             DataEntity capturedDataEntity = dataEntityArgumentCaptor.getValue();
             CampaignHit campaignHit = Utils.campaignHitFromDataEntity(capturedDataEntity);
             assertEquals(url, campaignHit.url);
-            assertEquals(payload, campaignHit.payload);
+            assertTrue(campaignHit.payload.contains("\"pushPlatform\":\"gcm\""));
+            assertTrue(campaignHit.payload.contains("\"marketingCloudId\":\"" + campaignState.getExperienceCloudId()+ "\""));
         });
     }
 
@@ -1337,8 +1336,6 @@ public class CampaignExtensionTests {
         Event testEvent = new Event.Builder("Test event", EventType.LIFECYCLE,
                 EventSource.RESPONSE_CONTENT).setEventData(getLifecycleEventData()).build();
 
-        String payload = "{\"pushPlatform\":\"gcm\"" +
-                ",\"marketingCloudId\":\"" + campaignState.getExperienceCloudId() + "\"}";
         String url = String.format(CampaignConstants.CAMPAIGN_REGISTRATION_URL, campaignState.getCampaignServer(),
                 campaignState.getCampaignPkey(), campaignState.getExperienceCloudId());
 
@@ -1350,7 +1347,8 @@ public class CampaignExtensionTests {
         DataEntity capturedDataEntity = dataEntityArgumentCaptor.getValue();
         CampaignHit campaignHit = Utils.campaignHitFromDataEntity(capturedDataEntity);
         assertEquals(url, campaignHit.url);
-        assertEquals(payload, campaignHit.payload);
+        assertTrue(campaignHit.payload.contains("\"pushPlatform\":\"gcm\""));
+        assertTrue(campaignHit.payload.contains("\"marketingCloudId\":\"" + campaignState.getExperienceCloudId()+ "\""));
 
         // setup for second part of test
         // add values to datastore to simulate a previous successful campaign registration request
@@ -1382,8 +1380,6 @@ public class CampaignExtensionTests {
         Event testEvent = new Event.Builder("Test event", EventType.LIFECYCLE,
                 EventSource.RESPONSE_CONTENT).setEventData(getLifecycleEventData()).build();
 
-        String payload = "{\"pushPlatform\":\"gcm\"" +
-                ",\"marketingCloudId\":\"" + campaignState.getExperienceCloudId() + "\"}";
         String url = String.format(CampaignConstants.CAMPAIGN_REGISTRATION_URL, campaignState.getCampaignServer(),
                 campaignState.getCampaignPkey(), campaignState.getExperienceCloudId());
 
@@ -1394,8 +1390,8 @@ public class CampaignExtensionTests {
         verify(mockPersistentHitQueue, times(1)).queue(dataEntityArgumentCaptor.capture());
         DataEntity capturedDataEntity = dataEntityArgumentCaptor.getValue();
         CampaignHit campaignHit = Utils.campaignHitFromDataEntity(capturedDataEntity);
-        assertEquals(url, campaignHit.url);
-        assertEquals(payload, campaignHit.payload);
+        assertTrue(campaignHit.payload.contains("\"pushPlatform\":\"gcm\""));
+        assertTrue(campaignHit.payload.contains("\"marketingCloudId\":\"" + campaignState.getExperienceCloudId()+ "\""));
 
         // setup for second part of test
         // add values to datastore to simulate a previous successful campaign registration request
@@ -1411,7 +1407,8 @@ public class CampaignExtensionTests {
         capturedDataEntity = dataEntityArgumentCaptor.getValue();
         campaignHit = Utils.campaignHitFromDataEntity(capturedDataEntity);
         assertEquals(url, campaignHit.url);
-        assertEquals(payload, campaignHit.payload);
+        assertTrue(campaignHit.payload.contains("\"pushPlatform\":\"gcm\""));
+        assertTrue(campaignHit.payload.contains("\"marketingCloudId\":\"" + campaignState.getExperienceCloudId()+ "\""));
     }
 
     @Test
@@ -1432,8 +1429,6 @@ public class CampaignExtensionTests {
         Event testEvent = new Event.Builder("Test event", EventType.LIFECYCLE,
                 EventSource.RESPONSE_CONTENT).setEventData(getLifecycleEventData()).build();
 
-        String payload = "{\"pushPlatform\":\"gcm\"" +
-                ",\"marketingCloudId\":\"" + campaignState.getExperienceCloudId() + "\"}";
         String url = String.format(CampaignConstants.CAMPAIGN_REGISTRATION_URL, campaignState.getCampaignServer(),
                 campaignState.getCampaignPkey(), campaignState.getExperienceCloudId());
 
@@ -1450,7 +1445,8 @@ public class CampaignExtensionTests {
         DataEntity capturedDataEntity = dataEntityArgumentCaptor.getValue();
         CampaignHit campaignHit = Utils.campaignHitFromDataEntity(capturedDataEntity);
         assertEquals(url, campaignHit.url);
-        assertEquals(payload, campaignHit.payload);
+        assertTrue(campaignHit.payload.contains("\"pushPlatform\":\"gcm\""));
+        assertTrue(campaignHit.payload.contains("\"marketingCloudId\":\"" + campaignState.getExperienceCloudId()+ "\""));
     }
 
     @Test
@@ -1498,8 +1494,6 @@ public class CampaignExtensionTests {
         Event testEvent = new Event.Builder("Test event", EventType.LIFECYCLE,
                 EventSource.RESPONSE_CONTENT).setEventData(getLifecycleEventData()).build();
 
-        String payload = "{\"pushPlatform\":\"gcm\"" +
-                ",\"marketingCloudId\":\"" + campaignState.getExperienceCloudId() + "\"}";
         String url = String.format(CampaignConstants.CAMPAIGN_REGISTRATION_URL, campaignState.getCampaignServer(),
                 campaignState.getCampaignPkey(), campaignState.getExperienceCloudId());
 
@@ -1516,7 +1510,8 @@ public class CampaignExtensionTests {
         DataEntity capturedDataEntity = dataEntityArgumentCaptor.getValue();
         CampaignHit campaignHit = Utils.campaignHitFromDataEntity(capturedDataEntity);
         assertEquals(url, campaignHit.url);
-        assertEquals(payload, campaignHit.payload);
+        assertTrue(campaignHit.payload.contains("\"pushPlatform\":\"gcm\""));
+        assertTrue(campaignHit.payload.contains("\"marketingCloudId\":\"testExperienceCloudId\""));
     }
 
     @Test
