@@ -42,7 +42,6 @@ public class CountUpLatch {
         this.await(expectedCount, 2000);
     }
 
-
     public void countUp() {
         lock.lock();
 
@@ -52,8 +51,5 @@ public class CountUpLatch {
         } finally {
             lock.unlock();
         }
-
-
     }
-
 }

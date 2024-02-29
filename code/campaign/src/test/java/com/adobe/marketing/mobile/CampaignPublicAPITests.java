@@ -14,20 +14,16 @@ package com.adobe.marketing.mobile;
 import static org.junit.Assert.assertEquals;
 
 import com.adobe.marketing.mobile.campaign.CampaignExtension;
-import com.adobe.marketing.mobile.services.Log;
-
-import org.junit.Assert;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class CampaignPublicAPITests {
@@ -48,7 +44,8 @@ public class CampaignPublicAPITests {
 
     @Test
     public void test_setLinkageFields() {
-        try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class)) {
+        try (MockedStatic<MobileCore> mobileCoreMockedStatic =
+                Mockito.mockStatic(MobileCore.class)) {
             // setup
             ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
             Map<String, String> linkageFields = new HashMap<>();
@@ -64,7 +61,8 @@ public class CampaignPublicAPITests {
             assertEquals(EventSource.REQUEST_IDENTITY, capturedEvent.getSource());
             assertEquals("setLinkageFields Event", capturedEvent.getName());
             Map<String, Object> capturedEventData = capturedEvent.getEventData();
-            Map<String, String> capturedLinkageFields = (Map<String, String>) capturedEventData.get("linkagefields");
+            Map<String, String> capturedLinkageFields =
+                    (Map<String, String>) capturedEventData.get("linkagefields");
             assertEquals("firstName", capturedLinkageFields.get("cusFirstName"));
             assertEquals("lastName", capturedLinkageFields.get("cusLastName"));
             assertEquals("firstNameLastName@email.com", capturedLinkageFields.get("cusEmail"));
@@ -74,7 +72,8 @@ public class CampaignPublicAPITests {
     @Test
     public void test_setLinkageFields_NullMap() {
         // test
-        try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class)) {
+        try (MockedStatic<MobileCore> mobileCoreMockedStatic =
+                Mockito.mockStatic(MobileCore.class)) {
             Campaign.setLinkageFields(null);
             // verify campaign request identity event not dispatched
             mobileCoreMockedStatic.verifyNoInteractions();
@@ -84,7 +83,8 @@ public class CampaignPublicAPITests {
     @Test
     public void test_setLinkageFields_EmptyMap() {
         // test
-        try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class)) {
+        try (MockedStatic<MobileCore> mobileCoreMockedStatic =
+                Mockito.mockStatic(MobileCore.class)) {
             Campaign.setLinkageFields(new HashMap<>());
             // verify campaign request identity event not dispatched
             mobileCoreMockedStatic.verifyNoInteractions();
@@ -93,7 +93,8 @@ public class CampaignPublicAPITests {
 
     @Test
     public void test_resetLinkageFields() {
-        try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class)) {
+        try (MockedStatic<MobileCore> mobileCoreMockedStatic =
+                Mockito.mockStatic(MobileCore.class)) {
             // setup
             ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
             // test

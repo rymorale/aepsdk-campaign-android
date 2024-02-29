@@ -12,83 +12,99 @@
 package com.adobe.marketing.mobile;
 
 import androidx.annotation.NonNull;
-
 import com.adobe.marketing.mobile.campaign.CampaignExtension;
 import com.adobe.marketing.mobile.services.Log;
-
 import java.util.HashMap;
 import java.util.Map;
 
 public class Campaign {
-	private final static String EXTENSION_VERSION = "3.0.0";
-	private static final String LOG_TAG = "Campaign";
-	private static final String LINKAGE_FIELDS = "linkagefields";
+    private static final String EXTENSION_VERSION = "3.0.0";
+    private static final String LOG_TAG = "Campaign";
+    private static final String LINKAGE_FIELDS = "linkagefields";
 
-	public static final Class<? extends Extension> EXTENSION = CampaignExtension.class;
+    public static final Class<? extends Extension> EXTENSION = CampaignExtension.class;
 
-	private Campaign() {
-	}
+    private Campaign() {}
 
-	/**
-	 * Returns the version of the {@link Campaign} extension
-	 *
-	 * @return The version as {@code String}
-	 */
-	@NonNull
-	public static String extensionVersion() {
-		return EXTENSION_VERSION;
-	}
+    /**
+     * Returns the version of the {@link Campaign} extension
+     *
+     * @return The version as {@code String}
+     */
+    @NonNull public static String extensionVersion() {
+        return EXTENSION_VERSION;
+    }
 
-	/**
-	 * Sets the Campaign linkage fields (CRM IDs) in the mobile SDK to be used for downloading personalized messages from Campaign.
-	 * <p>
-	 * The set linkage fields are stored as base64 encoded JSON string in memory and they are sent in a custom HTTP header 'X-InApp-Auth'
-	 * in all future Campaign rules download requests until {@link #resetLinkageFields()} is invoked. These in-memory variables are also
-	 * lost in the wake of an Application crash event or upon graceful Application termination or when the privacy status is updated to
-	 * {@link MobilePrivacyStatus#OPT_OUT}.
-	 * <p>
-	 * This method clears cached rules from previous download before triggering a rules download request to the configured Campaign server.
-	 * If the current SDK privacy status is not {@code MobilePrivacyStatus.OPT_IN}, no rules download happens.
-	 * Dispatches a {@code EventType.CAMPAIGN}, {@code EventSource.REQUEST_IDENTITY} event to set linkage fields in the SDK.
-	 * <p>
-	 * If the provided {@code linkageFields} Map is null or empty, no event is dispatched.
-	 *
-	 * @param linkageFields {@code Map<String, String>} containing the linkage fields key-value pairs
-	 */
-	public static void setLinkageFields(@NonNull final Map<String, String> linkageFields) {
-		if (linkageFields == null || linkageFields.isEmpty()) {
-			Log.debug(LOG_TAG, "setLinkageFields",
-					"setLinkageFields -  Cannot set Linkage Fields, provided linkage fields map is empty. \n For more information: https://aep-sdks.gitbook.io/docs/using-mobile-extensions/adobe-campaign-standard/adobe-campaign-standard-api-reference#set-linkage-fields");
-			return;
-		}
+    /**
+     * Sets the Campaign linkage fields (CRM IDs) in the mobile SDK to be used for downloading
+     * personalized messages from Campaign.
+     *
+     * <p>The set linkage fields are stored as base64 encoded JSON string in memory and they are
+     * sent in a custom HTTP header 'X-InApp-Auth' in all future Campaign rules download requests
+     * until {@link #resetLinkageFields()} is invoked. These in-memory variables are also lost in
+     * the wake of an Application crash event or upon graceful Application termination or when the
+     * privacy status is updated to {@link MobilePrivacyStatus#OPT_OUT}.
+     *
+     * <p>This method clears cached rules from previous download before triggering a rules download
+     * request to the configured Campaign server. If the current SDK privacy status is not {@code
+     * MobilePrivacyStatus.OPT_IN}, no rules download happens. Dispatches a {@code
+     * EventType.CAMPAIGN}, {@code EventSource.REQUEST_IDENTITY} event to set linkage fields in the
+     * SDK.
+     *
+     * <p>If the provided {@code linkageFields} Map is null or empty, no event is dispatched.
+     *
+     * @param linkageFields {@code Map<String, String>} containing the linkage fields key-value
+     *     pairs
+     */
+    public static void setLinkageFields(@NonNull final Map<String, String> linkageFields) {
+        if (linkageFields == null || linkageFields.isEmpty()) {
+            Log.debug(
+                    LOG_TAG,
+                    "setLinkageFields",
+                    "setLinkageFields -  Cannot set Linkage Fields, provided linkage fields map is"
+                        + " empty. \n"
+                        + " For more information:"
+                        + " https://aep-sdks.gitbook.io/docs/using-mobile-extensions/adobe-campaign-standard/adobe-campaign-standard-api-reference#set-linkage-fields");
+            return;
+        }
 
-		final Map<String, Object> eventData = new HashMap<>();
-		eventData.put(LINKAGE_FIELDS, linkageFields);
+        final Map<String, Object> eventData = new HashMap<>();
+        eventData.put(LINKAGE_FIELDS, linkageFields);
 
-		final Event event = new Event.Builder("setLinkageFields Event",
-				EventType.CAMPAIGN, EventSource.REQUEST_IDENTITY).setEventData(eventData).build();
+        final Event event =
+                new Event.Builder(
+                                "setLinkageFields Event",
+                                EventType.CAMPAIGN,
+                                EventSource.REQUEST_IDENTITY)
+                        .setEventData(eventData)
+                        .build();
 
-		// dispatch event
-		MobileCore.dispatchEvent(event);
-	}
+        // dispatch event
+        MobileCore.dispatchEvent(event);
+    }
 
-	/**
-	 * Clears previously stored linkage fields in the mobile SDK and triggers Campaign rules download request to the configured Campaign server.
-	 * <p>
-	 * This method unregisters any previously registered rules with the Event Hub and clears cached rules from previous download.
-	 * If the current SDK privacy status is not {@link MobilePrivacyStatus#OPT_IN}, no rules download happens.
-	 * To reset the linkage field, this function dispatches a {@code EventType.CAMPAIGN}, {@code EventSource.REQUEST_RESET} event to clear previously set
-	 * linkage fields in the SDK.
-	 *
-	 * @see #setLinkageFields(Map)
-	 */
-	public static void resetLinkageFields() {
+    /**
+     * Clears previously stored linkage fields in the mobile SDK and triggers Campaign rules
+     * download request to the configured Campaign server.
+     *
+     * <p>This method unregisters any previously registered rules with the Event Hub and clears
+     * cached rules from previous download. If the current SDK privacy status is not {@link
+     * MobilePrivacyStatus#OPT_IN}, no rules download happens. To reset the linkage field, this
+     * function dispatches a {@code EventType.CAMPAIGN}, {@code EventSource.REQUEST_RESET} event to
+     * clear previously set linkage fields in the SDK.
+     *
+     * @see #setLinkageFields(Map)
+     */
+    public static void resetLinkageFields() {
 
-		final Event event = new Event.Builder("resetLinkageFields Event",
-				EventType.CAMPAIGN, EventSource.REQUEST_RESET).build();
+        final Event event =
+                new Event.Builder(
+                                "resetLinkageFields Event",
+                                EventType.CAMPAIGN,
+                                EventSource.REQUEST_RESET)
+                        .build();
 
-		// dispatch event
-		MobileCore.dispatchEvent(event);
-	}
-
+        // dispatch event
+        MobileCore.dispatchEvent(event);
+    }
 }

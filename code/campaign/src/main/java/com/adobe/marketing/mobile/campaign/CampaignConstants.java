@@ -17,8 +17,8 @@ import java.util.Arrays;
 
 /**
  * Contains {@code static} constants used by the classes within the Campaign extension.
- * <p>
- * This class is not instantiable.
+ *
+ * <p>This class is not instantiable.
  */
 final class CampaignConstants {
 
@@ -32,7 +32,8 @@ final class CampaignConstants {
     static final String CAMPAIGN_NAMED_COLLECTION_NAME = "CampaignCollection";
     static final String CAMPAIGN_NAMED_COLLECTION_REMOTES_URL_KEY = "CampaignRemoteUrl";
     static final String CAMPAIGN_NAMED_COLLECTION_EXPERIENCE_CLOUD_ID_KEY = "ExperienceCloudId";
-    static final String CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY = "CampaignRegistrationTimestamp";
+    static final String CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY =
+            "CampaignRegistrationTimestamp";
 
     // acp campaign datastore file
     static final String ACP_CAMPAIGN_DATASTORE_NAME = "CampaignDataStore";
@@ -71,7 +72,8 @@ final class CampaignConstants {
     static final String RULES_CACHE_FOLDER = "campaignRules";
     static final String RULES_JSON_FILE_NAME = "rules.json";
 
-    static final String CAMPAIGN_REGISTRATION_URL = "https://%s/rest/head/mobileAppV5/%s/subscriptions/%s";
+    static final String CAMPAIGN_REGISTRATION_URL =
+            "https://%s/rest/head/mobileAppV5/%s/subscriptions/%s";
     static final String CAMPAIGN_RULES_DOWNLOAD_URL = "https://%s/%s/%s/%s/rules.zip";
     static final String CAMPAIGN_TRACKING_URL = "https://%s/r/?id=%s,%s,%s&mcId=%s";
     static final int CAMPAIGN_TIMEOUT_DEFAULT = 5;
@@ -97,17 +99,19 @@ final class CampaignConstants {
     static final String HTTP_HEADER_IF_NONE_MATCH = "If-None-Match";
     static final String HTTP_HEADER_IF_RANGE = "If-Range";
     static final String HTTP_HEADER_ETAG = "Etag";
-    static final ArrayList<Integer> recoverableNetworkErrorCodes = new ArrayList(Arrays.asList(HttpURLConnection.HTTP_CLIENT_TIMEOUT, HttpURLConnection.HTTP_GATEWAY_TIMEOUT, HttpURLConnection.HTTP_UNAVAILABLE));
+    static final ArrayList<Integer> recoverableNetworkErrorCodes =
+            new ArrayList(
+                    Arrays.asList(
+                            HttpURLConnection.HTTP_CLIENT_TIMEOUT,
+                            HttpURLConnection.HTTP_GATEWAY_TIMEOUT,
+                            HttpURLConnection.HTTP_UNAVAILABLE));
 
     // cache service metadata
     static final String METADATA_PATH = "pathToFile";
 
-    private CampaignConstants() {
-    }
+    private CampaignConstants() {}
 
-    /**
-     * Context data keys
-     */
+    /** Context data keys */
     static final class ContextDataKeys {
         // in-app constants for message tracking
         static final String MESSAGE_TRIGGERED = "a.message.triggered";
@@ -115,8 +119,7 @@ final class CampaignConstants {
         static final String MESSAGE_VIEWED = "a.message.viewed";
         static final String MESSAGE_ID = "a.message.id";
 
-        private ContextDataKeys() {
-        }
+        private ContextDataKeys() {}
     }
 
     static final class CampaignHit {
@@ -124,8 +127,7 @@ final class CampaignConstants {
         static final String PAYLOAD = "payload";
         static final String TIMEOUT = "timeout";
 
-        private CampaignHit() {
-        }
+        private CampaignHit() {}
     }
 
     static final class Notification {
@@ -139,18 +141,16 @@ final class CampaignConstants {
         static final String REQUEST_CODE_KEY = "NOTIFICATION_REQUEST_CODE";
         static final String TITLE = "NOTIFICATION_TITLE";
 
-        private Notification() {
-        }
+        private Notification() {}
     }
 
     /*
-        EventDataKeys
-     */
+       EventDataKeys
+    */
     static final class EventDataKeys {
         static final String STATE_OWNER = "stateowner";
 
-        private EventDataKeys() {
-        }
+        private EventDataKeys() {}
 
         static final class Campaign {
             static final String LINKAGE_FIELDS = "linkagefields";
@@ -158,8 +158,7 @@ final class CampaignConstants {
             static final String TRACK_INFO_KEY_DELIVERY_ID = "deliveryId";
             static final String TRACK_INFO_KEY_ACTION = "action";
 
-            private Campaign() {
-            }
+            private Campaign() {}
         }
 
         static final class Configuration {
@@ -175,8 +174,7 @@ final class CampaignConstants {
             static final String CAMPAIGN_REGISTRATION_DELAY_KEY = "campaign.registrationDelay";
             static final String CAMPAIGN_REGISTRATION_PAUSED_KEY = "campaign.registrationPaused";
 
-            private Configuration() {
-            }
+            private Configuration() {}
         }
 
         static final class RuleEngine {
@@ -211,16 +209,14 @@ final class CampaignConstants {
             static final String MESSAGE_CONSEQUENCE_DETAIL_KEY_USER_DATA = "userData";
             static final String MESSAGE_CONSEQUENCE_DETAIL_KEY_SOUND = "sound";
 
-            private RuleEngine() {
-            }
+            private RuleEngine() {}
         }
 
         static final class Identity {
             static final String EXTENSION_NAME = "com.adobe.module.identity";
             static final String VISITOR_ID_MID = "mid";
 
-            private Identity() {
-            }
+            private Identity() {}
         }
 
         static final class Lifecycle {
@@ -229,9 +225,7 @@ final class CampaignConstants {
             static final String INSTALL_EVENT = "installevent";
             static final String LIFECYCLE_CONTEXT_DATA = "lifecyclecontextdata";
 
-            private Lifecycle() {
-            }
+            private Lifecycle() {}
         }
-
     }
 }
