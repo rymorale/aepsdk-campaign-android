@@ -29,11 +29,11 @@ class PushNotificationService : FirebaseMessagingService() {
         const val channelId = "campaign_notification_channel"
     }
 
-    override fun onNewToken(token: String?) {
+    override fun onNewToken(token: String) {
         MobileCore.setPushIdentifier(token)
     }
 
-    override fun onMessageReceived(message: RemoteMessage?) {
+    override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
         print("Push notification received")
 
@@ -52,7 +52,7 @@ class PushNotificationService : FirebaseMessagingService() {
             setContentTitle(message?.data?.get("title") ?: "")
             setContentText(message?.data?.get("body") ?: "")
             priority = NotificationCompat.PRIORITY_DEFAULT
-            setContentIntent(PendingIntent.getActivity(this@PushNotificationService, 0, Intent(this@PushNotificationService, MainActivity::class.java), 0))
+            setContentIntent(PendingIntent.getActivity(this@PushNotificationService, 0, Intent(this@PushNotificationService, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE))
             setAutoCancel(true)
         }
 
