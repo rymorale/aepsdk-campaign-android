@@ -39,25 +39,26 @@ public class TestConstants {
     public static final class EventType {
         public static final String MONITOR = "com.adobe.functional.eventType.monitor";
 
-        private EventType() {
-        }
+        private EventType() {}
     }
 
     public static final class EventSource {
-        public static final String XDM_SHARED_STATE_REQUEST = "com.adobe.eventSource.xdmsharedStateRequest";
-        public static final String XDM_SHARED_STATE_RESPONSE = "com.adobe.eventSource.xdmsharedStateResponse";
-        public static final String SHARED_STATE_REQUEST = "com.adobe.eventSource.sharedStateRequest";
-        public static final String SHARED_STATE_RESPONSE = "com.adobe.eventSource.sharedStateResponse";
+        public static final String XDM_SHARED_STATE_REQUEST =
+                "com.adobe.eventSource.xdmsharedStateRequest";
+        public static final String XDM_SHARED_STATE_RESPONSE =
+                "com.adobe.eventSource.xdmsharedStateResponse";
+        public static final String SHARED_STATE_REQUEST =
+                "com.adobe.eventSource.sharedStateRequest";
+        public static final String SHARED_STATE_RESPONSE =
+                "com.adobe.eventSource.sharedStateResponse";
         public static final String UNREGISTER = "com.adobe.eventSource.unregister";
 
-        private EventSource() {
-        }
+        private EventSource() {}
     }
 
     public static final class EventDataKey {
         public static final String STATE_OWNER = "stateowner";
 
-        private EventDataKey() {
-        }
+        private EventDataKey() {}
     }
 }

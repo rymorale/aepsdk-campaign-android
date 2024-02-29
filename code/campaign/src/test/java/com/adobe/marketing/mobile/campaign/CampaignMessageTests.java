@@ -15,21 +15,19 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
+import java.util.HashMap;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import java.util.HashMap;
-
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class CampaignMessageTests {
     private HashMap<String, Object> happyMessageMap;
     private HashMap<String, Object> happyDetailMap;
 
-    @Mock
-    CampaignExtension mockCampaignExtension;
+    @Mock CampaignExtension mockCampaignExtension;
 
     @Before
     public void setup() {
@@ -49,14 +47,15 @@ public class CampaignMessageTests {
 
     @Test(expected = CampaignMessageRequiredFieldMissingException.class)
     public void init_ExceptionThrown_When_ConsequenceIsNull() throws Exception {
-        //test
+        // test
         CampaignMessage.createMessageObject(mockCampaignExtension, null);
     }
 
     @Test(expected = CampaignMessageRequiredFieldMissingException.class)
     public void init_ExceptionThrown_When_ConsequenceMapIsEmpty() throws Exception {
-        //test
-        CampaignMessage.createMessageObject(mockCampaignExtension, TestUtils.createRuleConsequence(new HashMap<>()));
+        // test
+        CampaignMessage.createMessageObject(
+                mockCampaignExtension, TestUtils.createRuleConsequence(new HashMap<>()));
     }
 
     @Test(expected = CampaignMessageRequiredFieldMissingException.class)
@@ -66,7 +65,8 @@ public class CampaignMessageTests {
         happyMessageMap.put("detail", happyDetailMap);
 
         // test
-        CampaignMessage.createMessageObject(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
+        CampaignMessage.createMessageObject(
+                mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
     }
 
     @Test
@@ -76,7 +76,9 @@ public class CampaignMessageTests {
         happyMessageMap.put("detail", happyDetailMap);
 
         // test
-        CampaignMessage message = CampaignMessage.createMessageObject(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
+        CampaignMessage message =
+                CampaignMessage.createMessageObject(
+                        mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 
         // verify
         assertNull(message);
@@ -85,7 +87,9 @@ public class CampaignMessageTests {
     @Test
     public void init_Success_When_MessagePayloadIsValid() throws Exception {
         // test
-        final CampaignMessage message = CampaignMessage.createMessageObject(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
+        final CampaignMessage message =
+                CampaignMessage.createMessageObject(
+                        mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 
         // verify
         assertNotNull(message);

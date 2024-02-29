@@ -7,7 +7,8 @@
   the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
   OF ANY KIND, either express or implied. See the License for the specific language
   governing permissions and limitations under the License.
- */
+*/
+
 package com.adobe.marketing.mobile.campaign;
 
 import android.app.Activity;
@@ -28,10 +29,8 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
-
 import com.adobe.marketing.mobile.MobileCore;
 import com.adobe.marketing.mobile.services.DeviceInforming;
 import com.adobe.marketing.mobile.services.Log;
@@ -66,9 +65,7 @@ class LocalNotificationHandler extends BroadcastReceiver {
         final Bundle bundle = intent.getExtras();
 
         if (bundle == null) {
-            Log.debug(LOG_TAG,
-                    SELF_TAG,
-                    "Failed to load extras from local notification intent");
+            Log.debug(LOG_TAG, SELF_TAG, "Failed to load extras from local notification intent");
             return;
         }
 
@@ -79,7 +76,8 @@ class LocalNotificationHandler extends BroadcastReceiver {
         final String messageID = bundle.getString(NOTIFICATION_IDENTIFIER_KEY);
         final String deeplink = bundle.getString(NOTIFICATION_DEEPLINK_KEY);
         final String sound = bundle.getString(NOTIFICATION_SOUND_KEY);
-        final HashMap<String, Object> userInfo = (HashMap<String, Object>) bundle.getSerializable(NOTIFICATION_USER_INFO_KEY);
+        final HashMap<String, Object> userInfo =
+                (HashMap<String, Object>) bundle.getSerializable(NOTIFICATION_USER_INFO_KEY);
         final String title = bundle.getString(NOTIFICATION_TITLE);
 
         // if our request codes are not matching, we don't care about this intent
@@ -90,7 +88,11 @@ class LocalNotificationHandler extends BroadcastReceiver {
 
         // if our message is null, we still don't care
         if (message == null) {
-            Log.debug(LOG_TAG, SELF_TAG, "%s (local notification message)", Log.UNEXPECTED_NULL_VALUE);
+            Log.debug(
+                    LOG_TAG,
+                    SELF_TAG,
+                    "%s (local notification message)",
+                    Log.UNEXPECTED_NULL_VALUE);
             return;
         }
 
@@ -119,17 +121,16 @@ class LocalNotificationHandler extends BroadcastReceiver {
 
         try {
             // if we have an activity for this notification, use it
-            final int flags = (buildVersion >= Build.VERSION_CODES.M)
-                    ? (PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE)
-                    : PendingIntent.FLAG_UPDATE_CURRENT;
+            final int flags =
+                    (buildVersion >= Build.VERSION_CODES.M)
+                            ? (PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE)
+                            : PendingIntent.FLAG_UPDATE_CURRENT;
 
-            final PendingIntent sender = PendingIntent.getActivity(
-                                appContext,
-                                senderCode,
-                                resumeIntent,
-                                flags);
+            final PendingIntent sender =
+                    PendingIntent.getActivity(appContext, senderCode, resumeIntent, flags);
             if (sender == null) {
-                Log.debug(LOG_TAG,
+                Log.debug(
+                        LOG_TAG,
                         SELF_TAG,
                         "Failed to retrieve sender from broadcast, unable to post notification");
                 return;
@@ -145,9 +146,11 @@ class LocalNotificationHandler extends BroadcastReceiver {
             // notification channels are required if api level is 26 or higher
             if (buildVersion >= Build.VERSION_CODES.O) {
                 if (notificationManager.getNotificationChannel(NOTIFICATION_CHANNEL_ID) == null) {
-                    final NotificationChannel notificationChannel = new NotificationChannel(NOTIFICATION_CHANNEL_ID,
-                            NOTIFICATION_CHANNEL_NAME,
-                            NotificationManager.IMPORTANCE_HIGH);
+                    final NotificationChannel notificationChannel =
+                            new NotificationChannel(
+                                    NOTIFICATION_CHANNEL_ID,
+                                    NOTIFICATION_CHANNEL_NAME,
+                                    NotificationManager.IMPORTANCE_HIGH);
                     notificationChannel.setDescription(NOTIFICATION_CHANNEL_DESCRIPTION);
                     notificationManager.createNotificationChannel(notificationChannel);
                 }
@@ -157,12 +160,15 @@ class LocalNotificationHandler extends BroadcastReceiver {
             // set all the notification properties (small icon, content title, and content text are
             // all required)
             // small icon shows up in the status bar
-            final NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
-                    .setStyle(new NotificationCompat.BigTextStyle())
-                    .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
-                    .setPriority(Notification.PRIORITY_HIGH)
-                    .setStyle(new NotificationCompat.BigTextStyle())
-                    .setSmallIcon(getSmallIcon());
+            final NotificationCompat.Builder notificationBuilder =
+                    new NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
+                            .setStyle(new NotificationCompat.BigTextStyle())
+                            .setSound(
+                                    RingtoneManager.getDefaultUri(
+                                            RingtoneManager.TYPE_NOTIFICATION))
+                            .setPriority(Notification.PRIORITY_HIGH)
+                            .setStyle(new NotificationCompat.BigTextStyle())
+                            .setSmallIcon(getSmallIcon());
             final Bitmap largeIcon = getLargeIcon(context);
             if (largeIcon != null) {
                 notificationBuilder.setLargeIcon(largeIcon);
@@ -178,20 +184,16 @@ class LocalNotificationHandler extends BroadcastReceiver {
             // Setting the delete intent for tracking click on deletion.
             final Intent deleteIntent = new Intent(appContext, NotificationDismissalHandler.class);
             deleteIntent.putExtra(NOTIFICATION_USER_INFO_KEY, userInfo);
-            final PendingIntent pendingIntent =  PendingIntent.getBroadcast(appContext,
-                        senderCode,
-                        deleteIntent,
-                        flags);
+            final PendingIntent pendingIntent =
+                    PendingIntent.getBroadcast(appContext, senderCode, deleteIntent, flags);
             notificationBuilder.setDeleteIntent(pendingIntent);
 
             // this causes the notification to automatically go away when it is touched
             notificationBuilder.setAutoCancel(true);
-            notificationManager.notify(new SecureRandom().nextInt(), (Notification) notificationBuilder.build());
+            notificationManager.notify(
+                    new SecureRandom().nextInt(), (Notification) notificationBuilder.build());
         } catch (final Exception e) {
-            Log.warning(LOG_TAG,
-                    SELF_TAG,
-                    "unexpected error posting notification (%s)",
-                    e);
+            Log.warning(LOG_TAG, SELF_TAG, "unexpected error posting notification (%s)", e);
         }
     }
 

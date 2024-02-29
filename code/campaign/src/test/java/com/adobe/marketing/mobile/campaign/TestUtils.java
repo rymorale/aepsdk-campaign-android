@@ -13,7 +13,6 @@ package com.adobe.marketing.mobile.campaign;
 
 import com.adobe.marketing.mobile.launch.rulesengine.RuleConsequence;
 import com.adobe.marketing.mobile.util.DataReader;
-
 import java.io.File;
 import java.net.URL;
 import java.util.Map;
@@ -28,10 +27,10 @@ public class TestUtils {
     }
 
     /**
-     * Get an instance of {@link File} for resource from the resource directory, that matches the name supplied.
-     * <p>
-     * The resource directory for the unit tests is <b>{projectroot}/unitTests/resource</b>
-     * </p>
+     * Get an instance of {@link File} for resource from the resource directory, that matches the
+     * name supplied.
+     *
+     * <p>The resource directory for the unit tests is <b>{projectroot}/unitTests/resource</b>
      *
      * @param resourceName The name of the resource.
      * @return A File instance, if the resource was found in the resource directory. null otherwise.

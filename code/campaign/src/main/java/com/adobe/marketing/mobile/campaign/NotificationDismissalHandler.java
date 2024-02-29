@@ -14,10 +14,8 @@ package com.adobe.marketing.mobile.campaign;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-
 import com.adobe.marketing.mobile.MobileCore;
 import com.adobe.marketing.mobile.services.Log;
-
 import java.util.HashMap;
 import java.util.Map;
 

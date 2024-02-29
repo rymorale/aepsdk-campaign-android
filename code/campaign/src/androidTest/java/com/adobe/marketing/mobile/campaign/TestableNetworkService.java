@@ -18,7 +18,6 @@ import com.adobe.marketing.mobile.services.NetworkRequest;
 import com.adobe.marketing.mobile.services.Networking;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.util.StringUtils;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -49,14 +48,12 @@ public class TestableNetworkService implements Networking {
         countUpLatch.countUp();
     }
 
-    /**
-     * Waits up to 10 seconds for the request to be sent to the specified url.
-     */
+    /** Waits up to 10 seconds for the request to be sent to the specified url. */
     public boolean waitForRequest(String expectedUrl) {
         CountDownLatch latch = new CountDownLatch(1);
         int elapsedTime = 0;
 
-        while(elapsedTime <= 10000) {
+        while (elapsedTime <= 10000) {
             if (capturedRequests.containsKey(expectedUrl)) {
                 latch.countDown();
                 return true;
@@ -103,32 +100,45 @@ public class TestableNetworkService implements Networking {
     public NetworkRequest getRequest(String url) {
         NetworkRequest foundRequest = capturedRequests.get(url);
         if (foundRequest == null) {
-            Log.debug("testableNetworkService","getRequest", "Network request (%s) not found.", url);
+            Log.debug(
+                    "testableNetworkService", "getRequest", "Network request (%s) not found.", url);
         }
         return foundRequest;
     }
 
-    public void setNetworkResponse(final String urlToMatch, final String message, final int responseCode) {
+    public void setNetworkResponse(
+            final String urlToMatch, final String message, final int responseCode) {
         setResponseFromFileWithETag(null, urlToMatch, null, message, responseCode);
     }
 
-    public void setResponseFromFile(final String path,
-                                    final String urlToMatch) {
+    public void setResponseFromFile(final String path, final String urlToMatch) {
         setResponseFromFileWithETag(path, urlToMatch, null, null, 0);
     }
 
-    public void setResponseFromFileWithResponseCode(final String path,
-                                                    final String urlToMatch, final String message, final int responseCode) {
+    public void setResponseFromFileWithResponseCode(
+            final String path,
+            final String urlToMatch,
+            final String message,
+            final int responseCode) {
         setResponseFromFileWithETag(path, urlToMatch, null, message, responseCode);
     }
 
-    public void setResponseFromFileWithETag(final String path,
-                                            final String urlToMatch, final String etag, final String message, final int responseCode) {
+    public void setResponseFromFileWithETag(
+            final String path,
+            final String urlToMatch,
+            final String etag,
+            final String message,
+            final int responseCode) {
         InputStream zipFile = null;
 
         if (!StringUtils.isNullOrEmpty(path)) {
             try {
-                zipFile = ServiceProvider.getInstance().getAppContextService().getApplicationContext().getAssets().open(path);
+                zipFile =
+                        ServiceProvider.getInstance()
+                                .getAppContextService()
+                                .getApplicationContext()
+                                .getAssets()
+                                .open(path);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -148,38 +158,37 @@ public class TestableNetworkService implements Networking {
         }
 
         InputStream finalZipFile = zipFile;
-        HttpConnecting connection = new HttpConnecting() {
-            @Override
-            public InputStream getInputStream() {
-                return finalZipFile;
-            }
+        HttpConnecting connection =
+                new HttpConnecting() {
+                    @Override
+                    public InputStream getInputStream() {
+                        return finalZipFile;
+                    }
 
-            @Override
-            public InputStream getErrorStream() {
-                // no-op
-                return null;
-            }
+                    @Override
+                    public InputStream getErrorStream() {
+                        // no-op
+                        return null;
+                    }
 
-            @Override
-            public int getResponseCode() {
-                return responseCode <= 0 ? HttpURLConnection.HTTP_OK : responseCode;
-            }
+                    @Override
+                    public int getResponseCode() {
+                        return responseCode <= 0 ? HttpURLConnection.HTTP_OK : responseCode;
+                    }
 
-            @Override
-            public String getResponseMessage() {
-                return message == null ? "OK" : message;
-            }
+                    @Override
+                    public String getResponseMessage() {
+                        return message == null ? "OK" : message;
+                    }
 
-            @Override
-            public String getResponsePropertyValue(String s) {
-                return headers.toString();
-            }
+                    @Override
+                    public String getResponsePropertyValue(String s) {
+                        return headers.toString();
+                    }
 
-            @Override
-            public void close() {
-
-            }
-        };
+                    @Override
+                    public void close() {}
+                };
         setResponseForUrl(urlToMatch, connection);
     }
 }
