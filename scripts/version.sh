@@ -10,7 +10,7 @@ VERSION_REGEX="[0-9]+\.[0-9]+\.[0-9]+"
 
 GRADLE_PROPERTIES_FILE=$ROOT_DIR"/code/gradle.properties"
 TEST_CONSTANTS_FILE=$ROOT_DIR"/code/campaign/src/test/java/com/adobe/marketing/mobile/CampaignTestConstants.java"
-CONSTANTS_FILE=$ROOT_DIR"/code/campaign/src/main/java/com/adobe/marketing/mobile/campaign/CampaignConstants.java"
+CONSTANTS_FILE=$ROOT_DIR"/code/campaign/src/phone/java/com/adobe/marketing/mobile/Campaign.java"
 # Java files
 EXTENSION_VERSION_REGEX="^.*String EXTENSION_VERSION *= *"
 # Kotlin files
