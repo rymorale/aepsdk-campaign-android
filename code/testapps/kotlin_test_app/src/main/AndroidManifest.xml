@@ -63,12 +63,8 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
-
-        <activity android:name="com.adobe.marketing.mobile.FullscreenMessageActivity" />
-
         <receiver android:name="com.adobe.marketing.mobile.LocalNotificationHandler" />
 
-        <activity android:name="com.adobe.griffon.FullScreenTakeoverActivity" />
     </application>
 
 </manifest>
