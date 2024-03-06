@@ -127,7 +127,8 @@ class CampaignRulesDownloader {
                         Log.warning(
                                 CampaignConstants.LOG_TAG,
                                 SELF_TAG,
-                                "loadRulesFromUrl - No internet connection. Unable to download rules.",
+                                "loadRulesFromUrl - No internet connection. Unable to download"
+                                        + " rules.",
                                 url);
                         return;
                     }

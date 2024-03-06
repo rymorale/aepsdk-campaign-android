@@ -99,8 +99,8 @@ class CampaignMessageAssetsDownloader {
                             Log.warning(
                                     CampaignConstants.LOG_TAG,
                                     SELF_TAG,
-                                    "downloadAssetCollection - Internet not available. Failed to download asset from URL:"
-                                            + " %s",
+                                    "downloadAssetCollection - Internet not available. Failed to"
+                                            + " download asset from URL: %s",
                                     url);
                             return;
                         }
