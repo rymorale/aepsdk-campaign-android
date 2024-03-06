@@ -95,6 +95,15 @@ class CampaignMessageAssetsDownloader {
             networkService.connectAsync(
                     networkRequest,
                     connection -> {
+                        if (connection == null) {
+                            Log.warning(
+                                    CampaignConstants.LOG_TAG,
+                                    SELF_TAG,
+                                    "downloadAssetCollection - Internet not available. Failed to"
+                                            + " download asset from URL: %s",
+                                    url);
+                            return;
+                        }
                         if (connection.getResponseCode() == HttpURLConnection.HTTP_NOT_MODIFIED) {
                             Log.debug(
                                     CampaignConstants.LOG_TAG,

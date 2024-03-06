@@ -9,12 +9,11 @@
   governing permissions and limitations under the License.
 */
 
-package com.adobe.marketing.mobile.campaign;
+package com.adobe.marketing.mobile;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import com.adobe.marketing.mobile.MobileCore;
 import com.adobe.marketing.mobile.services.Log;
 import java.util.HashMap;
 import java.util.Map;
@@ -23,20 +22,21 @@ import java.util.Map;
  * A {@link BroadcastReceiver} that triggers when user dismisses local notification from
  * notification panel. It does the click tracking for local notification.
  */
-final class NotificationDismissalHandler extends BroadcastReceiver {
+public final class NotificationDismissalHandler extends BroadcastReceiver {
     private static final String SELF_TAG = "NotificationDismissalHandler";
     private static final String KEY_BROADLOG_ID = "broadlogId";
     private static final String KEY_DELIVERY_ID = "deliveryId";
     private static final String KEY_ACTION = "action";
     private static final String NOTIFICATION_USER_INFO_KEY = "NOTIFICATION_USER_INFO";
     private static final int MESSAGE_INFO_MAP_SIZE = 3;
+    private static final String LOG_TAG = "Campaign";
 
     @Override
     public void onReceive(final Context context, final Intent intent) {
         if (!intent.hasExtra(NOTIFICATION_USER_INFO_KEY)) {
             return;
         }
-        Log.debug(CampaignConstants.LOG_TAG, SELF_TAG, "Notification dismissed");
+        Log.debug(LOG_TAG, SELF_TAG, "Notification dismissed");
         final Map<String, Object> notificationData =
                 (Map<String, Object>) intent.getSerializableExtra(NOTIFICATION_USER_INFO_KEY);
 

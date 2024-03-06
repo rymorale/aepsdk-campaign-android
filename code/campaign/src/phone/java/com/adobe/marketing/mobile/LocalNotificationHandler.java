@@ -9,7 +9,7 @@
   governing permissions and limitations under the License.
 */
 
-package com.adobe.marketing.mobile.campaign;
+package com.adobe.marketing.mobile;
 
 import android.app.Activity;
 import android.app.Notification;
@@ -31,7 +31,6 @@ import android.os.Build;
 import android.os.Bundle;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
-import com.adobe.marketing.mobile.MobileCore;
 import com.adobe.marketing.mobile.services.DeviceInforming;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.ServiceProvider;
@@ -40,7 +39,7 @@ import java.security.SecureRandom;
 import java.util.HashMap;
 
 @SuppressWarnings("unchecked")
-class LocalNotificationHandler extends BroadcastReceiver {
+public class LocalNotificationHandler extends BroadcastReceiver {
 
     private static final String LOG_TAG = "Campaign";
     private static final String SELF_TAG = "LocalNotificationHandler";

@@ -123,6 +123,15 @@ class CampaignRulesDownloader {
         networkService.connectAsync(
                 networkRequest,
                 httpConnecting -> {
+                    if (httpConnecting == null) {
+                        Log.warning(
+                                CampaignConstants.LOG_TAG,
+                                SELF_TAG,
+                                "loadRulesFromUrl - No internet connection. Unable to download"
+                                        + " rules.",
+                                url);
+                        return;
+                    }
                     onRulesDownloaded(url, httpConnecting);
                 });
     }

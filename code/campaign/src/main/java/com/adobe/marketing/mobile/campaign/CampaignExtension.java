@@ -16,6 +16,7 @@ import android.content.SharedPreferences;
 import android.util.Base64;
 import androidx.annotation.NonNull;
 import androidx.annotation.VisibleForTesting;
+import com.adobe.marketing.mobile.Campaign;
 import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.EventSource;
 import com.adobe.marketing.mobile.EventType;
@@ -179,7 +180,7 @@ public class CampaignExtension extends Extension {
 
     @Override
     protected String getVersion() {
-        return CampaignConstants.EXTENSION_VERSION;
+        return Campaign.extensionVersion();
     }
 
     @Override
