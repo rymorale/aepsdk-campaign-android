@@ -31,7 +31,6 @@ import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Base64;
-
 import com.adobe.marketing.mobile.Campaign;
 import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.EventSource;
