@@ -31,7 +31,8 @@ import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Base64;
-import com.adobe.marketing.mobile.CampaignTestConstants;
+
+import com.adobe.marketing.mobile.Campaign;
 import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.EventSource;
 import com.adobe.marketing.mobile.EventType;
@@ -316,7 +317,7 @@ public class CampaignExtensionTests {
         String version = campaignExtension.getVersion();
 
         // verify
-        assertEquals(CampaignTestConstants.EXTENSION_VERSION, version);
+        assertEquals(Campaign.EXTENSION_VERSION, version);
     }
 
     @Test
