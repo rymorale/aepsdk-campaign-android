@@ -18,7 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Campaign {
-    private static final String EXTENSION_VERSION = "3.0.0";
+    public static final String EXTENSION_VERSION = "3.0.0";
     private static final String LOG_TAG = "Campaign";
     private static final String LINKAGE_FIELDS = "linkagefields";
 

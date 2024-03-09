@@ -29,12 +29,12 @@ aepLibrary {
 }
 
 dependencies {
-    implementation("com.adobe.marketing.mobile:core:$mavenCoreVersion-SNAPSHOT")
+    implementation("com.adobe.marketing.mobile:core:$mavenCoreVersion")
 
     // testImplementation dependencies provided by aep-library:
     // MOCKITO_CORE, MOCKITO_INLINE, JSON
 
     // androidTestImplementation dependencies provided by aep-library:
-    androidTestImplementation("com.adobe.marketing.mobile:identity:$functionalTestIdentityVersion-SNAPSHOT")
-    androidTestImplementation("com.adobe.marketing.mobile:lifecycle:$functionalTestLifecycleVersion-SNAPSHOT")
+    androidTestImplementation("com.adobe.marketing.mobile:identity:$functionalTestIdentityVersion")
+    androidTestImplementation("com.adobe.marketing.mobile:lifecycle:$functionalTestLifecycleVersion")
 }
