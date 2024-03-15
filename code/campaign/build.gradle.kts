@@ -18,7 +18,7 @@ val functionalTestIdentityVersion: String by project
 val functionalTestLifecycleVersion: String by project
 
 aepLibrary {
-    namespace = "com.adobe.marketing.mobile"
+    namespace = "com.adobe.marketing.mobile.campaign"
     enableSpotless = true
     enableCheckStyle = true
 
