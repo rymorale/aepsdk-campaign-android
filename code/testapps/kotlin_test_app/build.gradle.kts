@@ -57,6 +57,6 @@ dependencies {
     implementation("androidx.preference:preference:1.2.1")
     implementation("com.google.android.material:material:1.6.1")
 
-    implementation("com.google.firebase:firebase-messaging:22.0.0")
+    implementation("com.google.firebase:firebase-messaging:23.4.1")
 
 }
