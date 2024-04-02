@@ -12,7 +12,8 @@
 package com.adobe.marketing.mobile.campaign;
 
 /**
- * Exception indicating that a required field is missing from the payload definition for a {@code CampaignMessage} object.
+ * Exception indicating that a required field is missing from the payload definition for a {@code
+ * CampaignMessage} object.
  */
 class CampaignMessageRequiredFieldMissingException extends Exception {
 

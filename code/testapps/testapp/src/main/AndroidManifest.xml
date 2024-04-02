@@ -62,6 +62,8 @@
             </intent-filter>
         </receiver>
 
+        <receiver android:name="com.adobe.marketing.mobile.NotificationDismissalHandler" />
+
         <service android:name=".CampaignFirebaseMessagingService"
             android:exported="true">
             <intent-filter>

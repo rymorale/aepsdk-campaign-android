@@ -7,7 +7,6 @@ Refer to the [Getting started guide](./getting-started.md)
 ## API reference
 
 * [extensionVersion](#extensionversion)
-* [registerExtension](#registerextension)
 * [resetLinkageFields](#resetlinkagefields)
 * [setLinkageFields](#setlinkagefields)
 
@@ -25,25 +24,6 @@ String campaignExtensionVersion = Campaign.extensionVersion();
 
 ```kotlin
 val campaignExtensionVersion: String = Campaign.extensionVersion()
-```
-
-## registerExtension
-
-> **Warning**
-> Deprecated as of 2.0.0. Use the [MobileCore.registerExtensions API](https://github.com/adobe/aepsdk-core-android) instead.
-
-Registers the Campaign Standard extension with the Mobile Core.
-
-#### Java
-
-```java
-Campaign.registerExtension();
-```
-
-#### Kotlin
-
-```kotlin
-Campaign.registerExtension()
 ```
 
 ## resetLinkageFields

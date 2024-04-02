@@ -11,25 +11,19 @@
 
 package com.adobe.marketing.mobile.campaign;
 
+import static com.adobe.marketing.mobile.campaign.TestConstants.LOG_TAG;
+
 import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.SharedPreferences;
-
 import androidx.test.platform.app.InstrumentationRegistry;
-
 import com.adobe.marketing.mobile.LoggingMode;
 import com.adobe.marketing.mobile.MobileCore;
+import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.caching.CacheEntry;
 import com.adobe.marketing.mobile.services.caching.CacheExpiry;
-
-import org.json.JSONObject;
-import org.junit.Assert;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
-
 import java.io.File;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
@@ -41,12 +35,18 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
+import org.json.JSONObject;
+import org.junit.Assert;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
 /**
- * Test helper for functional testing to read, write, reset and assert against eventhub events, shared states and persistence data.
+ * Test helper for functional testing to read, write, reset and assert against eventhub events,
+ * shared states and persistence data.
  */
 public class TestHelper {
-    private static final String LOG_TAG = "TestHelper";
+    private static final String SELF_TAG = "TestHelper";
     // List of threads to wait for after test execution
     private static final List<String> knownThreads = new ArrayList<String>();
     static Application defaultApplication;
@@ -57,8 +57,9 @@ public class TestHelper {
     }
 
     /**
-     * Waits for all the {@code #knownThreads} to finish or fails the test after timeoutMillis if some of them are still running
-     * when the timer expires. If timeoutMillis is 0, a default timeout will be set = 1000ms
+     * Waits for all the {@code #knownThreads} to finish or fails the test after timeoutMillis if
+     * some of them are still running when the timer expires. If timeoutMillis is 0, a default
+     * timeout will be set = 1000ms
      *
      * @param timeoutMillis max waiting time
      */
@@ -74,12 +75,23 @@ public class TestHelper {
         sleep(TEST_INITIAL_SLEEP_MS);
         Set<Thread> threadSet = getEligibleThreads();
 
-        while (threadSet.size() > 0 && ((System.currentTimeMillis() - startTime) < timeoutTestMillis)) {
-            MobileCore.log(LoggingMode.DEBUG, LOG_TAG, "waitForThreads - Still waiting for " + threadSet.size() + " thread(s)");
+        while (threadSet.size() > 0
+                && ((System.currentTimeMillis() - startTime) < timeoutTestMillis)) {
+            Log.debug(
+                    LOG_TAG,
+                    SELF_TAG,
+                    "waitForThreads - Still waiting for " + threadSet.size() + " thread(s)");
 
             for (Thread t : threadSet) {
 
-                MobileCore.log(LoggingMode.DEBUG, LOG_TAG, "waitForThreads - Waiting for thread " + t.getName() + " (" + t.getId() + ")");
+                Log.debug(
+                        LOG_TAG,
+                        SELF_TAG,
+                        "waitForThreads - Waiting for thread "
+                                + t.getName()
+                                + " ("
+                                + t.getId()
+                                + ")");
                 boolean done = false;
                 boolean timedOut = false;
 
@@ -87,29 +99,41 @@ public class TestHelper {
                     if (t.getState().equals(Thread.State.TERMINATED)
                             || t.getState().equals(Thread.State.TIMED_WAITING)
                             || t.getState().equals(Thread.State.WAITING)) {
-                        //Cannot use the join() API since we use a cached thread pool, which
-                        //means that we keep idle threads around for 60secs (default timeout).
+                        // Cannot use the join() API since we use a cached thread pool, which
+                        // means that we keep idle threads around for 60secs (default timeout).
                         done = true;
                     } else {
-                        //blocking
+                        // blocking
                         sleep(sleepTime);
                         timedOut = (System.currentTimeMillis() - startTime) > timeoutTestMillis;
                     }
                 }
 
                 if (timedOut) {
-                    MobileCore.log(LoggingMode.DEBUG, LOG_TAG,
-                            "waitForThreads - Timeout out waiting for thread " + t.getName() + " (" + t.getId() + ")");
+                    Log.debug(
+                            LOG_TAG,
+                            SELF_TAG,
+                            "waitForThreads - Timeout out waiting for thread "
+                                    + t.getName()
+                                    + " ("
+                                    + t.getId()
+                                    + ")");
                 } else {
-                    MobileCore.log(LoggingMode.DEBUG, LOG_TAG,
-                            "waitForThreads - Done waiting for thread " + t.getName() + " (" + t.getId() + ")");
+                    Log.debug(
+                            LOG_TAG,
+                            SELF_TAG,
+                            "waitForThreads - Done waiting for thread "
+                                    + t.getName()
+                                    + " ("
+                                    + t.getId()
+                                    + ")");
                 }
             }
 
             threadSet = getEligibleThreads();
         }
 
-        MobileCore.log(LoggingMode.DEBUG, LOG_TAG, "waitForThreads - All known threads are terminated.");
+        Log.debug(LOG_TAG, SELF_TAG, "waitForThreads - All known threads are terminated.");
     }
 
     /**
@@ -122,7 +146,9 @@ public class TestHelper {
         Set<Thread> eligibleThreads = new HashSet<Thread>();
 
         for (Thread t : threadSet) {
-            if (isAppThread(t) && !t.getState().equals(Thread.State.WAITING) && !t.getState().equals(Thread.State.TERMINATED)
+            if (isAppThread(t)
+                    && !t.getState().equals(Thread.State.WAITING)
+                    && !t.getState().equals(Thread.State.TERMINATED)
                     && !t.getState().equals(Thread.State.TIMED_WAITING)) {
                 eligibleThreads.add(t);
             }
@@ -132,8 +158,8 @@ public class TestHelper {
     }
 
     /**
-     * Checks if current thread is not a daemon and its name starts with one of the known thread names specified here
-     * {@link #knownThreads}
+     * Checks if current thread is not a daemon and its name starts with one of the known thread
+     * names specified here {@link #knownThreads}
      *
      * @param t current thread to verify
      * @return true if it is a known thread, false otherwise
@@ -172,8 +198,9 @@ public class TestHelper {
     /**
      * {@code TestRule} which sets up the MobileCore for testing before each test execution, and
      * tearsdown the MobileCore after test execution.
-     * <p>
-     * To use, add the following to your test class:
+     *
+     * <p>To use, add the following to your test class:
+     *
      * <pre>
      *    @Rule
      *    public TestHelper.SetupCoreRule coreRule = new TestHelper.SetupCoreRule();
@@ -187,8 +214,10 @@ public class TestHelper {
                 @Override
                 public void evaluate() throws Throwable {
                     if (defaultApplication == null) {
-                        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
-                        defaultApplication = Instrumentation.newApplication(CustomApplication.class, context);
+                        Context context =
+                                InstrumentationRegistry.getInstrumentation().getTargetContext();
+                        defaultApplication =
+                                Instrumentation.newApplication(CustomApplication.class, context);
                     }
 
                     MobileCore.setLogLevel(LoggingMode.VERBOSE);
@@ -197,11 +226,14 @@ public class TestHelper {
                     try {
                         base.evaluate();
                     } catch (Throwable e) {
-                        MobileCore.log(LoggingMode.DEBUG, "SetupCoreRule", "Wait after test failure.");
+                        Log.debug(LOG_TAG, "SetupCoreRule", "Wait after test failure.");
                         throw e; // rethrow test failure
                     } finally {
                         // After test execution
-                        MobileCore.log(LoggingMode.DEBUG, "SetupCoreRule", "Finished '" + description.getMethodName() + "'");
+                        Log.debug(
+                                LOG_TAG,
+                                "SetupCoreRule",
+                                "Finished '" + description.getMethodName() + "'");
                         waitForThreads(5000); // wait to allow thread to run after test execution
                     }
                 }
@@ -209,12 +241,9 @@ public class TestHelper {
         }
     }
 
-    /**
-     * Dummy Application for the test instrumentation
-     */
+    /** Dummy Application for the test instrumentation */
     public static class CustomApplication extends Application {
-        public CustomApplication() {
-        }
+        public CustomApplication() {}
     }
 
     public static SimpleDateFormat createRFC2822Formatter() {
@@ -224,14 +253,18 @@ public class TestHelper {
         return rfc2822formatter;
     }
 
-    /**
-     * Adds a zip file to the Campaign extension rules cache.
-     */
+    /** Adds a zip file to the Campaign extension rules cache. */
     static void addRulesZipToCache(final Map<String, String> metaData) {
-        final File assetDir = new File(CampaignConstants.CACHE_BASE_DIR + File.separator + CampaignConstants.RULES_CACHE_FOLDER);
+        final File assetDir =
+                new File(
+                        CampaignConstants.CACHE_BASE_DIR
+                                + File.separator
+                                + CampaignConstants.RULES_CACHE_FOLDER);
         final InputStream zipFile = convertResourceFileToInputStream("rules-broadcast.zip");
         final CacheEntry mockCachedZip = new CacheEntry(zipFile, CacheExpiry.never(), metaData);
-        ServiceProvider.getInstance().getCacheService().set(assetDir.getAbsolutePath(), CampaignConstants.ZIP_HANDLE, mockCachedZip);
+        ServiceProvider.getInstance()
+                .getCacheService()
+                .set(assetDir.getAbsolutePath(), CampaignConstants.ZIP_HANDLE, mockCachedZip);
     }
 
     /**
@@ -244,40 +277,53 @@ public class TestHelper {
         return TestHelper.class.getClassLoader().getResourceAsStream(filename);
     }
 
-    /**
-     * Set the persistence data for Identity extension.
-     */
-    static void setIdentityPersistence(final Map<String, Object> persistedData, final Application application) {
+    /** Set the persistence data for Identity extension. */
+    static void setIdentityPersistence(
+            final Map<String, Object> persistedData, final Application application) {
         if (persistedData != null) {
             final JSONObject persistedJSON = new JSONObject(persistedData);
-            updatePersistence("com.adobe.identity",
-                    "identity.properties", persistedJSON.toString(), application);
+            updatePersistence(
+                    "com.adobe.identity",
+                    "identity.properties",
+                    persistedJSON.toString(),
+                    application);
         }
     }
 
     /**
      * Helper method to update the {@link SharedPreferences} data.
      *
-     * @param datastore   the name of the datastore to be updated
-     * @param key         the persisted data key that has to be updated
-     * @param value       the new value
+     * @param datastore the name of the datastore to be updated
+     * @param key the persisted data key that has to be updated
+     * @param value the new value
      * @param application the current test application
      */
-    public static void updatePersistence(final String datastore, final String key, final String value, final Application application) {
+    public static void updatePersistence(
+            final String datastore,
+            final String key,
+            final String value,
+            final Application application) {
         if (application == null) {
-            Assert.fail("Unable to updatePersistence by TestPersistenceHelper. Application is null, fast failing the test case.");
+            Assert.fail(
+                    "Unable to updatePersistence by TestPersistenceHelper. Application is null,"
+                            + " fast failing the test case.");
         }
 
         final Context context = application.getApplicationContext();
 
         if (context == null) {
-            Assert.fail("Unable to updatePersistence by TestPersistenceHelper. Context is null, fast failing the test case.");
+            Assert.fail(
+                    "Unable to updatePersistence by TestPersistenceHelper. Context is null, fast"
+                            + " failing the test case.");
         }
 
-        SharedPreferences sharedPreferences = context.getSharedPreferences(datastore, Context.MODE_PRIVATE);
+        SharedPreferences sharedPreferences =
+                context.getSharedPreferences(datastore, Context.MODE_PRIVATE);
 
         if (sharedPreferences == null) {
-            Assert.fail("Unable to updatePersistence by TestPersistenceHelper. sharedPreferences is null, fast failing the test case.");
+            Assert.fail(
+                    "Unable to updatePersistence by TestPersistenceHelper. sharedPreferences is"
+                            + " null, fast failing the test case.");
         }
 
         SharedPreferences.Editor editor = sharedPreferences.edit();

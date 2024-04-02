@@ -15,14 +15,17 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import android.content.Context;
+import com.adobe.marketing.mobile.services.AppContextService;
 import com.adobe.marketing.mobile.services.ServiceProvider;
-import com.adobe.marketing.mobile.services.ui.NotificationSetting;
-import com.adobe.marketing.mobile.services.ui.UIService;
-
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -32,10 +35,6 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class LocalNotificationMessageTests {
 
@@ -43,12 +42,10 @@ public class LocalNotificationMessageTests {
     private HashMap<String, Object> happyDetailMap;
     private HashMap<String, Object> happyUserDataMap;
 
-    @Mock
-    UIService mockUIService;
-    @Mock
-    ServiceProvider mockServiceProvider;
-    @Mock
-    CampaignExtension mockCampaignExtension;
+    @Mock AppContextService mockAppContextService;
+    @Mock Context mockContext;
+    @Mock ServiceProvider mockServiceProvider;
+    @Mock CampaignExtension mockCampaignExtension;
 
     @Before
     public void setup() {
@@ -73,14 +70,6 @@ public class LocalNotificationMessageTests {
         happyMessageMap.put("detail", happyDetailMap);
     }
 
-    private void setupServiceProviderMockAndRunTest(Runnable testRunnable) {
-        try (MockedStatic<ServiceProvider> serviceProviderMockedStatic = Mockito.mockStatic(ServiceProvider.class)) {
-            serviceProviderMockedStatic.when(ServiceProvider::getInstance).thenReturn(mockServiceProvider);
-            when(mockServiceProvider.getUIService()).thenReturn(mockUIService);
-            testRunnable.run();
-        }
-    }
-
     @Test(expected = CampaignMessageRequiredFieldMissingException.class)
     public void init_ExceptionThrown_When_ConsequenceIsNull() throws Exception {
         // test
@@ -90,7 +79,8 @@ public class LocalNotificationMessageTests {
     @Test(expected = CampaignMessageRequiredFieldMissingException.class)
     public void init_ExceptionThrown_When_ConsequenceMapIsEmpty() throws Exception {
         // test
-        new LocalNotificationMessage(mockCampaignExtension, TestUtils.createRuleConsequence(new HashMap<>()));
+        new LocalNotificationMessage(
+                mockCampaignExtension, TestUtils.createRuleConsequence(new HashMap<>()));
     }
 
     @Test(expected = CampaignMessageRequiredFieldMissingException.class)
@@ -99,7 +89,8 @@ public class LocalNotificationMessageTests {
         happyMessageMap.remove("id");
 
         // test
-        new LocalNotificationMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
+        new LocalNotificationMessage(
+                mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
     }
 
     @Test(expected = CampaignMessageRequiredFieldMissingException.class)
@@ -108,7 +99,8 @@ public class LocalNotificationMessageTests {
         happyMessageMap.put("id", "");
 
         // test
-        new LocalNotificationMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
+        new LocalNotificationMessage(
+                mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
     }
 
     @Test(expected = CampaignMessageRequiredFieldMissingException.class)
@@ -117,7 +109,8 @@ public class LocalNotificationMessageTests {
         happyMessageMap.remove("type");
 
         // test
-        new LocalNotificationMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
+        new LocalNotificationMessage(
+                mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
     }
 
     @Test(expected = CampaignMessageRequiredFieldMissingException.class)
@@ -126,7 +119,8 @@ public class LocalNotificationMessageTests {
         happyMessageMap.put("type", "");
 
         // test
-        new LocalNotificationMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
+        new LocalNotificationMessage(
+                mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
     }
 
     @Test(expected = CampaignMessageRequiredFieldMissingException.class)
@@ -135,7 +129,8 @@ public class LocalNotificationMessageTests {
         happyMessageMap.put("type", "invalid");
 
         // test
-        new LocalNotificationMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
+        new LocalNotificationMessage(
+                mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
     }
 
     @Test(expected = CampaignMessageRequiredFieldMissingException.class)
@@ -144,7 +139,8 @@ public class LocalNotificationMessageTests {
         happyMessageMap.remove("detail");
 
         // test
-        new LocalNotificationMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
+        new LocalNotificationMessage(
+                mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
     }
 
     @Test(expected = CampaignMessageRequiredFieldMissingException.class)
@@ -153,7 +149,8 @@ public class LocalNotificationMessageTests {
         happyMessageMap.put("detail", new HashMap<String, Object>());
 
         // test
-        new LocalNotificationMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
+        new LocalNotificationMessage(
+                mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
     }
 
     @Test(expected = CampaignMessageRequiredFieldMissingException.class)
@@ -164,7 +161,8 @@ public class LocalNotificationMessageTests {
         happyMessageMap.put("detail", happyDetailMap);
 
         // test
-        new LocalNotificationMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
+        new LocalNotificationMessage(
+                mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
     }
 
     @Test(expected = CampaignMessageRequiredFieldMissingException.class)
@@ -174,7 +172,8 @@ public class LocalNotificationMessageTests {
         happyMessageMap.put("detail", happyDetailMap);
 
         // test
-        new LocalNotificationMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
+        new LocalNotificationMessage(
+                mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
     }
 
     @Test(expected = CampaignMessageRequiredFieldMissingException.class)
@@ -184,7 +183,8 @@ public class LocalNotificationMessageTests {
         happyMessageMap.put("detail", happyDetailMap);
 
         // test
-        new LocalNotificationMessage(mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
+        new LocalNotificationMessage(
+                mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
     }
 
     @Test
@@ -194,8 +194,9 @@ public class LocalNotificationMessageTests {
         happyMessageMap.put("detail", happyDetailMap);
 
         // test
-        final LocalNotificationMessage message = new LocalNotificationMessage(mockCampaignExtension,
-                TestUtils.createRuleConsequence(happyMessageMap));
+        final LocalNotificationMessage message =
+                new LocalNotificationMessage(
+                        mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 
         // verify
         assertNotNull(message);
@@ -208,23 +209,26 @@ public class LocalNotificationMessageTests {
         happyMessageMap.put("detail", happyDetailMap);
 
         // test
-        final LocalNotificationMessage message = new LocalNotificationMessage(mockCampaignExtension,
-                TestUtils.createRuleConsequence(happyMessageMap));
+        final LocalNotificationMessage message =
+                new LocalNotificationMessage(
+                        mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 
         // verify
         assertNotNull(message);
     }
 
     @Test
-    public void init_ExceptionNotThrown_When_DetailMapDoesNotContainFireDateOrWait() throws Exception {
+    public void init_ExceptionNotThrown_When_DetailMapDoesNotContainFireDateOrWait()
+            throws Exception {
         // setup
         happyDetailMap.remove("date");
         happyDetailMap.remove("wait");
         happyMessageMap.put("detail", happyDetailMap);
 
         // test
-        final LocalNotificationMessage message = new LocalNotificationMessage(mockCampaignExtension,
-                TestUtils.createRuleConsequence(happyMessageMap));
+        final LocalNotificationMessage message =
+                new LocalNotificationMessage(
+                        mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 
         // verify
         assertNotNull(message);
@@ -237,8 +241,9 @@ public class LocalNotificationMessageTests {
         happyMessageMap.put("detail", happyDetailMap);
 
         // test
-        final LocalNotificationMessage message = new LocalNotificationMessage(mockCampaignExtension,
-                TestUtils.createRuleConsequence(happyMessageMap));
+        final LocalNotificationMessage message =
+                new LocalNotificationMessage(
+                        mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 
         // verify
         assertNotNull(message);
@@ -251,8 +256,9 @@ public class LocalNotificationMessageTests {
         happyMessageMap.put("detail", happyDetailMap);
 
         // test
-        final LocalNotificationMessage message = new LocalNotificationMessage(mockCampaignExtension,
-                TestUtils.createRuleConsequence(happyMessageMap));
+        final LocalNotificationMessage message =
+                new LocalNotificationMessage(
+                        mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 
         // verify
         assertNotNull(message);
@@ -265,8 +271,9 @@ public class LocalNotificationMessageTests {
         happyMessageMap.put("detail", happyDetailMap);
 
         // test
-        final LocalNotificationMessage message = new LocalNotificationMessage(mockCampaignExtension,
-                TestUtils.createRuleConsequence(happyMessageMap));
+        final LocalNotificationMessage message =
+                new LocalNotificationMessage(
+                        mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 
         // verify
         assertNotNull(message);
@@ -279,8 +286,9 @@ public class LocalNotificationMessageTests {
         happyMessageMap.put("detail", happyDetailMap);
 
         // test
-        final LocalNotificationMessage message = new LocalNotificationMessage(mockCampaignExtension,
-                TestUtils.createRuleConsequence(happyMessageMap));
+        final LocalNotificationMessage message =
+                new LocalNotificationMessage(
+                        mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 
         // verify
         assertNotNull(message);
@@ -293,8 +301,9 @@ public class LocalNotificationMessageTests {
         happyMessageMap.put("detail", happyDetailMap);
 
         // test
-        final LocalNotificationMessage message = new LocalNotificationMessage(mockCampaignExtension,
-                TestUtils.createRuleConsequence(happyMessageMap));
+        final LocalNotificationMessage message =
+                new LocalNotificationMessage(
+                        mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 
         // verify
         assertNotNull(message);
@@ -307,8 +316,9 @@ public class LocalNotificationMessageTests {
         happyMessageMap.put("detail", happyDetailMap);
 
         // test
-        final LocalNotificationMessage message = new LocalNotificationMessage(mockCampaignExtension,
-                TestUtils.createRuleConsequence(happyMessageMap));
+        final LocalNotificationMessage message =
+                new LocalNotificationMessage(
+                        mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 
         // verify
         assertNotNull(message);
@@ -321,8 +331,9 @@ public class LocalNotificationMessageTests {
         happyMessageMap.put("detail", happyDetailMap);
 
         // test
-        final LocalNotificationMessage message = new LocalNotificationMessage(mockCampaignExtension,
-                TestUtils.createRuleConsequence(happyMessageMap));
+        final LocalNotificationMessage message =
+                new LocalNotificationMessage(
+                        mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 
         // verify
         assertNotNull(message);
@@ -335,8 +346,9 @@ public class LocalNotificationMessageTests {
         happyMessageMap.put("detail", happyDetailMap);
 
         // test
-        final LocalNotificationMessage message = new LocalNotificationMessage(mockCampaignExtension,
-                TestUtils.createRuleConsequence(happyMessageMap));
+        final LocalNotificationMessage message =
+                new LocalNotificationMessage(
+                        mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 
         // verify
         assertNotNull(message);
@@ -349,19 +361,20 @@ public class LocalNotificationMessageTests {
         happyMessageMap.put("detail", happyDetailMap);
 
         // test
-        final LocalNotificationMessage message = new LocalNotificationMessage(mockCampaignExtension,
-                TestUtils.createRuleConsequence(happyMessageMap));
+        final LocalNotificationMessage message =
+                new LocalNotificationMessage(
+                        mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 
         // verify
         assertNotNull(message);
     }
 
-
     @Test
     public void init_Success_When_ConsequenceIsValid() throws Exception {
         // test
-        final LocalNotificationMessage localNotificationMessage = new LocalNotificationMessage(mockCampaignExtension,
-                TestUtils.createRuleConsequence(happyMessageMap));
+        final LocalNotificationMessage localNotificationMessage =
+                new LocalNotificationMessage(
+                        mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 
         // verify
         assertEquals("123", localNotificationMessage.messageId);
@@ -382,8 +395,9 @@ public class LocalNotificationMessageTests {
         happyMessageMap.put("detail", happyDetailMap);
 
         // test
-        final LocalNotificationMessage localNotificationMessage = new LocalNotificationMessage(mockCampaignExtension,
-                TestUtils.createRuleConsequence(happyMessageMap));
+        final LocalNotificationMessage localNotificationMessage =
+                new LocalNotificationMessage(
+                        mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 
         // verify
         assertEquals("123", localNotificationMessage.messageId);
@@ -404,8 +418,9 @@ public class LocalNotificationMessageTests {
         happyMessageMap.put("detail", happyDetailMap);
 
         // test
-        final LocalNotificationMessage localNotificationMessage = new LocalNotificationMessage(mockCampaignExtension,
-                TestUtils.createRuleConsequence(happyMessageMap));
+        final LocalNotificationMessage localNotificationMessage =
+                new LocalNotificationMessage(
+                        mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 
         // verify
         assertEquals("123", localNotificationMessage.messageId);
@@ -427,8 +442,9 @@ public class LocalNotificationMessageTests {
         happyMessageMap.put("detail", happyDetailMap);
 
         // test
-        final LocalNotificationMessage localNotificationMessage = new LocalNotificationMessage(mockCampaignExtension,
-                TestUtils.createRuleConsequence(happyMessageMap));
+        final LocalNotificationMessage localNotificationMessage =
+                new LocalNotificationMessage(
+                        mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 
         // verify
         assertEquals("123", localNotificationMessage.messageId);
@@ -443,22 +459,43 @@ public class LocalNotificationMessageTests {
     }
 
     @Test
-    public void showMessage_DispatchesTriggeredHitAndMessageInfoAndShowsNotification_happy() throws Exception {
+    public void showMessage_DispatchesTriggeredHitAndMessageInfoAndShowsNotification_happy()
+            throws Exception {
         // setup
-        setupServiceProviderMockAndRunTest(() -> {
-            ArgumentCaptor<NotificationSetting> notificationSettingArgumentCaptor = ArgumentCaptor.forClass(NotificationSetting.class);
-            ArgumentCaptor<Map<String, Object>> mapArgumentCaptor = ArgumentCaptor.forClass(Map.class);
+        try (MockedStatic<ServiceProvider> serviceProviderMockedStatic =
+                        Mockito.mockStatic(ServiceProvider.class);
+                MockedStatic<LocalNotificationService> localNotificationServiceMockedStatic =
+                        Mockito.mockStatic(LocalNotificationService.class)) {
+            serviceProviderMockedStatic
+                    .when(ServiceProvider::getInstance)
+                    .thenReturn(mockServiceProvider);
+            localNotificationServiceMockedStatic
+                    .when(() -> LocalNotificationService.showLocalNotification(any(), any()))
+                    .then(invocationOnMock -> null);
+            when(mockServiceProvider.getAppContextService()).thenReturn(mockAppContextService);
+            when(mockAppContextService.getApplicationContext()).thenReturn(mockContext);
+
+            ArgumentCaptor<NotificationSetting> notificationSettingArgumentCaptor =
+                    ArgumentCaptor.forClass(NotificationSetting.class);
+            ArgumentCaptor<Map<String, Object>> mapArgumentCaptor =
+                    ArgumentCaptor.forClass(Map.class);
             ArgumentCaptor<String> stringArgumentCaptor = ArgumentCaptor.forClass(String.class);
             // test
             try {
-                LocalNotificationMessage localNotificationMessage = new LocalNotificationMessage(mockCampaignExtension,
-                        TestUtils.createRuleConsequence(happyMessageMap));
+                LocalNotificationMessage localNotificationMessage =
+                        new LocalNotificationMessage(
+                                mockCampaignExtension,
+                                TestUtils.createRuleConsequence(happyMessageMap));
                 localNotificationMessage.showMessage();
             } catch (CampaignMessageRequiredFieldMissingException exception) {
                 fail(exception.getMessage());
             }
             // verify showLocalNotification called
-            verify(mockUIService, times(1)).showLocalNotification(notificationSettingArgumentCaptor.capture());
+            localNotificationServiceMockedStatic.verify(
+                    () ->
+                            LocalNotificationService.showLocalNotification(
+                                    any(), notificationSettingArgumentCaptor.capture()),
+                    times(1));
             NotificationSetting notificationSetting = notificationSettingArgumentCaptor.getValue();
             assertEquals("content", notificationSetting.getContent());
             assertEquals("123", notificationSetting.getIdentifier());
@@ -470,8 +507,13 @@ public class LocalNotificationMessageTests {
             assertEquals("a2a1", userInfo.get("deliveryId"));
 
             // verify tracking events
-            verify(mockCampaignExtension, times(1)).dispatchMessageInteraction(mapArgumentCaptor.capture());
-            verify(mockCampaignExtension, times(1)).dispatchMessageInfo(stringArgumentCaptor.capture(), stringArgumentCaptor.capture(), stringArgumentCaptor.capture());
+            verify(mockCampaignExtension, times(1))
+                    .dispatchMessageInteraction(mapArgumentCaptor.capture());
+            verify(mockCampaignExtension, times(1))
+                    .dispatchMessageInfo(
+                            stringArgumentCaptor.capture(),
+                            stringArgumentCaptor.capture(),
+                            stringArgumentCaptor.capture());
             Map<String, Object> triggeredDataMap = mapArgumentCaptor.getValue();
             assertEquals("1", triggeredDataMap.get("a.message.triggered"));
             assertEquals("123", triggeredDataMap.get("a.message.id"));
@@ -479,14 +521,15 @@ public class LocalNotificationMessageTests {
             assertEquals("h3325", viewedDataList.get(0));
             assertEquals("a2a1", viewedDataList.get(1));
             assertEquals("7", viewedDataList.get(2));
-        });
+        }
     }
 
     @Test
     public void shouldDownloadAssets_ReturnsFalse_happy() throws Exception {
         // setup
-        LocalNotificationMessage localNotificationMessage = new LocalNotificationMessage(mockCampaignExtension,
-                TestUtils.createRuleConsequence(happyMessageMap));
+        LocalNotificationMessage localNotificationMessage =
+                new LocalNotificationMessage(
+                        mockCampaignExtension, TestUtils.createRuleConsequence(happyMessageMap));
 
         // test
         boolean shouldDownloadAssets = localNotificationMessage.shouldDownloadAssets();
