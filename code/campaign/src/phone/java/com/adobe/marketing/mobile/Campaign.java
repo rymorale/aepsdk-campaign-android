@@ -61,7 +61,8 @@ public class Campaign {
             Log.warning(
                     LOG_TAG,
                     "setLinkageFields",
-                    "Provided LinkageFields Map is null or empty. Ignoring the setLinkageField request.");
+                    "Provided LinkageFields Map is null or empty. Ignoring the setLinkageField"
+                            + " request.");
             return;
         }
 
