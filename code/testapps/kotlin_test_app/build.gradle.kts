@@ -49,8 +49,8 @@ apply(plugin = "com.google.gms.google-services")
 
 dependencies {
     implementation(project(":campaign"))
-    implementation("com.adobe.marketing.mobile:core:2.+")
-    implementation("com.adobe.marketing.mobile:assurance:2.+")
+    implementation("com.adobe.marketing.mobile:core:3.0.0")
+    implementation("com.adobe.marketing.mobile:assurance:3.0.0")
 
     implementation(fileTree("libs").matching { include("*.jar") })
     implementation("androidx.recyclerview:recyclerview:1.2.1")
