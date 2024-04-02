@@ -49,14 +49,14 @@ apply(plugin = "com.google.gms.google-services")
 
 dependencies {
     implementation(project(":campaign"))
-    implementation("com.adobe.marketing.mobile:core:2.+")
-    implementation("com.adobe.marketing.mobile:assurance:2.+")
+    implementation("com.adobe.marketing.mobile:core:3.0.0")
+    implementation("com.adobe.marketing.mobile:assurance:3.0.0")
 
     implementation(fileTree("libs").matching { include("*.jar") })
     implementation("androidx.recyclerview:recyclerview:1.2.1")
     implementation("androidx.preference:preference:1.2.1")
     implementation("com.google.android.material:material:1.6.1")
 
-    implementation("com.google.firebase:firebase-messaging:22.0.0")
+    implementation("com.google.firebase:firebase-messaging:23.4.1")
 
 }

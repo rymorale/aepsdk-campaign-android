@@ -18,23 +18,14 @@ import com.adobe.marketing.mobile.Campaign;
 import com.adobe.marketing.mobile.LoggingMode;
 import com.adobe.marketing.mobile.Signal;
 import com.adobe.marketing.mobile.UserProfile;
+import com.adobe.marketing.mobile.Assurance;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.messaging.FirebaseMessaging;
 
-import android.Manifest;
 import android.app.Application;
-import android.content.pm.PackageManager;
-import android.os.Build;
-import android.os.Bundle;
 import android.util.Log;
-import android.widget.Toast;
-
-import androidx.activity.ComponentActivity;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
-import androidx.core.content.ContextCompat;
 
 import java.util.Arrays;
 
@@ -42,15 +33,13 @@ public class CampaignTestApp extends Application {
 
     private static final String LOG_TAG = "CampaignTestApp";
 
-    private static Application application;
-
     @Override
     public void onCreate() {
         super.onCreate();
         MobileCore.setApplication(this);
         MobileCore.setLogLevel(LoggingMode.DEBUG);
 
-        MobileCore.registerExtensions(Arrays.asList(Campaign.EXTENSION, Lifecycle.EXTENSION, Identity.EXTENSION, Signal.EXTENSION, UserProfile.EXTENSION), o -> {
+        MobileCore.registerExtensions(Arrays.asList(Campaign.EXTENSION, Lifecycle.EXTENSION, Identity.EXTENSION, Signal.EXTENSION, UserProfile.EXTENSION, Assurance.EXTENSION), o -> {
             MobileCore.configureWithAppID("31d8b0ad1f9f/98da4ef07438/launch-b7548c1d44a2-development");
             try {
                 Thread.sleep(1000);
@@ -59,13 +48,11 @@ public class CampaignTestApp extends Application {
             }
         });
 
-        application = this;
-
         FirebaseMessaging.getInstance().getToken().addOnCompleteListener(new OnCompleteListener<String>() {
             @Override
             public void onComplete(@NonNull Task<String> task) {
                 if (!task.isSuccessful()) {
-                    Log.w("CampaignTestApp", "getInstanceId failed", task.getException());
+                    Log.w(LOG_TAG, "getInstanceId failed", task.getException());
                     return;
                 }
 

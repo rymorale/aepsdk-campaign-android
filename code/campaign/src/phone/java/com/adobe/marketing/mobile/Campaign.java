@@ -58,13 +58,11 @@ public class Campaign {
      */
     public static void setLinkageFields(@NonNull final Map<String, String> linkageFields) {
         if (linkageFields == null || linkageFields.isEmpty()) {
-            Log.debug(
+            Log.warning(
                     LOG_TAG,
                     "setLinkageFields",
-                    "setLinkageFields -  Cannot set Linkage Fields, provided linkage fields map is"
-                        + " empty. \n"
-                        + " For more information:"
-                        + " https://aep-sdks.gitbook.io/docs/using-mobile-extensions/adobe-campaign-standard/adobe-campaign-standard-api-reference#set-linkage-fields");
+                    "Provided LinkageFields Map is null or empty. Ignoring the setLinkageField"
+                            + " request.");
             return;
         }
 
