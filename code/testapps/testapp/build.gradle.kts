@@ -36,13 +36,14 @@ android {
 
 dependencies {
     implementation(project(":campaign"))
-    implementation("com.adobe.marketing.mobile:core:3.0.0-beta.1-SNAPSHOT")
-    implementation("com.adobe.marketing.mobile:lifecycle:3.0.0-beta.1-SNAPSHOT")
-    implementation("com.adobe.marketing.mobile:identity:3.0.0-beta.1-SNAPSHOT")
-    implementation("com.adobe.marketing.mobile:signal:3.0.0-beta.1-SNAPSHOT")
-    implementation("com.adobe.marketing.mobile:userprofile:3.0.0-beta.1-SNAPSHOT")
-    implementation("com.adobe.marketing.mobile:assurance:3.0.0-beta.1-SNAPSHOT")
+    implementation("com.adobe.marketing.mobile:core:3.0.0")
+    implementation("com.adobe.marketing.mobile:lifecycle:3.0.0")
+    implementation("com.adobe.marketing.mobile:identity:3.0.0")
+    implementation("com.adobe.marketing.mobile:signal:3.0.0")
+    implementation("com.adobe.marketing.mobile:userprofile:3.0.0")
+    implementation("com.adobe.marketing.mobile:assurance:3.0.0")
     implementation("com.google.firebase:firebase-messaging:23.4.1")
+    
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
 }
