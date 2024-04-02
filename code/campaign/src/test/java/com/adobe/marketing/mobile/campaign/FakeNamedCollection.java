@@ -12,7 +12,6 @@
 package com.adobe.marketing.mobile.campaign;
 
 import com.adobe.marketing.mobile.services.NamedCollection;
-
 import java.util.HashMap;
 import java.util.Map;
 

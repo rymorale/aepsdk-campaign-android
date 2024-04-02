@@ -11,17 +11,15 @@
 
 package com.adobe.marketing.mobile.campaign;
 
-import org.junit.Before;
-import org.junit.Test;
-
 import static org.junit.Assert.*;
 
 import com.adobe.marketing.mobile.MobilePrivacyStatus;
 import com.adobe.marketing.mobile.SharedStateResult;
 import com.adobe.marketing.mobile.SharedStateStatus;
-
 import java.util.HashMap;
 import java.util.Map;
+import org.junit.Before;
+import org.junit.Test;
 
 public class CampaignStateTests {
 
@@ -34,23 +32,32 @@ public class CampaignStateTests {
 
     private SharedStateResult getConfigurationEventData() {
         final Map<String, Object> configData = new HashMap<>();
-        configData.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_SERVER_KEY, "testServer");
+        configData.put(
+                CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_SERVER_KEY, "testServer");
         configData.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_PKEY_KEY, "testPkey");
-        configData.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_MCIAS_KEY, "testMcias");
+        configData.put(
+                CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_MCIAS_KEY, "testMcias");
         configData.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_TIMEOUT, 10);
         configData.put(CampaignConstants.EventDataKeys.Configuration.PROPERTY_ID, "testPropertyId");
-        configData.put(CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY, "optedin");
-        configData.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_REGISTRATION_DELAY_KEY, 30);
-        configData.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_REGISTRATION_PAUSED_KEY, true);
-        final SharedStateResult sharedStateResult = new SharedStateResult(SharedStateStatus.SET, configData);
+        configData.put(
+                CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY, "optedin");
+        configData.put(
+                CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_REGISTRATION_DELAY_KEY, 30);
+        configData.put(
+                CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_REGISTRATION_PAUSED_KEY,
+                true);
+        final SharedStateResult sharedStateResult =
+                new SharedStateResult(SharedStateStatus.SET, configData);
 
         return sharedStateResult;
     }
 
     private SharedStateResult getIdentityEventData() {
         final Map<String, Object> identityData = new HashMap<>();
-        identityData.put(CampaignConstants.EventDataKeys.Identity.VISITOR_ID_MID, "testExperienceCloudId");
-        final SharedStateResult sharedStateResult = new SharedStateResult(SharedStateStatus.SET, identityData);
+        identityData.put(
+                CampaignConstants.EventDataKeys.Identity.VISITOR_ID_MID, "testExperienceCloudId");
+        final SharedStateResult sharedStateResult =
+                new SharedStateResult(SharedStateStatus.SET, identityData);
 
         return sharedStateResult;
     }
@@ -76,8 +83,10 @@ public class CampaignStateTests {
         // setup
         Map<String, Object> testConfigData = new HashMap<>();
         Map<String, Object> testIdentityData = new HashMap<>();
-        SharedStateResult configSharedStateResult = new SharedStateResult(SharedStateStatus.SET, testConfigData);
-        SharedStateResult identitySharedStateResult = new SharedStateResult(SharedStateStatus.SET, testIdentityData);
+        SharedStateResult configSharedStateResult =
+                new SharedStateResult(SharedStateStatus.SET, testConfigData);
+        SharedStateResult identitySharedStateResult =
+                new SharedStateResult(SharedStateStatus.SET, testIdentityData);
 
         // test
         campaignState.setState(configSharedStateResult, identitySharedStateResult);
@@ -86,10 +95,13 @@ public class CampaignStateTests {
         assertEquals("", campaignState.getCampaignServer());
         assertEquals("", campaignState.getCampaignPkey());
         assertEquals("", campaignState.getCampaignMcias());
-        assertEquals(CampaignConstants.CAMPAIGN_TIMEOUT_DEFAULT, campaignState.getCampaignTimeout());
+        assertEquals(
+                CampaignConstants.CAMPAIGN_TIMEOUT_DEFAULT, campaignState.getCampaignTimeout());
         assertEquals("", campaignState.getPropertyId());
         assertEquals(MobilePrivacyStatus.UNKNOWN, campaignState.getMobilePrivacyStatus());
-        assertEquals(CampaignConstants.DEFAULT_REGISTRATION_DELAY_DAYS, campaignState.getCampaignRegistrationDelay());
+        assertEquals(
+                CampaignConstants.DEFAULT_REGISTRATION_DELAY_DAYS,
+                campaignState.getCampaignRegistrationDelay());
         assertEquals(false, campaignState.getCampaignRegistrationPaused());
     }
 
@@ -109,8 +121,10 @@ public class CampaignStateTests {
     public void testCanDownloadRulesWithCurrentState_ReturnsFalse_When_PrivacyOptOut() {
         // setup
         Map<String, Object> testConfigData = new HashMap<>();
-        testConfigData.put(CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY, "optedout");
-        SharedStateResult configSharedStateResult = new SharedStateResult(SharedStateStatus.SET, testConfigData);
+        testConfigData.put(
+                CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY, "optedout");
+        SharedStateResult configSharedStateResult =
+                new SharedStateResult(SharedStateStatus.SET, testConfigData);
 
         campaignState.setState(configSharedStateResult, getIdentityEventData());
 
@@ -125,8 +139,10 @@ public class CampaignStateTests {
     public void testCanDownloadRulesWithCurrentState_ReturnsFalse_When_PrivacyUnknown() {
         // setup
         Map<String, Object> testConfigData = new HashMap<>();
-        testConfigData.put(CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY, "optunknown");
-        SharedStateResult configSharedStateResult = new SharedStateResult(SharedStateStatus.SET, testConfigData);
+        testConfigData.put(
+                CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY, "optunknown");
+        SharedStateResult configSharedStateResult =
+                new SharedStateResult(SharedStateStatus.SET, testConfigData);
 
         campaignState.setState(configSharedStateResult, getIdentityEventData());
 
@@ -142,7 +158,8 @@ public class CampaignStateTests {
         // setup
         Map<String, Object> testConfigData = new HashMap<>();
         testConfigData.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_SERVER_KEY, "");
-        SharedStateResult configSharedStateResult = new SharedStateResult(SharedStateStatus.SET, testConfigData);
+        SharedStateResult configSharedStateResult =
+                new SharedStateResult(SharedStateStatus.SET, testConfigData);
 
         campaignState.setState(configSharedStateResult, getIdentityEventData());
 
@@ -158,7 +175,8 @@ public class CampaignStateTests {
         // setup
         Map<String, Object> testConfigData = new HashMap<>();
         testConfigData.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_SERVER_KEY, null);
-        SharedStateResult configSharedStateResult = new SharedStateResult(SharedStateStatus.SET, testConfigData);
+        SharedStateResult configSharedStateResult =
+                new SharedStateResult(SharedStateStatus.SET, testConfigData);
 
         campaignState.setState(configSharedStateResult, getIdentityEventData());
 
@@ -174,7 +192,8 @@ public class CampaignStateTests {
         // setup
         Map<String, Object> testConfigData = new HashMap<>();
         testConfigData.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_MCIAS_KEY, "");
-        SharedStateResult configSharedStateResult = new SharedStateResult(SharedStateStatus.SET, testConfigData);
+        SharedStateResult configSharedStateResult =
+                new SharedStateResult(SharedStateStatus.SET, testConfigData);
 
         campaignState.setState(configSharedStateResult, getIdentityEventData());
 
@@ -190,7 +209,8 @@ public class CampaignStateTests {
         // setup
         Map<String, Object> testConfigData = new HashMap<>();
         testConfigData.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_MCIAS_KEY, null);
-        SharedStateResult configSharedStateResult = new SharedStateResult(SharedStateStatus.SET, testConfigData);
+        SharedStateResult configSharedStateResult =
+                new SharedStateResult(SharedStateStatus.SET, testConfigData);
 
         campaignState.setState(configSharedStateResult, getIdentityEventData());
 
@@ -206,7 +226,8 @@ public class CampaignStateTests {
         // setup
         Map<String, Object> testConfigData = new HashMap<>();
         testConfigData.put(CampaignConstants.EventDataKeys.Configuration.PROPERTY_ID, "");
-        SharedStateResult configSharedStateResult = new SharedStateResult(SharedStateStatus.SET, testConfigData);
+        SharedStateResult configSharedStateResult =
+                new SharedStateResult(SharedStateStatus.SET, testConfigData);
 
         campaignState.setState(configSharedStateResult, getIdentityEventData());
 
@@ -222,7 +243,8 @@ public class CampaignStateTests {
         // setup
         Map<String, Object> testConfigData = new HashMap<>();
         testConfigData.put(CampaignConstants.EventDataKeys.Configuration.PROPERTY_ID, null);
-        SharedStateResult configSharedStateResult = new SharedStateResult(SharedStateStatus.SET, testConfigData);
+        SharedStateResult configSharedStateResult =
+                new SharedStateResult(SharedStateStatus.SET, testConfigData);
 
         campaignState.setState(configSharedStateResult, getIdentityEventData());
 
@@ -238,7 +260,8 @@ public class CampaignStateTests {
         // setup
         Map<String, Object> testIdentityData = new HashMap<>();
         testIdentityData.put(CampaignConstants.EventDataKeys.Identity.VISITOR_ID_MID, "");
-        SharedStateResult identitySharedStateResult = new SharedStateResult(SharedStateStatus.SET, testIdentityData);
+        SharedStateResult identitySharedStateResult =
+                new SharedStateResult(SharedStateStatus.SET, testIdentityData);
 
         campaignState.setState(getConfigurationEventData(), identitySharedStateResult);
 
@@ -254,7 +277,8 @@ public class CampaignStateTests {
         // setup
         Map<String, Object> testIdentityData = new HashMap<>();
         testIdentityData.put(CampaignConstants.EventDataKeys.Identity.VISITOR_ID_MID, null);
-        SharedStateResult identitySharedStateResult = new SharedStateResult(SharedStateStatus.SET, testIdentityData);
+        SharedStateResult identitySharedStateResult =
+                new SharedStateResult(SharedStateStatus.SET, testIdentityData);
 
         campaignState.setState(getConfigurationEventData(), identitySharedStateResult);
 
@@ -282,7 +306,8 @@ public class CampaignStateTests {
         // setup
         Map<String, Object> testConfigData = new HashMap<>();
         testConfigData.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_SERVER_KEY, "");
-        SharedStateResult configSharedStateResult = new SharedStateResult(SharedStateStatus.SET, testConfigData);
+        SharedStateResult configSharedStateResult =
+                new SharedStateResult(SharedStateStatus.SET, testConfigData);
 
         campaignState.setState(configSharedStateResult, getIdentityEventData());
 
@@ -298,7 +323,8 @@ public class CampaignStateTests {
         // setup
         Map<String, Object> testConfigData = new HashMap<>();
         testConfigData.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_SERVER_KEY, null);
-        SharedStateResult configSharedStateResult = new SharedStateResult(SharedStateStatus.SET, testConfigData);
+        SharedStateResult configSharedStateResult =
+                new SharedStateResult(SharedStateStatus.SET, testConfigData);
 
         campaignState.setState(configSharedStateResult, getIdentityEventData());
 
@@ -314,7 +340,8 @@ public class CampaignStateTests {
         // setup
         Map<String, Object> testConfigData = new HashMap<>();
         testConfigData.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_PKEY_KEY, "");
-        SharedStateResult configSharedStateResult = new SharedStateResult(SharedStateStatus.SET, testConfigData);
+        SharedStateResult configSharedStateResult =
+                new SharedStateResult(SharedStateStatus.SET, testConfigData);
 
         campaignState.setState(configSharedStateResult, getIdentityEventData());
 
@@ -330,7 +357,8 @@ public class CampaignStateTests {
         // setup
         Map<String, Object> testConfigData = new HashMap<>();
         testConfigData.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_PKEY_KEY, null);
-        SharedStateResult configSharedStateResult = new SharedStateResult(SharedStateStatus.SET, testConfigData);
+        SharedStateResult configSharedStateResult =
+                new SharedStateResult(SharedStateStatus.SET, testConfigData);
 
         campaignState.setState(configSharedStateResult, getIdentityEventData());
 
@@ -346,7 +374,8 @@ public class CampaignStateTests {
         // setup
         Map<String, Object> testIdentityData = new HashMap<>();
         testIdentityData.put(CampaignConstants.EventDataKeys.Identity.VISITOR_ID_MID, "");
-        SharedStateResult identitySharedStateResult = new SharedStateResult(SharedStateStatus.SET, testIdentityData);
+        SharedStateResult identitySharedStateResult =
+                new SharedStateResult(SharedStateStatus.SET, testIdentityData);
 
         campaignState.setState(getConfigurationEventData(), identitySharedStateResult);
 
@@ -362,7 +391,8 @@ public class CampaignStateTests {
         // setup
         Map<String, Object> testIdentityData = new HashMap<>();
         testIdentityData.put(CampaignConstants.EventDataKeys.Identity.VISITOR_ID_MID, null);
-        SharedStateResult identitySharedStateResult = new SharedStateResult(SharedStateStatus.SET, testIdentityData);
+        SharedStateResult identitySharedStateResult =
+                new SharedStateResult(SharedStateStatus.SET, testIdentityData);
 
         campaignState.setState(getConfigurationEventData(), identitySharedStateResult);
 
@@ -377,8 +407,10 @@ public class CampaignStateTests {
     public void testCanRegisterWithCurrentState_ReturnsFalse_When_PrivacyOptOut() {
         // setup
         Map<String, Object> testConfigData = new HashMap<>();
-        testConfigData.put(CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY, "optedout");
-        SharedStateResult configSharedStateResult = new SharedStateResult(SharedStateStatus.SET, testConfigData);
+        testConfigData.put(
+                CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY, "optedout");
+        SharedStateResult configSharedStateResult =
+                new SharedStateResult(SharedStateStatus.SET, testConfigData);
 
         campaignState.setState(configSharedStateResult, getIdentityEventData());
 
@@ -393,8 +425,10 @@ public class CampaignStateTests {
     public void testCanRegisterWithCurrentState_ReturnsFalse_When_PrivacyUnknown() {
         // setup
         Map<String, Object> testConfigData = new HashMap<>();
-        testConfigData.put(CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY, "optunknown");
-        SharedStateResult configSharedStateResult = new SharedStateResult(SharedStateStatus.SET, testConfigData);
+        testConfigData.put(
+                CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY, "optunknown");
+        SharedStateResult configSharedStateResult =
+                new SharedStateResult(SharedStateStatus.SET, testConfigData);
 
         campaignState.setState(configSharedStateResult, getIdentityEventData());
 
@@ -422,7 +456,8 @@ public class CampaignStateTests {
         // setup
         Map<String, Object> testConfigData = new HashMap<>();
         testConfigData.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_SERVER_KEY, "");
-        SharedStateResult configSharedStateResult = new SharedStateResult(SharedStateStatus.SET, testConfigData);
+        SharedStateResult configSharedStateResult =
+                new SharedStateResult(SharedStateStatus.SET, testConfigData);
 
         campaignState.setState(configSharedStateResult, getIdentityEventData());
 
@@ -438,7 +473,8 @@ public class CampaignStateTests {
         // setup
         Map<String, Object> testConfigData = new HashMap<>();
         testConfigData.put(CampaignConstants.EventDataKeys.Configuration.CAMPAIGN_SERVER_KEY, null);
-        SharedStateResult configSharedStateResult = new SharedStateResult(SharedStateStatus.SET, testConfigData);
+        SharedStateResult configSharedStateResult =
+                new SharedStateResult(SharedStateStatus.SET, testConfigData);
 
         campaignState.setState(configSharedStateResult, getIdentityEventData());
 
@@ -454,7 +490,8 @@ public class CampaignStateTests {
         // setup
         Map<String, Object> testIdentityData = new HashMap<>();
         testIdentityData.put(CampaignConstants.EventDataKeys.Identity.VISITOR_ID_MID, "");
-        SharedStateResult identitySharedStateResult = new SharedStateResult(SharedStateStatus.SET, testIdentityData);
+        SharedStateResult identitySharedStateResult =
+                new SharedStateResult(SharedStateStatus.SET, testIdentityData);
 
         campaignState.setState(getConfigurationEventData(), identitySharedStateResult);
 
@@ -470,7 +507,8 @@ public class CampaignStateTests {
         // setup
         Map<String, Object> testIdentityData = new HashMap<>();
         testIdentityData.put(CampaignConstants.EventDataKeys.Identity.VISITOR_ID_MID, null);
-        SharedStateResult identitySharedStateResult = new SharedStateResult(SharedStateStatus.SET, testIdentityData);
+        SharedStateResult identitySharedStateResult =
+                new SharedStateResult(SharedStateStatus.SET, testIdentityData);
 
         campaignState.setState(getConfigurationEventData(), identitySharedStateResult);
 
@@ -485,8 +523,10 @@ public class CampaignStateTests {
     public void testCanSendTrackInfoWithCurrentState_ReturnsFalse_When_PrivacyOptOut() {
         // setup
         Map<String, Object> testConfigData = new HashMap<>();
-        testConfigData.put(CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY, "optedout");
-        SharedStateResult configSharedStateResult = new SharedStateResult(SharedStateStatus.SET, testConfigData);
+        testConfigData.put(
+                CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY, "optedout");
+        SharedStateResult configSharedStateResult =
+                new SharedStateResult(SharedStateStatus.SET, testConfigData);
 
         campaignState.setState(configSharedStateResult, getIdentityEventData());
 
@@ -501,8 +541,10 @@ public class CampaignStateTests {
     public void testCanSendTrackInfoWithCurrentState_ReturnsFalse_When_PrivacyUnknown() {
         // setup
         Map<String, Object> testConfigData = new HashMap<>();
-        testConfigData.put(CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY, "optunknown");
-        SharedStateResult configSharedStateResult = new SharedStateResult(SharedStateStatus.SET, testConfigData);
+        testConfigData.put(
+                CampaignConstants.EventDataKeys.Configuration.GLOBAL_CONFIG_PRIVACY, "optunknown");
+        SharedStateResult configSharedStateResult =
+                new SharedStateResult(SharedStateStatus.SET, testConfigData);
 
         campaignState.setState(configSharedStateResult, getIdentityEventData());
 

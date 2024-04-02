@@ -16,7 +16,7 @@ Integrate the Campaign mobile extension into your app by following the [getting 
 
 **Open the project**
 
-To open and run the project, open the `code/settings.gradle` file in Android Studio.
+To open and run the project, open the `code/settings.gradle.kts` file in Android. Studio.
 
 ## Related Projects
 

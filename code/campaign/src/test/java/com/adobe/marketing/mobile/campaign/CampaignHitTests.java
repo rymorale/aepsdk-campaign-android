@@ -15,7 +15,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import com.adobe.marketing.mobile.services.HttpMethod;
-
 import org.junit.Test;
 
 public class CampaignHitTests {
@@ -26,7 +25,8 @@ public class CampaignHitTests {
         CampaignHit campaignHit = new CampaignHit("url", "payload", 5);
         // verify
         assertNotNull(campaignHit);
-        assertEquals("{\"payload\":\"payload\",\"url\":\"url\",\"timeout\":5}", campaignHit.toString());
+        assertEquals(
+                "{\"payload\":\"payload\",\"url\":\"url\",\"timeout\":5}", campaignHit.toString());
         assertEquals(HttpMethod.POST, campaignHit.getHttpCommand());
     }
 

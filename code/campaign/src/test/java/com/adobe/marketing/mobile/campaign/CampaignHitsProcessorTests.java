@@ -30,7 +30,7 @@ import com.adobe.marketing.mobile.services.NetworkCallback;
 import com.adobe.marketing.mobile.services.NetworkRequest;
 import com.adobe.marketing.mobile.services.Networking;
 import com.adobe.marketing.mobile.services.ServiceProvider;
-
+import java.net.HttpURLConnection;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -39,29 +39,26 @@ import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 
-import java.net.HttpURLConnection;
-
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class CampaignHitsProcessorTests {
     private final CampaignHitProcessor campaignHitProcessor = new CampaignHitProcessor();
 
-    @Mock
-    Networking mockNetworkService;
-    @Mock
-    ServiceProvider mockServiceProvider;
-    @Mock
-    HttpConnecting mockHttpConnection;
-    @Mock
-    DataStoring mockDataStoreService;
-    @Mock
-    NamedCollection mockNamedCollection;
+    @Mock Networking mockNetworkService;
+    @Mock ServiceProvider mockServiceProvider;
+    @Mock HttpConnecting mockHttpConnection;
+    @Mock DataStoring mockDataStoreService;
+    @Mock NamedCollection mockNamedCollection;
 
     private void setupServiceProviderMockAndRunTest(Runnable testRunnable) {
-        try (MockedStatic<ServiceProvider> serviceProviderMockedStatic = Mockito.mockStatic(ServiceProvider.class)) {
-            serviceProviderMockedStatic.when(ServiceProvider::getInstance).thenReturn(mockServiceProvider);
+        try (MockedStatic<ServiceProvider> serviceProviderMockedStatic =
+                Mockito.mockStatic(ServiceProvider.class)) {
+            serviceProviderMockedStatic
+                    .when(ServiceProvider::getInstance)
+                    .thenReturn(mockServiceProvider);
             when(mockServiceProvider.getNetworkService()).thenReturn(mockNetworkService);
             when(mockServiceProvider.getDataStoreService()).thenReturn(mockDataStoreService);
-            when(mockDataStoreService.getNamedCollection(anyString())).thenReturn(mockNamedCollection);
+            when(mockDataStoreService.getNamedCollection(anyString()))
+                    .thenReturn(mockNamedCollection);
             testRunnable.run();
         }
     }
@@ -84,204 +81,329 @@ public class CampaignHitsProcessorTests {
     @Test
     public void testProcessHit_NotRetry_NullDataEntity() {
         // setup
-        setupServiceProviderMockAndRunTest(() -> {
-            // test
-            campaignHitProcessor.processHit(null, processingComplete -> {
-                // verify
-                assertEquals(true, processingComplete);
-                verify(mockNamedCollection, times(0)).setLong(eq(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY), anyLong());
-            });
-        });
+        setupServiceProviderMockAndRunTest(
+                () -> {
+                    // test
+                    campaignHitProcessor.processHit(
+                            null,
+                            processingComplete -> {
+                                // verify
+                                assertEquals(true, processingComplete);
+                                verify(mockNamedCollection, times(0))
+                                        .setLong(
+                                                eq(
+                                                        CampaignConstants
+                                                                .CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY),
+                                                anyLong());
+                            });
+                });
     }
 
     @Test
     public void testProcessHit_NotRetry_EmptyDataInDataEntity() {
         // setup
-        setupServiceProviderMockAndRunTest(() -> {
-            CampaignHit campaignHit = new CampaignHit("", "", 0);
-            DataEntity dataEntity = new DataEntity(campaignHit.toString());
-            // test
-            campaignHitProcessor.processHit(dataEntity, processingComplete -> {
-                // verify
-                assertEquals(true, processingComplete);
-                verify(mockNamedCollection, times(0)).setLong(eq(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY), anyLong());
-            });
-        });
+        setupServiceProviderMockAndRunTest(
+                () -> {
+                    CampaignHit campaignHit = new CampaignHit("", "", 0);
+                    DataEntity dataEntity = new DataEntity(campaignHit.toString());
+                    // test
+                    campaignHitProcessor.processHit(
+                            dataEntity,
+                            processingComplete -> {
+                                // verify
+                                assertEquals(true, processingComplete);
+                                verify(mockNamedCollection, times(0))
+                                        .setLong(
+                                                eq(
+                                                        CampaignConstants
+                                                                .CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY),
+                                                anyLong());
+                            });
+                });
     }
 
     @Test
     public void testProcessHit_Retry_WhenNullNetworkService() {
         // setup
-        setupServiceProviderMockAndRunTest(() -> {
-            when(mockServiceProvider.getNetworkService()).thenReturn(null);
-            CampaignHit campaignHit = new CampaignHit("https://campaignrequest.com", "payload", 5);
-            DataEntity dataEntity = new DataEntity(campaignHit.toString());
-            // test
-            campaignHitProcessor.processHit(dataEntity, processingComplete -> {
-                // verify
-                assertEquals(false, processingComplete);
-                verify(mockNamedCollection, times(0)).setLong(eq(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY), anyLong());
-            });
-        });
+        setupServiceProviderMockAndRunTest(
+                () -> {
+                    when(mockServiceProvider.getNetworkService()).thenReturn(null);
+                    CampaignHit campaignHit =
+                            new CampaignHit("https://campaignrequest.com", "payload", 5);
+                    DataEntity dataEntity = new DataEntity(campaignHit.toString());
+                    // test
+                    campaignHitProcessor.processHit(
+                            dataEntity,
+                            processingComplete -> {
+                                // verify
+                                assertEquals(false, processingComplete);
+                                verify(mockNamedCollection, times(0))
+                                        .setLong(
+                                                eq(
+                                                        CampaignConstants
+                                                                .CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY),
+                                                anyLong());
+                            });
+                });
     }
 
     @Test
     public void testProcessHit_Retry_When_ConnectionIsNull() {
         // setup
-        setupServiceProviderMockAndRunTest(() -> {
-            doAnswer((Answer<Void>) invocation -> {
-                NetworkCallback callback = invocation.getArgument(1);
-                callback.call(null);
-                return null;
-            }).when(mockNetworkService)
-                    .connectAsync(any(NetworkRequest.class), any(NetworkCallback.class));
-            CampaignHit campaignHit = new CampaignHit("https://campaignrequest.com", "payload", 5);
-            DataEntity dataEntity = new DataEntity(campaignHit.toString());
-            // test
-            campaignHitProcessor.processHit(dataEntity, processingComplete -> {
-                // verify
-                assertEquals(false, processingComplete);
-                verify(mockNamedCollection, times(0)).setLong(eq(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY), anyLong());
-            });
-        });
+        setupServiceProviderMockAndRunTest(
+                () -> {
+                    doAnswer(
+                                    (Answer<Void>)
+                                            invocation -> {
+                                                NetworkCallback callback =
+                                                        invocation.getArgument(1);
+                                                callback.call(null);
+                                                return null;
+                                            })
+                            .when(mockNetworkService)
+                            .connectAsync(any(NetworkRequest.class), any(NetworkCallback.class));
+                    CampaignHit campaignHit =
+                            new CampaignHit("https://campaignrequest.com", "payload", 5);
+                    DataEntity dataEntity = new DataEntity(campaignHit.toString());
+                    // test
+                    campaignHitProcessor.processHit(
+                            dataEntity,
+                            processingComplete -> {
+                                // verify
+                                assertEquals(false, processingComplete);
+                                verify(mockNamedCollection, times(0))
+                                        .setLong(
+                                                eq(
+                                                        CampaignConstants
+                                                                .CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY),
+                                                anyLong());
+                            });
+                });
     }
-
 
     @Test
     public void testProcessHit_NotRetry_When_ResponseIsValid() {
         // setup
-        setupServiceProviderMockAndRunTest(() -> {
-            when(mockHttpConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
-            doAnswer((Answer<Void>) invocation -> {
-                NetworkCallback callback = invocation.getArgument(1);
-                callback.call(mockHttpConnection);
-                return null;
-            }).when(mockNetworkService)
-                    .connectAsync(any(NetworkRequest.class), any(NetworkCallback.class));
-            CampaignHit campaignHit = new CampaignHit("https://campaignrequest.com", "payload", 5);
-            DataEntity dataEntity = new DataEntity(campaignHit.toString());
-            // test
-            campaignHitProcessor.processHit(dataEntity, processingComplete -> {
-                // verify
-                assertEquals(true, processingComplete);
-                verify(mockNamedCollection, times(1)).setLong(eq(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY), anyLong());
-            });
-        });
+        setupServiceProviderMockAndRunTest(
+                () -> {
+                    when(mockHttpConnection.getResponseCode())
+                            .thenReturn(HttpURLConnection.HTTP_OK);
+                    doAnswer(
+                                    (Answer<Void>)
+                                            invocation -> {
+                                                NetworkCallback callback =
+                                                        invocation.getArgument(1);
+                                                callback.call(mockHttpConnection);
+                                                return null;
+                                            })
+                            .when(mockNetworkService)
+                            .connectAsync(any(NetworkRequest.class), any(NetworkCallback.class));
+                    CampaignHit campaignHit =
+                            new CampaignHit("https://campaignrequest.com", "payload", 5);
+                    DataEntity dataEntity = new DataEntity(campaignHit.toString());
+                    // test
+                    campaignHitProcessor.processHit(
+                            dataEntity,
+                            processingComplete -> {
+                                // verify
+                                assertEquals(true, processingComplete);
+                                verify(mockNamedCollection, times(1))
+                                        .setLong(
+                                                eq(
+                                                        CampaignConstants
+                                                                .CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY),
+                                                anyLong());
+                            });
+                });
     }
 
     @Test
-    public void testProcessHit_NoExceptionAndNotRetry_When_ResponseIsValid_WhenNamedCollectionUnavailable() {
+    public void
+            testProcessHit_NoExceptionAndNotRetry_When_ResponseIsValid_WhenNamedCollectionUnavailable() {
         // setup
-        setupServiceProviderMockAndRunTest(() -> {
-            when(mockHttpConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
-            when(mockDataStoreService.getNamedCollection(anyString())).thenReturn(null);
-            doAnswer((Answer<Void>) invocation -> {
-                NetworkCallback callback = invocation.getArgument(1);
-                callback.call(mockHttpConnection);
-                return null;
-            }).when(mockNetworkService)
-                    .connectAsync(any(NetworkRequest.class), any(NetworkCallback.class));
-            CampaignHit campaignHit = new CampaignHit("https://campaignrequest.com", "payload", 5);
-            DataEntity dataEntity = new DataEntity(campaignHit.toString());
-            // test
-            campaignHitProcessor.processHit(dataEntity, processingComplete -> {
-                // verify
-                assertEquals(true, processingComplete);
-                verify(mockNamedCollection, times(0)).setLong(eq(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY), anyLong());
-            });
-        });
+        setupServiceProviderMockAndRunTest(
+                () -> {
+                    when(mockHttpConnection.getResponseCode())
+                            .thenReturn(HttpURLConnection.HTTP_OK);
+                    when(mockDataStoreService.getNamedCollection(anyString())).thenReturn(null);
+                    doAnswer(
+                                    (Answer<Void>)
+                                            invocation -> {
+                                                NetworkCallback callback =
+                                                        invocation.getArgument(1);
+                                                callback.call(mockHttpConnection);
+                                                return null;
+                                            })
+                            .when(mockNetworkService)
+                            .connectAsync(any(NetworkRequest.class), any(NetworkCallback.class));
+                    CampaignHit campaignHit =
+                            new CampaignHit("https://campaignrequest.com", "payload", 5);
+                    DataEntity dataEntity = new DataEntity(campaignHit.toString());
+                    // test
+                    campaignHitProcessor.processHit(
+                            dataEntity,
+                            processingComplete -> {
+                                // verify
+                                assertEquals(true, processingComplete);
+                                verify(mockNamedCollection, times(0))
+                                        .setLong(
+                                                eq(
+                                                        CampaignConstants
+                                                                .CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY),
+                                                anyLong());
+                            });
+                });
     }
 
     @Test
     public void testProcessHit_Retry_When_ConnectionTimeout() {
         // setup
-        setupServiceProviderMockAndRunTest(() -> {
-            when(mockHttpConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_CLIENT_TIMEOUT);
-            when(mockDataStoreService.getNamedCollection(anyString())).thenReturn(mockNamedCollection);
-            doAnswer((Answer<Void>) invocation -> {
-                NetworkCallback callback = invocation.getArgument(1);
-                callback.call(mockHttpConnection);
-                return null;
-            }).when(mockNetworkService)
-                    .connectAsync(any(NetworkRequest.class), any(NetworkCallback.class));
-            CampaignHit campaignHit = new CampaignHit("https://campaignrequest.com", "payload", 5);
-            DataEntity dataEntity = new DataEntity(campaignHit.toString());
-            // test
-            campaignHitProcessor.processHit(dataEntity, processingComplete -> {
-                // verify
-                assertEquals(false, processingComplete);
-                verify(mockNamedCollection, times(0)).setLong(eq(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY), anyLong());
-            });
-        });
+        setupServiceProviderMockAndRunTest(
+                () -> {
+                    when(mockHttpConnection.getResponseCode())
+                            .thenReturn(HttpURLConnection.HTTP_CLIENT_TIMEOUT);
+                    when(mockDataStoreService.getNamedCollection(anyString()))
+                            .thenReturn(mockNamedCollection);
+                    doAnswer(
+                                    (Answer<Void>)
+                                            invocation -> {
+                                                NetworkCallback callback =
+                                                        invocation.getArgument(1);
+                                                callback.call(mockHttpConnection);
+                                                return null;
+                                            })
+                            .when(mockNetworkService)
+                            .connectAsync(any(NetworkRequest.class), any(NetworkCallback.class));
+                    CampaignHit campaignHit =
+                            new CampaignHit("https://campaignrequest.com", "payload", 5);
+                    DataEntity dataEntity = new DataEntity(campaignHit.toString());
+                    // test
+                    campaignHitProcessor.processHit(
+                            dataEntity,
+                            processingComplete -> {
+                                // verify
+                                assertEquals(false, processingComplete);
+                                verify(mockNamedCollection, times(0))
+                                        .setLong(
+                                                eq(
+                                                        CampaignConstants
+                                                                .CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY),
+                                                anyLong());
+                            });
+                });
     }
 
     @Test
     public void testProcess_Retry_When_GateWayTimeout() {
         // setup
-        setupServiceProviderMockAndRunTest(() -> {
-            when(mockHttpConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_GATEWAY_TIMEOUT);
-            when(mockDataStoreService.getNamedCollection(anyString())).thenReturn(mockNamedCollection);
-            doAnswer((Answer<Void>) invocation -> {
-                NetworkCallback callback = invocation.getArgument(1);
-                callback.call(mockHttpConnection);
-                return null;
-            }).when(mockNetworkService)
-                    .connectAsync(any(NetworkRequest.class), any(NetworkCallback.class));
-            CampaignHit campaignHit = new CampaignHit("https://campaignrequest.com", "payload", 5);
-            DataEntity dataEntity = new DataEntity(campaignHit.toString());
-            // test
-            campaignHitProcessor.processHit(dataEntity, processingComplete -> {
-                // verify
-                assertEquals(false, processingComplete);
-                verify(mockNamedCollection, times(0)).setLong(eq(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY), anyLong());
-            });
-        });
+        setupServiceProviderMockAndRunTest(
+                () -> {
+                    when(mockHttpConnection.getResponseCode())
+                            .thenReturn(HttpURLConnection.HTTP_GATEWAY_TIMEOUT);
+                    when(mockDataStoreService.getNamedCollection(anyString()))
+                            .thenReturn(mockNamedCollection);
+                    doAnswer(
+                                    (Answer<Void>)
+                                            invocation -> {
+                                                NetworkCallback callback =
+                                                        invocation.getArgument(1);
+                                                callback.call(mockHttpConnection);
+                                                return null;
+                                            })
+                            .when(mockNetworkService)
+                            .connectAsync(any(NetworkRequest.class), any(NetworkCallback.class));
+                    CampaignHit campaignHit =
+                            new CampaignHit("https://campaignrequest.com", "payload", 5);
+                    DataEntity dataEntity = new DataEntity(campaignHit.toString());
+                    // test
+                    campaignHitProcessor.processHit(
+                            dataEntity,
+                            processingComplete -> {
+                                // verify
+                                assertEquals(false, processingComplete);
+                                verify(mockNamedCollection, times(0))
+                                        .setLong(
+                                                eq(
+                                                        CampaignConstants
+                                                                .CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY),
+                                                anyLong());
+                            });
+                });
     }
-
 
     @Test
     public void testProcess_Retry_When_HttpUnavailable() {
         // setup
-        setupServiceProviderMockAndRunTest(() -> {
-            when(mockHttpConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_UNAVAILABLE);
-            when(mockDataStoreService.getNamedCollection(anyString())).thenReturn(mockNamedCollection);
-            doAnswer((Answer<Void>) invocation -> {
-                NetworkCallback callback = invocation.getArgument(1);
-                callback.call(mockHttpConnection);
-                return null;
-            }).when(mockNetworkService)
-                    .connectAsync(any(NetworkRequest.class), any(NetworkCallback.class));
-            CampaignHit campaignHit = new CampaignHit("https://campaignrequest.com", "payload", 5);
-            DataEntity dataEntity = new DataEntity(campaignHit.toString());
-            // test
-            campaignHitProcessor.processHit(dataEntity, processingComplete -> {
-                // verify
-                assertEquals(false, processingComplete);
-                verify(mockNamedCollection, times(0)).setLong(eq(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY), anyLong());
-            });
-        });
+        setupServiceProviderMockAndRunTest(
+                () -> {
+                    when(mockHttpConnection.getResponseCode())
+                            .thenReturn(HttpURLConnection.HTTP_UNAVAILABLE);
+                    when(mockDataStoreService.getNamedCollection(anyString()))
+                            .thenReturn(mockNamedCollection);
+                    doAnswer(
+                                    (Answer<Void>)
+                                            invocation -> {
+                                                NetworkCallback callback =
+                                                        invocation.getArgument(1);
+                                                callback.call(mockHttpConnection);
+                                                return null;
+                                            })
+                            .when(mockNetworkService)
+                            .connectAsync(any(NetworkRequest.class), any(NetworkCallback.class));
+                    CampaignHit campaignHit =
+                            new CampaignHit("https://campaignrequest.com", "payload", 5);
+                    DataEntity dataEntity = new DataEntity(campaignHit.toString());
+                    // test
+                    campaignHitProcessor.processHit(
+                            dataEntity,
+                            processingComplete -> {
+                                // verify
+                                assertEquals(false, processingComplete);
+                                verify(mockNamedCollection, times(0))
+                                        .setLong(
+                                                eq(
+                                                        CampaignConstants
+                                                                .CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY),
+                                                anyLong());
+                            });
+                });
     }
 
     @Test
     public void testProcess_NotRetry_When_OtherResponseCode() {
         // setup
-        setupServiceProviderMockAndRunTest(() -> {
-            when(mockHttpConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_PROXY_AUTH);
-            when(mockDataStoreService.getNamedCollection(anyString())).thenReturn(mockNamedCollection);
-            doAnswer((Answer<Void>) invocation -> {
-                NetworkCallback callback = invocation.getArgument(1);
-                callback.call(mockHttpConnection);
-                return null;
-            }).when(mockNetworkService)
-                    .connectAsync(any(NetworkRequest.class), any(NetworkCallback.class));
-            CampaignHit campaignHit = new CampaignHit("https://campaignrequest.com", "payload", 5);
-            DataEntity dataEntity = new DataEntity(campaignHit.toString());
-            // test
-            campaignHitProcessor.processHit(dataEntity, processingComplete -> {
-                // verify
-                assertEquals(true, processingComplete);
-                verify(mockNamedCollection, times(0)).setLong(eq(CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY), anyLong());
-            });
-        });
+        setupServiceProviderMockAndRunTest(
+                () -> {
+                    when(mockHttpConnection.getResponseCode())
+                            .thenReturn(HttpURLConnection.HTTP_PROXY_AUTH);
+                    when(mockDataStoreService.getNamedCollection(anyString()))
+                            .thenReturn(mockNamedCollection);
+                    doAnswer(
+                                    (Answer<Void>)
+                                            invocation -> {
+                                                NetworkCallback callback =
+                                                        invocation.getArgument(1);
+                                                callback.call(mockHttpConnection);
+                                                return null;
+                                            })
+                            .when(mockNetworkService)
+                            .connectAsync(any(NetworkRequest.class), any(NetworkCallback.class));
+                    CampaignHit campaignHit =
+                            new CampaignHit("https://campaignrequest.com", "payload", 5);
+                    DataEntity dataEntity = new DataEntity(campaignHit.toString());
+                    // test
+                    campaignHitProcessor.processHit(
+                            dataEntity,
+                            processingComplete -> {
+                                // verify
+                                assertEquals(true, processingComplete);
+                                verify(mockNamedCollection, times(0))
+                                        .setLong(
+                                                eq(
+                                                        CampaignConstants
+                                                                .CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY),
+                                                anyLong());
+                            });
+                });
     }
 }
