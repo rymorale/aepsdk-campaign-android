@@ -880,7 +880,7 @@ public class CampaignExtension extends Extension {
         }
 
         // we need to check if the ACPCampaign datastore exists by checking for the presence of
-        // any keys as the returned shared preferences object is never null
+        // any entries in the shared preferences as the returned object is never null
         if (sharedPreferences != null && sharedPreferences.getAll().isEmpty()) {
             Log.trace(
                     CampaignConstants.LOG_TAG,
