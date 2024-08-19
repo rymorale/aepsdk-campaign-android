@@ -1113,17 +1113,13 @@ public class CampaignExtension extends Extension {
 
         final NamedCollection campaignNamedCollection = getNamedCollection();
         final String retrievedEcid =
-                campaignNamedCollection
-                        .getString(
-                                CampaignConstants.CAMPAIGN_NAMED_COLLECTION_EXPERIENCE_CLOUD_ID_KEY,
-                                "");
+                campaignNamedCollection.getString(
+                        CampaignConstants.CAMPAIGN_NAMED_COLLECTION_EXPERIENCE_CLOUD_ID_KEY, "");
         final String currentEcid = campaignState.getExperienceCloudId();
         final long retrievedTimestamp =
-                campaignNamedCollection
-                        .getLong(
-                                CampaignConstants
-                                        .CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY,
-                                CampaignConstants.DEFAULT_TIMESTAMP_VALUE);
+                campaignNamedCollection.getLong(
+                        CampaignConstants.CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY,
+                        CampaignConstants.DEFAULT_TIMESTAMP_VALUE);
         final int registrationDelay = campaignState.getCampaignRegistrationDelay();
         final long registrationDelayInMilliseconds = TimeUnit.DAYS.toMillis(registrationDelay);
 
