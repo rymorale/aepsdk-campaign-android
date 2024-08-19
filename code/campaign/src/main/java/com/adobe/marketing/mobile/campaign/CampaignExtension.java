@@ -879,7 +879,9 @@ public class CampaignExtension extends Extension {
                             CampaignConstants.ACP_CAMPAIGN_DATASTORE_NAME, 0);
         }
 
-        if (sharedPreferences == null) {
+        // we need to check if the ACPCampaign datastore exists by checking for the presence of
+        // any keys as the returned shared preferences object is never null
+        if (sharedPreferences != null && sharedPreferences.getAll().isEmpty()) {
             Log.trace(
                     CampaignConstants.LOG_TAG,
                     SELF_TAG,
@@ -1109,14 +1111,15 @@ public class CampaignExtension extends Extension {
             return false;
         }
 
+        final NamedCollection campaignNamedCollection = getNamedCollection();
         final String retrievedEcid =
-                getNamedCollection()
+                campaignNamedCollection
                         .getString(
                                 CampaignConstants.CAMPAIGN_NAMED_COLLECTION_EXPERIENCE_CLOUD_ID_KEY,
                                 "");
         final String currentEcid = campaignState.getExperienceCloudId();
         final long retrievedTimestamp =
-                getNamedCollection()
+                campaignNamedCollection
                         .getLong(
                                 CampaignConstants
                                         .CAMPAIGN_NAMED_COLLECTION_REGISTRATION_TIMESTAMP_KEY,
