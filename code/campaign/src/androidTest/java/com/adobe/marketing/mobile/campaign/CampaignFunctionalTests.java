@@ -97,7 +97,6 @@ class Retry implements TestRule {
     }
 }
 
-@Ignore
 @RunWith(AndroidJUnit4.class)
 public class CampaignFunctionalTests {
 
